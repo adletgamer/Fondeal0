@@ -7,7 +7,24 @@ _Infraestructura de crédito para PyMEs latinoamericanas, construida de forma na
 
 `Stellar` · `Soroban` · `USDC` · `on-chain reputation`
 
+**▶ Live MVP: [fondealo.vercel.app](https://fondealo.vercel.app)**
+
 </div>
+
+---
+
+## Deployments
+
+| Environment | Target | Address / URL | Status |
+| ----------- | ------ | ------------- | ------ |
+| Web (MVP)   | Vercel | https://fondealo.vercel.app | ✅ live |
+| `business_passport` | Stellar Testnet (Soroban) | _run `scripts/deploy_testnet.sh` → paste id_ | ⏳ pending |
+| `credit_score` | Stellar Testnet (Soroban) | _run `scripts/deploy_testnet.sh` → paste id_ | ⏳ pending |
+
+> The web app is live on Vercel. The Soroban contracts deploy separately with
+> `scripts/deploy_testnet.sh` on a machine with internet (funds a Testnet key via
+> Friendbot, deploys both contracts, wires roles, writes `apps/web/.env.local`).
+> Once deployed, paste the `C…` contract ids above and set them in the app env.
 
 ---
 
