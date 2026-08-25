@@ -1,0 +1,5 @@
+/* Shared design tokens for the Fondealo UI. Imported by the web app. */
+:root {
+  --fondealo-brand: 5 150 105; /* emerald-600 */
+  --fondealo-ink: 15 23 42; /* slate-900 */
+}
