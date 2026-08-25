@@ -1,0 +1,160 @@
+// Fondealo off-chain index + PII store.
+//
+// On-chain (Soroban) remains authoritative for anything trust-bearing
+// (Passport, score). This database is a fast, queryable PROJECTION of on-chain
+// state plus off-chain data that must never live on-chain (KYB PII, opportunity
+// descriptions, UX metadata). Only `data_hash` commitments bridge the two.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum KybStatus {
+  None
+  Processing
+  Accepted
+  Rejected
+}
+
+enum RiskBand {
+  A
+  B
+  C
+  D
+  E
+}
+
+enum OpportunityStatus {
+  Draft
+  Open
+  Funded
+  Active
+  Repaid
+  Defaulted
+  Cancelled
+}
+
+/// A registered business. `stellarAddress` is the on-chain identity key.
+model Business {
+  id            String    @id @default(cuid())
+  stellarAddress String   @unique
+  legalName     String
+  country       String
+  email         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  kybSubmissions KybSubmission[]
+  opportunities  Opportunity[]
+  passport       PassportProjection?
+
+  @@index([country])
+}
+
+/// A wallet-authenticated user (SEP-10). A user may act as business and/or investor.
+model UserWallet {
+  id            String   @id @default(cuid())
+  stellarAddress String  @unique
+  createdAt     DateTime @default(now())
+  lastLoginAt   DateTime?
+}
+
+/// KYB intake, shaped after SEP-12. `fields` holds provider-specific data (PII).
+model KybSubmission {
+  id          String    @id @default(cuid())
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id])
+  status      KybStatus @default(Processing)
+  /// PII payload — encrypted at rest in production.
+  fields      Json
+  /// 32-byte commitment (hex) mirrored on-chain as `data_hash`.
+  dataHash    String?
+  reviewedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([businessId])
+  @@index([status])
+}
+
+/// Mirror of the on-chain Passport for fast reads/dashboards. Never authoritative.
+model PassportProjection {
+  business      Business  @relation(fields: [businessId], references: [id])
+  businessId    String    @id
+  kybStatus     KybStatus
+  score         Int
+  riskBand      RiskBand
+  loansTotal    Int       @default(0)
+  loansRepaid   Int       @default(0)
+  onTimeStreak  Int       @default(0)
+  issuedAt      DateTime
+  updatedAt     DateTime
+  dataHash      String
+}
+
+model Opportunity {
+  id           String            @id @default(cuid())
+  businessId   String
+  business     Business          @relation(fields: [businessId], references: [id])
+  title        String
+  description  String            @default("")
+  /// USDC stroops as string to preserve precision.
+  amount       String
+  funded       String            @default("0")
+  termDays     Int
+  aprBps       Int
+  riskBand     RiskBand
+  status       OpportunityStatus @default(Draft)
+  /// On-chain escrow opportunity id (u64) once created on-chain.
+  onchainId    String?
+  createdAt    DateTime          @default(now())
+
+  fundings   Funding[]
+  repayments Repayment[]
+
+  @@index([businessId])
+  @@index([status])
+}
+
+model Funding {
+  id            String      @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id])
+  investor      String
+  amount        String
+  txHash        String?
+  createdAt     DateTime    @default(now())
+
+  @@index([opportunityId])
+  @@index([investor])
+}
+
+model Repayment {
+  id            String      @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id])
+  amount        String
+  onTime        Boolean     @default(true)
+  isFinal       Boolean     @default(false)
+  txHash        String?
+  createdAt     DateTime    @default(now())
+
+  @@index([opportunityId])
+}
+
+/// Append-only log of on-chain reputation events, indexed from contract events.
+model ScoreEvent {
+  id            String   @id @default(cuid())
+  business      String
+  scoreBefore   Int
+  scoreAfter    Int
+  reason        String
+  txHash        String?
+  createdAt     DateTime @default(now())
+
+  @@index([business])
+}
