@@ -1,0 +1,32 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "globalEnv": ["NODE_ENV"],
+  "globalPassThroughEnv": [
+    "NEXT_PUBLIC_STELLAR_NETWORK",
+    "NEXT_PUBLIC_SOROBAN_RPC_URL",
+    "NEXT_PUBLIC_HORIZON_URL",
+    "NEXT_PUBLIC_USDC_SAC_ADDRESS",
+    "NEXT_PUBLIC_PASSPORT_CONTRACT_ID",
+    "DATABASE_URL"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^build"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    }
+  }
+}

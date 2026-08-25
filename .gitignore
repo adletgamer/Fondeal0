@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Rust / Soroban
+target/
+**/target/
+*.wasm
+**/test_snapshots/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+Thumbs.db
+
+# Turbo
+.turbo/
+
+# Prisma
+packages/database/prisma/*.db
+
+# Transfer artifacts
+*.bundle
+_transfer*
