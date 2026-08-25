@@ -41,3 +41,4 @@ packages/database/prisma/*.db
 # Transfer artifacts
 *.bundle
 _transfer*
+.vercel

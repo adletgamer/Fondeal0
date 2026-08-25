@@ -1,54 +1,41 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@fondealo/ui';
-import { SCORE_MAX, type Passport } from '@fondealo/types';
-
-const bandColor: Record<string, string> = {
-  A: 'bg-emerald-100 text-emerald-800',
-  B: 'bg-lime-100 text-lime-800',
-  C: 'bg-amber-100 text-amber-800',
-  D: 'bg-orange-100 text-orange-800',
-  E: 'bg-red-100 text-red-800',
-};
+import { Card } from '@fondealo/ui';
+import { type Passport } from '@fondealo/types';
+import { ScoreGauge } from './score-gauge';
+import { ShieldCheck } from './icons';
 
 /** Renders a Business Passport summary. Data comes from the on-chain read once wired. */
 export function PassportCard({ passport }: { passport: Passport }) {
-  const pct = Math.round((passport.score / SCORE_MAX) * 100);
+  const stats = [
+    { label: 'KYB', value: passport.kybStatus },
+    { label: 'Repaid', value: `${passport.loansRepaid}/${passport.loansTotal}` },
+    { label: 'On-time streak', value: String(passport.onTimeStreak) },
+  ];
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Business Passport</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <div className="text-3xl font-bold text-slate-900">{passport.score}</div>
-            <div className="text-xs text-slate-500">Credit score / {SCORE_MAX}</div>
-          </div>
-          <span
-            className={`rounded-full px-3 py-1 text-sm font-semibold ${bandColor[passport.riskBand] ?? ''}`}
-          >
-            Risk {passport.riskBand}
-          </span>
+    <Card className="overflow-hidden">
+      <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+        <div className="flex items-center gap-2 font-semibold text-slate-900">
+          <ShieldCheck width={18} height={18} className="text-brand-600" />
+          Business Passport
         </div>
-        <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-          <div className="h-full rounded-full bg-emerald-600" style={{ width: `${pct}%` }} />
-        </div>
-        <dl className="grid grid-cols-3 gap-3 text-center text-sm">
-          <div>
-            <dt className="text-slate-500">KYB</dt>
-            <dd className="font-medium">{passport.kybStatus}</dd>
+        <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700">
+          {passport.kybStatus}
+        </span>
+      </div>
+      <div className="grid place-items-center py-6">
+        <ScoreGauge score={passport.score} band={passport.riskBand} size={180} />
+      </div>
+      <dl className="grid grid-cols-3 border-t border-slate-100 text-center">
+        {stats.map((s) => (
+          <div key={s.label} className="border-r border-slate-100 py-4 last:border-r-0">
+            <dt className="text-xs uppercase tracking-wide text-slate-400">{s.label}</dt>
+            <dd className="mt-1 font-display text-sm font-semibold text-slate-900">{s.value}</dd>
           </div>
-          <div>
-            <dt className="text-slate-500">Repaid</dt>
-            <dd className="font-medium">
-              {passport.loansRepaid}/{passport.loansTotal}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">On-time streak</dt>
-            <dd className="font-medium">{passport.onTimeStreak}</dd>
-          </div>
-        </dl>
-      </CardContent>
+        ))}
+      </dl>
+      <div className="flex items-center justify-between border-t border-slate-100 px-6 py-3 text-xs text-slate-500">
+        <span className="font-mono">{passport.business}</span>
+        <span className="text-brand-600">portable across loans</span>
+      </div>
     </Card>
   );
 }

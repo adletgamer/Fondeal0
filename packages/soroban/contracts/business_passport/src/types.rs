@@ -53,13 +53,20 @@ pub struct Passport {
     pub data_hash: BytesN<32>,
 }
 
-/// Storage keys. Admin/Writer live in instance storage; each Passport is a
-/// persistent entry keyed by the business address.
+/// Storage keys. Roles live in instance storage; each Passport is a persistent
+/// entry keyed by the business address.
+///
+/// Two write roles are intentionally separated:
+/// - `Issuer` issues Passports and sets KYB status (the Fondealo backend / admin
+///   key acting on an approved KYB).
+/// - `RepManager` applies reputation updates — this is the `credit_score`
+///   contract, which updates the Passport via a cross-contract call.
 #[contracttype]
 #[derive(Clone)]
 pub enum DataKey {
     Admin,
-    Writer,
+    Issuer,
+    RepManager,
     Passport(Address),
 }
 

@@ -7,7 +7,24 @@ _Infraestructura de crédito para PyMEs latinoamericanas, construida de forma na
 
 `Stellar` · `Soroban` · `USDC` · `on-chain reputation`
 
+**▶ Live MVP: [fondealo.vercel.app](https://fondealo.vercel.app)**
+
 </div>
+
+---
+
+## Deployments
+
+| Environment | Target | Address / URL | Status |
+| ----------- | ------ | ------------- | ------ |
+| Web (MVP)   | Vercel | https://fondealo.vercel.app | ✅ live |
+| `business_passport` | Stellar Testnet (Soroban) | _run `scripts/deploy_testnet.sh` → paste id_ | ⏳ pending |
+| `credit_score` | Stellar Testnet (Soroban) | _run `scripts/deploy_testnet.sh` → paste id_ | ⏳ pending |
+
+> The web app is live on Vercel. The Soroban contracts deploy separately with
+> `scripts/deploy_testnet.sh` on a machine with internet (funds a Testnet key via
+> Friendbot, deploys both contracts, wires roles, writes `apps/web/.env.local`).
+> Once deployed, paste the `C…` contract ids above and set them in the app env.
 
 ---
 
@@ -48,7 +65,8 @@ fondealo/
 │  └─ web/            Next.js 15 (App Router, Server Actions) · Tailwind · shadcn-style UI
 ├─ packages/
 │  ├─ soroban/        Rust / Soroban contracts (Cargo workspace)
-│  │  └─ contracts/business_passport   ← the trust primitive (implemented + tested)
+│  │  ├─ contracts/business_passport   ← the trust primitive (implemented + tested)
+│  │  └─ contracts/credit_score        ← reputation engine (implemented + tested)
 │  ├─ sdk/            TS client: network config, Wallets Kit, Passport read client
 │  ├─ types/          Shared domain types + zod schemas
 │  ├─ database/       Prisma schema for the off-chain index / PII
@@ -95,22 +113,34 @@ Phase-gated: each phase ends with ADRs and review before the next begins.
 | ----- | ----------------- | --------------------------------- |
 | 1     | Research          | ✅ merged                         |
 | 2     | Architecture      | ✅ merged                         |
-| 3     | Scaffolding       | ✅ this branch                    |
+| 3     | Scaffolding       | ✅ merged                         |
 | 4     | Business Passport | 🟡 contract done; app wiring next |
-| 5     | Credit Engine     | ⏳ next                           |
-| 6     | Funding Flow      | ⏳                                |
+| 5     | Credit Engine     | ✅ this branch (contract + spec)  |
+| 6     | Funding Flow      | ⏳ next                           |
 | 7     | Reputation System | ⏳                                |
 | 8     | Demo Day          | ⏳                                |
 
-**Verified in Phase 3:** `business_passport` builds and passes **11/11** unit tests with
-`soroban-sdk` 27 (`cargo fmt` + `clippy -D warnings` clean); TypeScript packages typecheck, lint, and
+**Verified:** contracts build and pass **20/20** unit tests with `soroban-sdk` 27
+(`business_passport` 11, `credit_score` 9), `cargo fmt` + `clippy -D warnings` clean, including the
+cross-contract reputation write and the anti-gaming rule. TypeScript packages typecheck, lint, and
 format clean.
+
+## Deploy to Testnet
+
+The cloud sandbox has no Testnet egress, so run the deploy on a machine with internet:
+
+```bash
+rustup target add wasm32-unknown-unknown
+curl -sSf https://stellar.org/install.sh | sh   # Stellar CLI
+./scripts/deploy_testnet.sh                       # funds a key, deploys, wires, writes .env.local
+```
 
 ## Docs
 
 [research](docs/research.md) ·
 [architecture](docs/architecture.md) ·
 [ADRs](docs/adr/) ·
+[score-spec](docs/score-spec.md) ·
 [roadmap](docs/roadmap.md) ·
 [risks](docs/risks.md) ·
 [backlog](docs/backlog.md)
