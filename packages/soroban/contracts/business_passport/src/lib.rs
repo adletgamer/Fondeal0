@@ -7,12 +7,20 @@
 //!
 //! The Passport is the composable trust primitive at the center of Fondealo:
 //! any Stellar contract can read it via [`BusinessPassportContract::get`].
-//! Mutations are gated to a single authorized `writer` (the Fondealo score/escrow
-//! contract or an admin backend key), set at `init` and rotatable by the `admin`.
 //!
-//! Reputation must *survive between loans*, so persistent entries are actively
-//! kept alive: every read/write bumps TTL, and [`BusinessPassportContract::bump_ttl`]
-//! plus an off-chain job in `scripts/` extend it before archival.
+//! Two write roles are separated so the reputation engine can update the Passport
+//! without also being able to issue identities:
+//! - **`issuer`** — issues Passports and sets KYB status (the Fondealo backend key
+//!   acting on an approved KYB).
+//! - **`reputation_manager`** — applies reputation updates; this is the
+//!   `credit_score` contract, which calls [`BusinessPassportContract::apply_reputation`]
+//!   via a cross-contract call. `require_auth` on that contract's own address is
+//!   satisfied automatically because it is the caller.
+//!
+//! Both roles are rotatable by the `admin`. Reputation must *survive between
+//! loans*, so persistent entries are actively kept alive (every read/write bumps
+//! TTL, and [`BusinessPassportContract::bump_ttl`] plus an off-chain job extend it
+//! before archival).
 
 mod types;
 
@@ -61,31 +69,45 @@ pub struct BusinessPassportContract;
 
 #[contractimpl]
 impl BusinessPassportContract {
-    /// Initialize once. `admin` can rotate the `writer`; `writer` is the only
-    /// address allowed to issue/mutate Passports.
-    pub fn init(env: Env, admin: Address, writer: Address) -> Result<(), Error> {
+    /// Initialize once with the three roles. `admin` can rotate `issuer` and
+    /// `reputation_manager`.
+    pub fn init(
+        env: Env,
+        admin: Address,
+        issuer: Address,
+        reputation_manager: Address,
+    ) -> Result<(), Error> {
         if env.storage().instance().has(&DataKey::Admin) {
             return Err(Error::AlreadyInitialized);
         }
         env.storage().instance().set(&DataKey::Admin, &admin);
-        env.storage().instance().set(&DataKey::Writer, &writer);
+        env.storage().instance().set(&DataKey::Issuer, &issuer);
+        env.storage()
+            .instance()
+            .set(&DataKey::RepManager, &reputation_manager);
         env.storage()
             .instance()
             .extend_ttl(TTL_BUMP_THRESHOLD, TTL_EXTEND_TO);
         Ok(())
     }
 
-    /// Rotate the authorized writer. Admin-gated.
-    pub fn set_writer(env: Env, new_writer: Address) -> Result<(), Error> {
+    /// Rotate the issuer. Admin-gated.
+    pub fn set_issuer(env: Env, new_issuer: Address) -> Result<(), Error> {
         Self::require_admin(&env)?;
-        env.storage().instance().set(&DataKey::Writer, &new_writer);
-        env.storage()
-            .instance()
-            .extend_ttl(TTL_BUMP_THRESHOLD, TTL_EXTEND_TO);
+        env.storage().instance().set(&DataKey::Issuer, &new_issuer);
         Ok(())
     }
 
-    /// Issue a Passport for `business`. Writer-gated. Fails if one already exists.
+    /// Rotate the reputation manager (the `credit_score` contract). Admin-gated.
+    pub fn set_reputation_manager(env: Env, new_manager: Address) -> Result<(), Error> {
+        Self::require_admin(&env)?;
+        env.storage()
+            .instance()
+            .set(&DataKey::RepManager, &new_manager);
+        Ok(())
+    }
+
+    /// Issue a Passport for `business`. Issuer-gated. Fails if one already exists.
     /// `initial_score` is bounded to `0..=SCORE_MAX`; the initial risk band is
     /// derived from it. Only businesses with `KybStatus::Accepted` may be issued.
     pub fn issue(
@@ -95,7 +117,7 @@ impl BusinessPassportContract {
         initial_score: u32,
         data_hash: BytesN<32>,
     ) -> Result<(), Error> {
-        Self::require_writer(&env)?;
+        Self::require_issuer(&env)?;
         if kyb_status != KybStatus::Accepted {
             return Err(Error::NotAccepted);
         }
@@ -143,9 +165,9 @@ impl BusinessPassportContract {
         env.storage().persistent().has(&DataKey::Passport(business))
     }
 
-    /// Update KYB status of an existing Passport. Writer-gated.
+    /// Update KYB status of an existing Passport. Issuer-gated.
     pub fn set_kyb(env: Env, business: Address, status: KybStatus) -> Result<(), Error> {
-        Self::require_writer(&env)?;
+        Self::require_issuer(&env)?;
         let key = DataKey::Passport(business.clone());
         let mut p = Self::load(&env, &key)?;
         p.kyb_status = status;
@@ -156,9 +178,10 @@ impl BusinessPassportContract {
         Ok(())
     }
 
-    /// Apply a reputation update from the Fondealo score engine. Writer-gated.
-    /// The score contract computes the new values; the Passport is the store of
-    /// record. `score` is bounded and the risk band is re-derived.
+    /// Apply a reputation update from the Fondealo score engine. Reputation-manager
+    /// gated (the `credit_score` contract). The score contract computes the new
+    /// values; the Passport is the store of record. `score` is bounded and the risk
+    /// band is re-derived.
     pub fn apply_reputation(
         env: Env,
         business: Address,
@@ -167,7 +190,7 @@ impl BusinessPassportContract {
         loans_repaid: u32,
         on_time_streak: u32,
     ) -> Result<(), Error> {
-        Self::require_writer(&env)?;
+        Self::require_reputation_manager(&env)?;
         if score > SCORE_MAX {
             return Err(Error::InvalidScore);
         }
@@ -204,33 +227,43 @@ impl BusinessPassportContract {
             .ok_or(Error::NotInitialized)
     }
 
-    /// Current authorized writer. Public.
-    pub fn writer(env: Env) -> Result<Address, Error> {
+    /// Current issuer. Public.
+    pub fn issuer(env: Env) -> Result<Address, Error> {
         env.storage()
             .instance()
-            .get(&DataKey::Writer)
+            .get(&DataKey::Issuer)
+            .ok_or(Error::NotInitialized)
+    }
+
+    /// Current reputation manager (the `credit_score` contract). Public.
+    pub fn reputation_manager(env: Env) -> Result<Address, Error> {
+        env.storage()
+            .instance()
+            .get(&DataKey::RepManager)
             .ok_or(Error::NotInitialized)
     }
 
     // ---------------- internal helpers ----------------
 
     fn require_admin(env: &Env) -> Result<(), Error> {
-        let admin: Address = env
-            .storage()
-            .instance()
-            .get(&DataKey::Admin)
-            .ok_or(Error::NotInitialized)?;
-        admin.require_auth();
-        Ok(())
+        Self::require_role(env, &DataKey::Admin)
     }
 
-    fn require_writer(env: &Env) -> Result<(), Error> {
-        let writer: Address = env
+    fn require_issuer(env: &Env) -> Result<(), Error> {
+        Self::require_role(env, &DataKey::Issuer)
+    }
+
+    fn require_reputation_manager(env: &Env) -> Result<(), Error> {
+        Self::require_role(env, &DataKey::RepManager)
+    }
+
+    fn require_role(env: &Env, key: &DataKey) -> Result<(), Error> {
+        let addr: Address = env
             .storage()
             .instance()
-            .get(&DataKey::Writer)
+            .get(key)
             .ok_or(Error::NotInitialized)?;
-        writer.require_auth();
+        addr.require_auth();
         Ok(())
     }
 
