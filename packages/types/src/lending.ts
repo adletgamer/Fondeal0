@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { riskBandSchema } from './passport.js';
+import { riskBandSchema } from './passport';
 
 /** Lifecycle of a funding opportunity (loan request). */
 export const OpportunityStatus = {

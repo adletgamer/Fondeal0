@@ -17,7 +17,7 @@ import {
   type xdr,
 } from '@stellar/stellar-sdk';
 import { bandForScore, KybStatus, type Passport, type RiskBand } from '@fondealo/types';
-import { getNetworkConfig } from './config.js';
+import { getNetworkConfig } from './config';
 
 // A well-known, non-existent-but-valid account used only as the simulation
 // source. Simulation never touches this account's state.

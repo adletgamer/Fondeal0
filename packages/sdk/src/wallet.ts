@@ -10,7 +10,7 @@ import { xBullModule } from '@creit.tech/stellar-wallets-kit/modules/xbull';
 import { AlbedoModule } from '@creit.tech/stellar-wallets-kit/modules/albedo';
 import { LobstrModule } from '@creit.tech/stellar-wallets-kit/modules/lobstr';
 import { HanaModule } from '@creit.tech/stellar-wallets-kit/modules/hana';
-import { getNetworkConfig } from './config.js';
+import { getNetworkConfig } from './config';
 
 let initialized = false;
 

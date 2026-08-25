@@ -1,3 +1,3 @@
-export * from './cn.js';
-export * from './button.js';
-export * from './card.js';
+export * from './cn';
+export * from './button';
+export * from './card';
