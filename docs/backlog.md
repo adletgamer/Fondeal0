@@ -13,6 +13,7 @@ Estimates are rough (S ≤1d, M ≤3d, L ≤1w). IDs are stable references for P
 | A5 | `packages/database` Postgres schema (Prisma/Drizzle) + migrations | P0 | M | A1 |
 | A6 | `packages/types` shared TS types + zod schemas | P0 | S | A1 |
 | A7 | `packages/sdk` RPC client + tx builder scaffold + Wallets Kit wrapper | P0 | M | A1,A6 |
+| A8 | Fix repo-wide `pnpm run format:check` failures + retarget contracts CI build to `wasm32v1-none` (soroban-sdk 27 needs it on Rust 1.84+) — both pre-existing, silently broken since Phase 3 | P1 | S | A3 |
 
 ## Epic B — Auth & wallets (Phase 3/4)
 | ID | Item | Pri | Est | Depends |
@@ -42,13 +43,14 @@ Estimates are rough (S ≤1d, M ≤3d, L ≤1w). IDs are stable references for P
 ## Epic E — Funding flow (Phase 6)
 | ID | Item | Pri | Est | Depends |
 |---|---|---|---|---|
-| E1 | `loan_escrow` contract: create/fund/release/repay + USDC SAC | P0 | L | A4 |
+| E1 | `loan_escrow` contract: create/fund/release/repay/default + USDC SAC, collateral by risk band | ✅ done | L | A4 |
 | E2 | Opportunity creation UI (amount, term, rate from risk_band) | P0 | M | C4,D4 |
 | E3 | Investor deposit USDC (testnet faucet) → escrow | P0 | M | E1,B3 |
 | E4 | Release to business on funded; repayment schedule + repay UI | P0 | M | E1 |
-| E5 | Final repayment triggers `credit_score.on_repayment` + Passport update | P0 | M | E1,D2,C1 |
+| E5 | Final repayment triggers `credit_score.on_repayment` + Passport update | ✅ done (on-chain; UI wiring is E4) | M | E1,D2,C1 |
 | E6 | Investor dashboard: positions, returns, status | P0 | M | E3 |
-| E7 | Escrow contract tests (reentrancy/auth, R-07) | P0 | M | E1 |
+| E7 | Escrow contract tests (auth gating, partial funding, pro-rata payout, default seizure, anti-gaming) | ✅ done — 17 tests | M | E1 |
+| E8 | Deploy `loan_escrow` to Testnet + rewire `credit_score.reporter` — script is ready (`scripts/deploy_testnet.sh`), needs a machine with internet + a real `USDC_SAC_ADDRESS` | P0 | S | E1 |
 
 ## Epic F — Reputation persistence & composability (Phase 7)
 | ID | Item | Pri | Est | Depends |

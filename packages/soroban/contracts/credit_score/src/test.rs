@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use super::*;
 use business_passport::{BusinessPassportContract, BusinessPassportContractClient, KybStatus};
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};

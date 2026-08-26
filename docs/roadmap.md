@@ -38,15 +38,18 @@ DB-unreachable-safe fallback — no production Postgres is provisioned yet.
 ### Month 1 — Make it real (finish Phase 6, start Phase 7)
 - Provision a real Postgres (Neon/Vercel Postgres), run `prisma migrate deploy`,
   retire the demo-data fallback on the investor dashboard.
-- Deploy `business_passport` + `credit_score` to Testnet (`scripts/deploy_testnet.sh`)
-  and wire the read side: dashboards read the real Passport/score instead of
-  the hardcoded demo passport.
+- Deploy `business_passport` + `credit_score` + `loan_escrow` to Testnet
+  (`scripts/deploy_testnet.sh` — needs a real `USDC_SAC_ADDRESS`; the contract
+  itself is done: 37/37 tests, `cargo clippy -D warnings` clean) and wire the
+  read side: dashboards read the real Passport/score instead of the hardcoded
+  demo passport.
 - SEP-10 wallet auth: replace the "paste your Stellar address" form fields
   with a real signed session, so Business/Investor identity comes from the
   connected wallet, not free text.
-- Ship `loan_escrow` (or equivalent) contract skeleton + tests: this is the
-  on-chain counterpart of the `fundOpportunity`/repay flow already scaffolded
-  off-chain.
+- Wire the frontend to `loan_escrow`: `fundOpportunity`/`repay` Server Actions
+  currently write straight to Postgres; point them at the deployed contract
+  (via `@fondealo/sdk`'s `EscrowClient`) once Testnet ids exist, and index its
+  events back into Postgres as a projection.
 - **Exit gate:** a business can connect a wallet, get a real on-chain
   Passport, open an opportunity, and an investor can fund it in testnet
   USDC — end to end, no demo data.
