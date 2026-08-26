@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { Suspense, useEffect, type ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Container } from '@fondealo/ui';
 import { useStellarWallet, type StellarWalletState } from '@/hooks/use-stellar-wallet';
@@ -43,7 +43,17 @@ export function AuthGate({ section, children }: { section: 'invest' | 'business'
     );
   }
 
-  return <ConnectedAuthGate section={section}>{children}</ConnectedAuthGate>;
+  return (
+    <Suspense
+      fallback={
+        <main className="grid min-h-[60vh] place-items-center bg-slate-50">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600" />
+        </main>
+      }
+    >
+      <ConnectedAuthGate section={section}>{children}</ConnectedAuthGate>
+    </Suspense>
+  );
 }
 
 function ConnectedAuthGate({
