@@ -36,6 +36,25 @@ export function bandForScore(score: number): RiskBand {
   return RiskBand.E;
 }
 
+/**
+ * Credit Reputation Score parameters (v1, fixed). MUST match
+ * `packages/soroban/contracts/credit_score` and `docs/score-spec.md` — this
+ * is the same formula the contract's `preview()` runs, kept here so the UI
+ * can preview a gain without a chain round-trip.
+ */
+export const SCORE_BASE_GAIN = 40;
+export const SCORE_STREAK_BONUS_PER = 5;
+export const SCORE_STREAK_BONUS_MAX = 50;
+export const SCORE_LATE_PENALTY = 30;
+export const SCORE_DEFAULT_PENALTY = 150;
+
+/** Points a business would gain from its *next* on-time, externally-funded repayment. */
+export function previewOnTimeGain(current: number, streak: number): number {
+  const headroom = SCORE_MAX - current;
+  const streakBonus = Math.min(streak * SCORE_STREAK_BONUS_PER, SCORE_STREAK_BONUS_MAX);
+  return Math.floor(((SCORE_BASE_GAIN + streakBonus) * headroom) / SCORE_MAX);
+}
+
 /** The on-chain Business Passport, decoded to JS. */
 export const passportSchema = z.object({
   /** Stellar address that owns the Passport (the business identity key). */

@@ -51,12 +51,16 @@ const demoOpportunities: Opportunity[] = [
   },
 ];
 
+// Semantic signal, not decoration: border + text in one solid tone on a
+// neutral (white) surface — no tinted fill. Reads as institutional, not
+// like a consumer app; see docs/roadmap.md context on why the copy here
+// is plain-language rather than technical.
 const bandColor: Record<string, string> = {
-  A: 'text-brand-700 bg-brand-50 border-brand-200',
-  B: 'text-brand-700 bg-brand-50 border-brand-200',
-  C: 'text-gold-600 bg-gold-50 border-gold-300/60',
-  D: 'text-orange-600 bg-orange-50 border-orange-200',
-  E: 'text-red-600 bg-red-50 border-red-200',
+  A: 'text-brand-700 border-brand-300',
+  B: 'text-brand-700 border-brand-300',
+  C: 'text-gold-600 border-gold-400',
+  D: 'text-orange-600 border-orange-300',
+  E: 'text-red-600 border-red-300',
 };
 
 export default async function InvestorDashboard() {
@@ -108,37 +112,52 @@ export default async function InvestorDashboard() {
                 <Card key={o.id} className="flex flex-col p-6">
                   <div className="mb-3 flex items-center justify-between">
                     <span
-                      className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${bandColor[o.riskBand] ?? ''}`}
+                      className={`rounded-full border bg-white px-2.5 py-1 text-xs font-semibold ${bandColor[o.riskBand] ?? ''}`}
                     >
                       Risk {o.riskBand}
                     </span>
                     <span className="text-xs font-medium text-slate-400">{o.status}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-slate-900">
-                    <Building width={18} height={18} className="text-slate-400" />
-                    <h3 className="font-semibold leading-tight">{o.title}</h3>
+
+                  {/* Editorial hierarchy: title as headline, APR as the
+                      magazine-style number — not a small trailing metric. */}
+                  <h3 className="mt-1 line-clamp-2 text-xl font-bold leading-tight text-slate-900">
+                    {o.title}
+                  </h3>
+                  <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-400">
+                    <Building width={13} height={13} />
+                    <span className="truncate font-mono">{o.business}</span>
                   </div>
 
-                  <div className="mt-4">
-                    <div className="mb-1 flex justify-between text-sm">
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <span className="font-display text-4xl font-bold leading-none tracking-tight text-slate-900">
+                      {(o.aprBps / 100).toFixed(1)}%
+                    </span>
+                    <div className="pb-0.5">
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        APR
+                      </div>
+                      <div className="text-xs font-medium text-slate-500">
+                        over {o.termDays} days
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex-1" />
+
+                  <div className="border-t border-slate-100 pt-3.5">
+                    <div className="mb-1.5 flex justify-between text-xs">
                       <span className="font-medium text-slate-700">
-                        {Number(o.funded).toLocaleString()} USDC
+                        {Number(o.funded).toLocaleString()} USDC raised
                       </span>
                       <span className="text-slate-400">of {Number(o.amount).toLocaleString()}</span>
                     </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                       <div
                         className="h-full rounded-full bg-brand-500"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
-                    <span>{o.termDays} days</span>
-                    <span className="font-semibold text-slate-700">
-                      {(o.aprBps / 100).toFixed(1)}% APR
-                    </span>
                   </div>
 
                   {isLive && o.status === OpportunityStatus.Open ? (

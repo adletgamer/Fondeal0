@@ -154,3 +154,43 @@ export async function listOpenOpportunities(): Promise<Opportunity[] | null> {
     return null;
   }
 }
+
+/**
+ * A business's own opportunities (every status, not just Open/Funded) so a
+ * business owner can see what they submitted and where it stands — never
+ * just a submit form with no way back to check on it.
+ */
+export async function listBusinessOpportunities(
+  _prev: { ok: true; opportunities: Opportunity[] } | { ok: false; error: string } | null,
+  formData: FormData,
+): Promise<{ ok: true; opportunities: Opportunity[] } | { ok: false; error: string }> {
+  const parsed = stellarAddress.safeParse(formData.get('businessAddress'));
+  if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
+
+  try {
+    const business = await prisma.business.findUnique({
+      where: { stellarAddress: parsed.data },
+      include: { opportunities: { orderBy: { createdAt: 'desc' } } },
+    });
+    if (!business) return { ok: true, opportunities: [] };
+
+    return {
+      ok: true,
+      opportunities: business.opportunities.map((row) => ({
+        id: row.id,
+        business: parsed.data,
+        title: row.title,
+        description: row.description,
+        amount: row.amount,
+        funded: row.funded,
+        termDays: row.termDays,
+        aprBps: row.aprBps,
+        riskBand: row.riskBand,
+        status: row.status,
+        createdAt: Math.floor(row.createdAt.getTime() / 1000),
+      })),
+    };
+  } catch {
+    return { ok: false, error: DB_UNREACHABLE };
+  }
+}
