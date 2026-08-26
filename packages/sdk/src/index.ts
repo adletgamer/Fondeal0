@@ -4,4 +4,5 @@
  */
 export * from './config';
 export * from './passport-client';
+export * from './escrow-client';
 export * from './wallet';

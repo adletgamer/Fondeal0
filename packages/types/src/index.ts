@@ -7,3 +7,4 @@
  */
 export * from './passport';
 export * from './lending';
+export * from './collateral';
