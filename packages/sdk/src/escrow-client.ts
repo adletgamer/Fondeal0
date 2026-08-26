@@ -1,15 +1,22 @@
 /**
  * Client for the `loan_escrow` Soroban contract (docs/product-v2.md §5).
  *
- * The contract does not exist yet — it ships in Prompt 3 of the product-v2
- * build plan — so every write method (create/fund/release/repay/default)
- * throws until then. Read methods are wired to the same simulate-based
- * machinery as {@link PassportClient} so they start working the moment a
- * real Testnet contract id is configured; nothing here ever falls back to a
- * fabricated contract id or fake data. The on-chain method names below
- * (`get_opportunity`, `list_opportunities`, `get_positions`) are this
- * skeleton's best-effort mirror of §5 and may need a rename once the real
- * contract's exported functions are finalized in Prompt 3.
+ * Read methods (getOpportunity/listOpportunities/getPositions) simulate a
+ * call — no signing, no fees. Write methods (create/fund/release/repay/
+ * default) build and *prepare* (simulate + populate the Soroban footprint,
+ * resource fee, and auth) a transaction and hand back its **unsigned**
+ * XDR — they never sign anything themselves, because this SDK has no access
+ * to a private key. The caller is expected to be the same address that
+ * authorizes the call (business for create/release/repay, investor for
+ * fund, keeper for default), so a single classic Ed25519 signature over the
+ * transaction envelope satisfies both the fee-source and the contract's
+ * `require_auth()` — see stellar-tx.ts for signing + submission (built for
+ * Privy's raw-hash signing on Stellar's Tier 2 chain support, but signer-
+ * agnostic).
+ *
+ * The constructor throws if no contract id is configured (no fabricated
+ * contract address, ever) — that's the "not deployed yet" signal callers
+ * should catch and fall back on.
  */
 import {
   Account,
@@ -48,6 +55,11 @@ export interface EscrowPosition {
   opportunityId: string;
   investor: string;
   amount: string;
+}
+
+/** An unsigned, fully-prepared transaction ready for an external signer. */
+export interface UnsignedTx {
+  xdr: string;
 }
 
 export class EscrowClient {
@@ -95,38 +107,74 @@ export class EscrowClient {
     return raw.map((p) => normalizePosition(investor, p as Record<string, unknown>));
   }
 
-  // ---- Write (typed stubs until Prompt 6) ----
+  // ---- Write (build + prepare an unsigned tx; caller signs and submits — see stellar-tx.ts) ----
 
   /** Business-gated: locks `collateralAmount` and opens the opportunity. */
   async create(
-    _opportunityId: string,
-    _business: string,
-    _principal: string,
-    _termDays: number,
-    _collateralAmount: string,
-    _aprBps: number,
-  ): Promise<never> {
-    throw new Error(`EscrowClient.create: ${NOT_DEPLOYED}`);
+    opportunityId: string,
+    business: string,
+    principal: string,
+    termDays: number,
+    collateralAmount: string,
+    aprBps: number,
+  ): Promise<UnsignedTx> {
+    const args = [
+      nativeToScVal(BigInt(opportunityId), { type: 'u64' }),
+      new Address(business).toScVal(),
+      nativeToScVal(BigInt(principal), { type: 'i128' }),
+      nativeToScVal(termDays, { type: 'u32' }),
+      nativeToScVal(BigInt(collateralAmount), { type: 'i128' }),
+      nativeToScVal(aprBps, { type: 'u32' }),
+    ];
+    return this.buildTransaction(business, 'create', args);
   }
 
   /** Pulls `amount` USDC from `investor` into the opportunity. */
-  async fund(_opportunityId: string, _investor: string, _amount: string): Promise<never> {
-    throw new Error(`EscrowClient.fund: ${NOT_DEPLOYED}`);
+  async fund(opportunityId: string, investor: string, amount: string): Promise<UnsignedTx> {
+    const args = [
+      nativeToScVal(BigInt(opportunityId), { type: 'u64' }),
+      new Address(investor).toScVal(),
+      nativeToScVal(BigInt(amount), { type: 'i128' }),
+    ];
+    return this.buildTransaction(investor, 'fund', args);
   }
 
   /** On fully funded: transfers principal to the business; collateral stays locked. */
-  async release(_opportunityId: string): Promise<never> {
-    throw new Error(`EscrowClient.release: ${NOT_DEPLOYED}`);
+  async release(opportunityId: string, business: string): Promise<UnsignedTx> {
+    const args = [nativeToScVal(BigInt(opportunityId), { type: 'u64' })];
+    return this.buildTransaction(business, 'release', args);
   }
 
   /** Business repayment; on the final installment, distributes to investors and returns collateral. */
-  async repay(_opportunityId: string, _amount: string): Promise<never> {
-    throw new Error(`EscrowClient.repay: ${NOT_DEPLOYED}`);
+  async repay(opportunityId: string, business: string, amount: string): Promise<UnsignedTx> {
+    const args = [
+      nativeToScVal(BigInt(opportunityId), { type: 'u64' }),
+      nativeToScVal(BigInt(amount), { type: 'i128' }),
+    ];
+    return this.buildTransaction(business, 'repay', args);
   }
 
   /** Callable after due + grace: seizes collateral pro-rata to investors, marks Defaulted. */
-  async default(_opportunityId: string): Promise<never> {
-    throw new Error(`EscrowClient.default: ${NOT_DEPLOYED}`);
+  async default(opportunityId: string, keeper: string): Promise<UnsignedTx> {
+    const args = [nativeToScVal(BigInt(opportunityId), { type: 'u64' })];
+    return this.buildTransaction(keeper, 'default', args);
+  }
+
+  private async buildTransaction(
+    sourceAddress: string,
+    method: string,
+    args: xdr.ScVal[],
+  ): Promise<UnsignedTx> {
+    const account = await this.server.getAccount(sourceAddress);
+    const tx = new TransactionBuilder(account, {
+      fee: BASE_FEE,
+      networkPassphrase: this.networkPassphrase,
+    })
+      .addOperation(this.contract.call(method, ...args))
+      .setTimeout(60)
+      .build();
+    const prepared = await this.server.prepareTransaction(tx);
+    return { xdr: prepared.toXDR() };
   }
 
   private async simulateRead(method: string, args: xdr.ScVal[]): Promise<unknown> {

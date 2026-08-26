@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import { Badge, Card, Container } from '@fondealo/ui';
 import { buildRepaymentSchedule, requiredCollateral } from '@fondealo/types';
-import { Navbar } from '@/components/navbar';
 import { RepayForm } from '@/components/repay-form';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { getOpportunityDetail, getRepaidSoFar } from '@/lib/data/opportunities';
@@ -31,7 +30,6 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <>
-      <Navbar />
       <main className="bg-slate-50 pb-20">
         <Container className="py-10">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">

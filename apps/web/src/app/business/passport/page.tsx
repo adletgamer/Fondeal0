@@ -1,8 +1,7 @@
 import { Card, Container } from '@fondealo/ui';
 import { COLLATERAL_CONFIG_V1, RiskBand } from '@fondealo/types';
-import { Navbar } from '@/components/navbar';
 import { SectionTabs } from '@/components/section-tabs';
-import { AddressLookupBanner } from '@/components/address-lookup-banner';
+import { WalletStatusBar } from '@/components/wallet-status-bar';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { PassportCard } from '@/components/passport-card';
 import { ScoreBreakdown } from '@/components/score-breakdown';
@@ -28,7 +27,6 @@ export default async function BusinessPassportPage({
 
   return (
     <>
-      <Navbar />
       <SectionTabs tabs={TABS} active="/business/passport" />
       <main className="bg-slate-50 pb-20">
         <Container className="py-10">
@@ -43,7 +41,7 @@ export default async function BusinessPassportPage({
           </div>
 
           <div className="mb-6">
-            <AddressLookupBanner address={rawAddress} action="/business/passport" placeholderLabel="passport" />
+            <WalletStatusBar />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[380px_1fr]">

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Container } from '@fondealo/ui';
 import { Logo } from './icons';
-import { WalletConnect } from './wallet-connect';
+import { PrivyAuthButton } from './privy-auth-button';
 
 export function Navbar() {
   return (
@@ -27,7 +27,7 @@ export function Navbar() {
             Invest
           </Link>
         </nav>
-        <WalletConnect />
+        <PrivyAuthButton />
       </Container>
     </header>
   );

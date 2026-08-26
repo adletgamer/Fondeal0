@@ -1,7 +1,6 @@
 import { Badge, Card, Container } from '@fondealo/ui';
-import { Navbar } from '@/components/navbar';
 import { SectionTabs } from '@/components/section-tabs';
-import { AddressLookupBanner } from '@/components/address-lookup-banner';
+import { WalletStatusBar } from '@/components/wallet-status-bar';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { RiskDisclosure } from '@/components/risk-disclosure';
 import { getInvestorPositions } from '@/lib/data/opportunities';
@@ -55,7 +54,6 @@ export default async function InvestDashboard({
 
   return (
     <>
-      <Navbar />
       <SectionTabs tabs={TABS} active="/invest" />
       <main className="bg-slate-50 pb-20">
         <Container className="py-10">
@@ -70,7 +68,7 @@ export default async function InvestDashboard({
           </div>
 
           <div className="mb-6">
-            <AddressLookupBanner address={address} action="/invest" placeholderLabel="portfolio" />
+            <WalletStatusBar />
           </div>
 
           <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

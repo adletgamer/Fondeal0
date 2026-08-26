@@ -1,7 +1,6 @@
 import { Container } from '@fondealo/ui';
-import { Navbar } from '@/components/navbar';
 import { SectionTabs } from '@/components/section-tabs';
-import { AddressLookupBanner } from '@/components/address-lookup-banner';
+import { WalletStatusBar } from '@/components/wallet-status-bar';
 import { CollateralCalculatorForm } from '@/components/collateral-calculator-form';
 import { getBorrowerPassport } from '@/lib/data/opportunities';
 
@@ -24,7 +23,6 @@ export default async function NewRequestPage({
 
   return (
     <>
-      <Navbar />
       <SectionTabs tabs={TABS} active="/business/new" />
       <main className="bg-slate-50 pb-20">
         <Container className="py-10">
@@ -37,7 +35,7 @@ export default async function NewRequestPage({
           </div>
 
           <div className="mb-6">
-            <AddressLookupBanner address={rawAddress} action="/business/new" placeholderLabel="band" />
+            <WalletStatusBar />
           </div>
 
           <CollateralCalculatorForm businessAddress={address} riskBand={passport.riskBand} />

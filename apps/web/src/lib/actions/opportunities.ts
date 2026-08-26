@@ -1,7 +1,6 @@
 'use server';
 
 import { prisma } from '@fondealo/database';
-import { EscrowClient } from '@fondealo/sdk';
 import { RiskBand, type Opportunity } from '@fondealo/types';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -126,66 +125,29 @@ export async function fundOpportunity(
 }
 
 /**
- * Attempts the real on-chain `escrow.create` first (via @fondealo/sdk's
- * EscrowClient — always throws "not deployed yet" today, see
- * docs/product-v2.md Prompt 3/6), then falls back to the Prisma-backed
- * `createOpportunity` so the app stays usable end to end before Testnet
- * deploy. The success message says which path actually ran.
+ * These two names stay stable for the form components that already import
+ * them, but the "on-chain aware" part of the flow moved client-side (see
+ * apps/web/src/components/fund-panel.tsx): building an unsigned tx and
+ * getting it signed needs a wallet, which a Server Action doesn't have.
+ * A Server Action can construct `EscrowClient` and get back unsigned XDR,
+ * but signing nothing and calling that "on-chain" was actively misleading —
+ * so these are now plain aliases for the Prisma-backed off-chain projection
+ * writers. The client attempts the real chain path first and only calls
+ * into these as the fallback (or as the projection-sync step after a real
+ * on-chain submission succeeds).
  */
 export async function createOpportunityOnChainAware(
   prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  let onChain = false;
-  try {
-    const escrow = new EscrowClient();
-    await escrow.create(
-      crypto.randomUUID(),
-      String(formData.get('businessAddress')),
-      String(formData.get('amount')),
-      Number(formData.get('termDays')),
-      '0',
-      Number(formData.get('aprBps')),
-    );
-    onChain = true; // unreachable until Prompt 6
-  } catch {
-    // Expected today: no Testnet contract id configured yet.
-  }
-
-  const result = await createOpportunity(prev, formData);
-  if (result.ok && !onChain) {
-    return { ok: true, message: `${result.message} (off-chain — Testnet contract not deployed yet)` };
-  }
-  return result;
+  return createOpportunity(prev, formData);
 }
 
-/**
- * Attempts the real on-chain `escrow.fund` first, then falls back to the
- * Prisma-backed `fundOpportunity`. Same on-chain-aware pattern as
- * {@link createOpportunityOnChainAware}.
- */
 export async function fundOpportunityOnChainAware(
   prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  let onChain = false;
-  try {
-    const escrow = new EscrowClient();
-    await escrow.fund(
-      String(formData.get('opportunityId')),
-      String(formData.get('investorAddress')),
-      String(formData.get('amount')),
-    );
-    onChain = true; // unreachable until Prompt 6
-  } catch {
-    // Expected today: no Testnet contract id configured yet.
-  }
-
-  const result = await fundOpportunity(prev, formData);
-  if (result.ok && !onChain) {
-    return { ok: true, message: `${result.message} (off-chain — Testnet contract not deployed yet)` };
-  }
-  return result;
+  return fundOpportunity(prev, formData);
 }
 
 const repayOpportunitySchema = z.object({
@@ -206,15 +168,6 @@ export async function repayOpportunity(
   const parsed = repayOpportunitySchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
   const { opportunityId, amount } = parsed.data;
-
-  let onChain = false;
-  try {
-    const escrow = new EscrowClient();
-    await escrow.repay(opportunityId, String(amount));
-    onChain = true; // unreachable until Prompt 6
-  } catch {
-    // Expected today: no Testnet contract id configured yet.
-  }
 
   try {
     const opportunity = await prisma.opportunity.findUnique({ where: { id: opportunityId } });
@@ -250,10 +203,9 @@ export async function repayOpportunity(
 
     revalidatePath(`/business/loans/${opportunityId}`);
     revalidatePath('/business');
-    const suffix = onChain ? '' : ' (off-chain — Testnet contract not deployed yet)';
     return {
       ok: true,
-      message: isFinal ? `Loan fully repaid — collateral returned.${suffix}` : `Payment recorded.${suffix}`,
+      message: isFinal ? 'Loan fully repaid — collateral returned.' : 'Payment recorded.',
     };
   } catch {
     return { ok: false, error: DB_UNREACHABLE };
