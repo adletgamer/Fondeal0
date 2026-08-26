@@ -20,11 +20,15 @@ _Infraestructura de crédito para PyMEs latinoamericanas, construida de forma na
 | Web (MVP)   | Vercel | https://fondealo.vercel.app | ✅ live |
 | `business_passport` | Stellar Testnet (Soroban) | _run `scripts/deploy_testnet.sh` → paste id_ | ⏳ pending |
 | `credit_score` | Stellar Testnet (Soroban) | _run `scripts/deploy_testnet.sh` → paste id_ | ⏳ pending |
+| `loan_escrow` | Stellar Testnet (Soroban) | _run `scripts/deploy_testnet.sh` → paste id_ | ⏳ pending |
 
 > The web app is live on Vercel. The Soroban contracts deploy separately with
 > `scripts/deploy_testnet.sh` on a machine with internet (funds a Testnet key via
-> Friendbot, deploys both contracts, wires roles, writes `apps/web/.env.local`).
-> Once deployed, paste the `C…` contract ids above and set them in the app env.
+> Friendbot, deploys all three contracts, wires roles — including `loan_escrow`
+> as `credit_score`'s reporter — writes `apps/web/.env.local`). Requires
+> `USDC_SAC_ADDRESS` (the USDC Stellar Asset Contract to escrow) since there is
+> no fixed Testnet USDC address to fall back to. Once deployed, paste the `C…`
+> contract ids above and set them in the app env.
 
 ---
 
@@ -66,7 +70,8 @@ fondealo/
 ├─ packages/
 │  ├─ soroban/        Rust / Soroban contracts (Cargo workspace)
 │  │  ├─ contracts/business_passport   ← the trust primitive (implemented + tested)
-│  │  └─ contracts/credit_score        ← reputation engine (implemented + tested)
+│  │  ├─ contracts/credit_score        ← reputation engine (implemented + tested)
+│  │  └─ contracts/loan_escrow         ← collateral + funding flow (implemented + tested)
 │  ├─ sdk/            TS client: network config, Wallets Kit, Passport read client
 │  ├─ types/          Shared domain types + zod schemas
 │  ├─ database/       Prisma schema for the off-chain index / PII
@@ -116,17 +121,19 @@ Phase-gated: each phase ends with ADRs and review before the next begins.
 | 3     | Scaffolding       | ✅ merged                         |
 | 4     | Business Passport | 🟡 contract done; app wiring next |
 | 5     | Credit Engine     | ✅ contract + spec                |
-| 6     | Funding Flow      | 🟡 backend live (no prod DB yet)  |
+| 6     | Funding Flow      | 🟡 backend + `loan_escrow` done; not deployed |
 | 7     | Reputation System | ⏳                                |
 | 8     | Demo Day          | ⏳                                |
 
 See [docs/roadmap.md](docs/roadmap.md#calendar-roadmap--next-4-months) for the
 month-by-month plan (next 4 months) behind this table.
 
-**Verified:** contracts build and pass **20/20** unit tests with `soroban-sdk` 27
-(`business_passport` 11, `credit_score` 9), `cargo fmt` + `clippy -D warnings` clean, including the
-cross-contract reputation write and the anti-gaming rule. TypeScript packages typecheck, lint, and
-format clean.
+**Verified:** contracts pass **37/37** unit tests with `soroban-sdk` 27 (`business_passport` 11,
+`credit_score` 9, `loan_escrow` 17), `cargo fmt` + `clippy -D warnings` clean, including the
+cross-contract reputation write, collateral-ratio enforcement, pro-rata payout on repay/default, and
+the on-chain-derived (not asserted) anti-gaming rule. TypeScript packages typecheck and lint clean.
+(`pnpm run format:check` has pre-existing, repo-wide failures unrelated to this work — see
+`docs/backlog.md`.)
 
 ## Deploy to Testnet
 

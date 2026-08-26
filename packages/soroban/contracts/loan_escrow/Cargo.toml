@@ -1,0 +1,19 @@
+[package]
+name = "loan-escrow"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+description = "Fondealo loan escrow — collateralized funding, repayment, and default handling."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = { workspace = true }
+business-passport = { path = "../business_passport" }
+credit-score = { path = "../credit_score" }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
