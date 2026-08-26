@@ -23,3 +23,75 @@ Passport (Phase 4) precedes Score (Phase 5) because the score needs an identity 
 
 ## Definition of Done (per phase)
 Tests pass in CI · contracts build reproducibly · ADR(s) written for contested calls · docs updated · demo-able on testnet · security notes captured.
+
+---
+
+## Calendar roadmap — next 4 months
+
+Where the phase table above maps work to the SCF tranche structure, this maps
+the *same* work to a calendar so it's obvious what ships when. Baseline: the
+web MVP is live (`fondealo.vercel.app`), both Soroban contracts are built and
+tested (Phases 3–5 done), and the funding-flow backend (Prisma + Server
+Actions for create/list/fund an opportunity) has just landed behind a
+DB-unreachable-safe fallback — no production Postgres is provisioned yet.
+
+### Month 1 — Make it real (finish Phase 6, start Phase 7)
+- Provision a real Postgres (Neon/Vercel Postgres), run `prisma migrate deploy`,
+  retire the demo-data fallback on the investor dashboard.
+- Deploy `business_passport` + `credit_score` to Testnet (`scripts/deploy_testnet.sh`)
+  and wire the read side: dashboards read the real Passport/score instead of
+  the hardcoded demo passport.
+- SEP-10 wallet auth: replace the "paste your Stellar address" form fields
+  with a real signed session, so Business/Investor identity comes from the
+  connected wallet, not free text.
+- Ship `loan_escrow` (or equivalent) contract skeleton + tests: this is the
+  on-chain counterpart of the `fundOpportunity`/repay flow already scaffolded
+  off-chain.
+- **Exit gate:** a business can connect a wallet, get a real on-chain
+  Passport, open an opportunity, and an investor can fund it in testnet
+  USDC — end to end, no demo data.
+
+### Month 2 — Close the loop (finish Phase 7)
+- Wire repayment: `repayOpportunity` Server Action + on-chain settlement via
+  `loan_escrow`, feeding the `credit_score` contract so a repayment actually
+  moves the score and risk band.
+- Cross-loan persistence: confirm reputation survives loan #1 → loan #2 with
+  a scripted demo (this is the product's core differentiator claim — it needs
+  a recorded proof, not just a claim).
+- TTL bumper job for Soroban storage (contract state expiry) so long-lived
+  Passports don't silently disappear.
+- Threat model + monitoring plan draft (SCF-required for Tranche 2).
+- **Exit gate:** a scripted demo shows one business completing two loan
+  cycles with a visibly improving score/risk band.
+
+### Month 3 — Composability + hardening
+- Blend integration spike: route funded USDC into a Blend pool instead of
+  idle escrow, or accept Blend as a funding source — whichever the spike from
+  ADR-0003 recommends.
+- DeFindex yield spike for idle investor USDC between fundings.
+- Security pass: fix findings from the Month 2 threat model, add contract
+  fuzz/property tests beyond the current unit tests, external review if
+  budget allows.
+- Basic ops: error tracking + uptime monitoring on the Vercel app, structured
+  logs on Server Actions, an on-call-readable runbook for "DB down" /
+  "Soroban RPC down" (the two single points of failure today).
+- **Exit gate:** at least one money-lego integration live on testnet; no
+  open Sev-1/Sev-2 findings from the security pass.
+
+### Month 4 — Demo Day readiness (Phase 8)
+- Polish the landing/dashboards with real usage data instead of the current
+  hero copy assumptions; bilingual (EN/ES) pass on every screen, not just the
+  landing page.
+- Record the demo video / live walkthrough for SCF submission.
+- Metrics dashboard: opportunities created, USDC funded, repayment rate,
+  average score delta — the "committed on-chain metrics" Tranche 3 needs.
+- Freeze scope, triage `docs/backlog.md`, and submit the SCF Build Award
+  application with the recorded metrics.
+- **Exit gate:** SCF-ready submission package (demo video, live app, metrics,
+  audited contracts or audit-in-progress note).
+
+### What's explicitly out of scope for the first 4 months
+Mainnet launch, a full KYB provider integration (SEP-12 shape is modeled, a
+real vendor is not wired), and non-USDC assets. These are Tranche 3 /
+post-SCF concerns and pulling them forward would slow down the Month 1–2
+exit gates above.

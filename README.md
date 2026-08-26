@@ -115,10 +115,13 @@ Phase-gated: each phase ends with ADRs and review before the next begins.
 | 2     | Architecture      | ✅ merged                         |
 | 3     | Scaffolding       | ✅ merged                         |
 | 4     | Business Passport | 🟡 contract done; app wiring next |
-| 5     | Credit Engine     | ✅ this branch (contract + spec)  |
-| 6     | Funding Flow      | ⏳ next                           |
+| 5     | Credit Engine     | ✅ contract + spec                |
+| 6     | Funding Flow      | 🟡 backend live (no prod DB yet)  |
 | 7     | Reputation System | ⏳                                |
 | 8     | Demo Day          | ⏳                                |
+
+See [docs/roadmap.md](docs/roadmap.md#calendar-roadmap--next-4-months) for the
+month-by-month plan (next 4 months) behind this table.
 
 **Verified:** contracts build and pass **20/20** unit tests with `soroban-sdk` 27
 (`business_passport` 11, `credit_score` 9), `cargo fmt` + `clippy -D warnings` clean, including the

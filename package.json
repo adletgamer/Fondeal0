@@ -18,7 +18,8 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,md,json}\"",
     "contracts:build": "cargo build --manifest-path packages/soroban/Cargo.toml --target wasm32-unknown-unknown --release",
     "contracts:test": "cargo test --manifest-path packages/soroban/Cargo.toml",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "pnpm --filter @fondealo/database run db:generate"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",
