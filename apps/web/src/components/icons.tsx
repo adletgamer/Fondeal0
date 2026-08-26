@@ -40,6 +40,58 @@ export function XCircle(p: IconProps) {
   );
 }
 
+export function Filter(p: IconProps) {
+  return (
+    <svg {...base} {...p}>
+      <path d="M4 5h16M7 12h10M10 19h4" />
+    </svg>
+  );
+}
+
+export function ArrowUpDown(p: IconProps) {
+  return (
+    <svg {...base} {...p}>
+      <path d="M7 16V4m0 0L3 8m4-4l4 4" />
+      <path d="M17 8v12m0 0l4-4m-4 4l-4-4" />
+    </svg>
+  );
+}
+
+export function AlertTriangle(p: IconProps) {
+  return (
+    <svg {...base} {...p}>
+      <path d="M12 3l10 18H2L12 3z" />
+      <path d="M12 10v4" />
+      <circle cx="12" cy="17.5" r="0.6" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function Calendar(p: IconProps) {
+  return (
+    <svg {...base} {...p}>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+    </svg>
+  );
+}
+
+export function Check(p: IconProps) {
+  return (
+    <svg {...base} {...p}>
+      <path d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
+export function Plus(p: IconProps) {
+  return (
+    <svg {...base} {...p}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
 export function Wallet(p: IconProps) {
   return (
     <svg {...base} {...p}>

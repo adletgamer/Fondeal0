@@ -20,7 +20,10 @@ export function Navbar() {
           <Link href="/#compose" className="transition-colors hover:text-slate-900">
             Composability
           </Link>
-          <Link href="/dashboard/investor" className="transition-colors hover:text-slate-900">
+          <Link href="/business" className="transition-colors hover:text-slate-900">
+            For businesses
+          </Link>
+          <Link href="/invest" className="transition-colors hover:text-slate-900">
             Invest
           </Link>
         </nav>

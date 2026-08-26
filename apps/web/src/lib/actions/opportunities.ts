@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@fondealo/database';
+import { EscrowClient } from '@fondealo/sdk';
 import { RiskBand, type Opportunity } from '@fondealo/types';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -119,6 +120,141 @@ export async function fundOpportunity(
 
     revalidatePath('/dashboard/investor');
     return { ok: true, message: isFull ? 'Fully funded! 🎉' : 'Funding recorded — thank you.' };
+  } catch {
+    return { ok: false, error: DB_UNREACHABLE };
+  }
+}
+
+/**
+ * Attempts the real on-chain `escrow.create` first (via @fondealo/sdk's
+ * EscrowClient — always throws "not deployed yet" today, see
+ * docs/product-v2.md Prompt 3/6), then falls back to the Prisma-backed
+ * `createOpportunity` so the app stays usable end to end before Testnet
+ * deploy. The success message says which path actually ran.
+ */
+export async function createOpportunityOnChainAware(
+  prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  let onChain = false;
+  try {
+    const escrow = new EscrowClient();
+    await escrow.create(
+      crypto.randomUUID(),
+      String(formData.get('businessAddress')),
+      String(formData.get('amount')),
+      Number(formData.get('termDays')),
+      '0',
+      Number(formData.get('aprBps')),
+    );
+    onChain = true; // unreachable until Prompt 6
+  } catch {
+    // Expected today: no Testnet contract id configured yet.
+  }
+
+  const result = await createOpportunity(prev, formData);
+  if (result.ok && !onChain) {
+    return { ok: true, message: `${result.message} (off-chain — Testnet contract not deployed yet)` };
+  }
+  return result;
+}
+
+/**
+ * Attempts the real on-chain `escrow.fund` first, then falls back to the
+ * Prisma-backed `fundOpportunity`. Same on-chain-aware pattern as
+ * {@link createOpportunityOnChainAware}.
+ */
+export async function fundOpportunityOnChainAware(
+  prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  let onChain = false;
+  try {
+    const escrow = new EscrowClient();
+    await escrow.fund(
+      String(formData.get('opportunityId')),
+      String(formData.get('investorAddress')),
+      String(formData.get('amount')),
+    );
+    onChain = true; // unreachable until Prompt 6
+  } catch {
+    // Expected today: no Testnet contract id configured yet.
+  }
+
+  const result = await fundOpportunity(prev, formData);
+  if (result.ok && !onChain) {
+    return { ok: true, message: `${result.message} (off-chain — Testnet contract not deployed yet)` };
+  }
+  return result;
+}
+
+const repayOpportunitySchema = z.object({
+  opportunityId: z.string().min(1),
+  amount: z.coerce.number().positive('Amount must be greater than 0'),
+});
+
+/**
+ * Business repayment. Off-chain equivalent of `loan_escrow.repay`: may be
+ * called multiple times; the call that brings cumulative `repaid` to the
+ * full amount due (principal + simple interest, same formula as
+ * `buildRepaymentSchedule`) marks the loan Repaid.
+ */
+export async function repayOpportunity(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const parsed = repayOpportunitySchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
+  const { opportunityId, amount } = parsed.data;
+
+  let onChain = false;
+  try {
+    const escrow = new EscrowClient();
+    await escrow.repay(opportunityId, String(amount));
+    onChain = true; // unreachable until Prompt 6
+  } catch {
+    // Expected today: no Testnet contract id configured yet.
+  }
+
+  try {
+    const opportunity = await prisma.opportunity.findUnique({ where: { id: opportunityId } });
+    if (!opportunity) return { ok: false, error: 'Loan not found.' };
+    if (opportunity.status !== 'Funded' && opportunity.status !== 'Active') {
+      return { ok: false, error: 'This loan is not active.' };
+    }
+
+    const principal = Number(opportunity.amount);
+    const totalDue = principal + (principal * opportunity.aprBps * opportunity.termDays) / (10_000 * 365);
+    // `amount` is stored as a string (stroops precision), so sum in JS —
+    // Prisma's `_sum` aggregate only works on numeric column types.
+    const priorRepayments = await prisma.repayment.findMany({
+      where: { opportunityId },
+      select: { amount: true },
+    });
+    const alreadyRepaid = priorRepayments.reduce((sum, r) => sum + Number(r.amount), 0);
+    const newRepaid = alreadyRepaid + amount;
+    if (newRepaid > totalDue + 0.01) {
+      return { ok: false, error: `Amount exceeds what's left due (${(totalDue - alreadyRepaid).toFixed(2)} USDC).` };
+    }
+    const isFinal = newRepaid >= totalDue - 0.01;
+
+    await prisma.$transaction([
+      prisma.repayment.create({
+        data: { opportunityId, amount: String(amount), onTime: true, isFinal },
+      }),
+      prisma.opportunity.update({
+        where: { id: opportunityId },
+        data: { status: isFinal ? 'Repaid' : 'Active' },
+      }),
+    ]);
+
+    revalidatePath(`/business/loans/${opportunityId}`);
+    revalidatePath('/business');
+    const suffix = onChain ? '' : ' (off-chain — Testnet contract not deployed yet)';
+    return {
+      ok: true,
+      message: isFinal ? `Loan fully repaid — collateral returned.${suffix}` : `Payment recorded.${suffix}`,
+    };
   } catch {
     return { ok: false, error: DB_UNREACHABLE };
   }
