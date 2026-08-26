@@ -1,7 +1,8 @@
-import { Badge, Button, Card, Container } from '@fondealo/ui';
+import { Badge, Card, Container } from '@fondealo/ui';
 import { KybStatus, RiskBand, type Passport } from '@fondealo/types';
 import { Navbar } from '@/components/navbar';
 import { PassportCard } from '@/components/passport-card';
+import { CreateOpportunityForm } from '@/components/create-opportunity-form';
 import { Coins, FileCheck, Repeat, TrendingUp } from '@/components/icons';
 
 // Placeholder data for the shell. Wired to the on-chain PassportClient in Phase 4.
@@ -31,7 +32,7 @@ export default function BusinessDashboard() {
                 Your Passport, financing, and reputation — in one place.
               </p>
             </div>
-            <Badge variant="gold">Demo data · wired in Phase 6</Badge>
+            <Badge variant="gold">Passport: demo · Financing: live (Phase 6)</Badge>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
@@ -50,12 +51,7 @@ export default function BusinessDashboard() {
                   <strong className="text-slate-700">{demoPassport.riskBand}</strong> suggests the
                   APR. Investors fund it, and repayments build your score.
                 </p>
-                <Button className="mt-5" disabled>
-                  Create opportunity
-                </Button>
-                <span className="ml-3 text-xs text-slate-400">
-                  Coming in Phase 6 — Funding Flow
-                </span>
+                <CreateOpportunityForm />
               </Card>
 
               <Card className="p-6">

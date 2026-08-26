@@ -12,12 +12,14 @@
     "test": "echo \"no unit tests yet\" && exit 0"
   },
   "dependencies": {
+    "@fondealo/database": "workspace:*",
     "@fondealo/sdk": "workspace:*",
     "@fondealo/types": "workspace:*",
     "@fondealo/ui": "workspace:*",
     "next": "^15.1.6",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",

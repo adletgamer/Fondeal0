@@ -2,6 +2,11 @@ import { Badge, Button, Card, Container } from '@fondealo/ui';
 import { OpportunityStatus, RiskBand, type Opportunity } from '@fondealo/types';
 import { Navbar } from '@/components/navbar';
 import { Building, Coins, Landmark, TrendingUp } from '@/components/icons';
+import { FundOpportunityForm } from '@/components/fund-opportunity-form';
+import { listOpenOpportunities } from '@/lib/actions/opportunities';
+
+/** Fetch live opportunities on every request; falls back to demo data below. */
+export const dynamic = 'force-dynamic';
 
 // Placeholder opportunities for the shell. Indexed from chain + Postgres in Phase 6.
 const demoOpportunities: Opportunity[] = [
@@ -54,7 +59,11 @@ const bandColor: Record<string, string> = {
   E: 'text-red-600 bg-red-50 border-red-200',
 };
 
-export default function InvestorDashboard() {
+export default async function InvestorDashboard() {
+  const live = await listOpenOpportunities();
+  const isLive = Boolean(live && live.length > 0);
+  const opportunities = isLive ? (live as Opportunity[]) : demoOpportunities;
+
   const stats = [
     { icon: Coins, label: 'Available USDC', value: '10,000' },
     { icon: TrendingUp, label: 'Deployed', value: '5,300' },
@@ -72,7 +81,9 @@ export default function InvestorDashboard() {
                 Fund vetted SMEs scored by on-chain reputation, earn USDC.
               </p>
             </div>
-            <Badge variant="gold">Demo data · wired in Phase 6</Badge>
+            <Badge variant="gold">
+              {isLive ? 'Live opportunities (Phase 6)' : 'Demo data — create one on the business dashboard'}
+            </Badge>
           </div>
 
           <div className="mb-8 grid gap-4 sm:grid-cols-3">
@@ -91,7 +102,7 @@ export default function InvestorDashboard() {
 
           <h2 className="mb-4 text-lg font-semibold text-slate-900">Open opportunities</h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {demoOpportunities.map((o) => {
+            {opportunities.map((o) => {
               const pct = Math.round((Number(o.funded) / Number(o.amount)) * 100);
               return (
                 <Card key={o.id} className="flex flex-col p-6">
@@ -130,16 +141,26 @@ export default function InvestorDashboard() {
                     </span>
                   </div>
 
-                  <Button className="mt-5" disabled={o.status !== OpportunityStatus.Open}>
-                    {o.status === OpportunityStatus.Open ? 'Fund in USDC' : 'Fully funded'}
-                  </Button>
+                  {isLive && o.status === OpportunityStatus.Open ? (
+                    <FundOpportunityForm opportunityId={o.id} />
+                  ) : (
+                    <Button className="mt-5" disabled={o.status !== OpportunityStatus.Open}>
+                      {o.status === OpportunityStatus.Open ? 'Fund in USDC' : 'Fully funded'}
+                    </Button>
+                  )}
                 </Card>
               );
             })}
           </div>
-          <p className="mt-6 text-sm text-slate-400">
-            USDC deposit &amp; funding flow ships in Phase 6.
-          </p>
+          {!isLive ? (
+            <p className="mt-6 text-sm text-slate-400">
+              These are demo opportunities. Create a real one from the{' '}
+              <a href="/dashboard/business" className="text-brand-600 hover:underline">
+                business dashboard
+              </a>{' '}
+              to fund it here for real.
+            </p>
+          ) : null}
         </Container>
       </main>
     </>
