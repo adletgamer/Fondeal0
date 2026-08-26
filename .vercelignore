@@ -1,0 +1,17 @@
+# Vercel's own upload filter — mirrors .gitignore. Deploying with a stray
+# `packages/soroban/target/` on disk (from running `cargo test`/`cargo build`
+# locally) can otherwise try to upload multiple GB of Rust build artifacts
+# that the Next.js app never needs.
+node_modules
+.pnpm-store
+dist
+.next
+out
+build
+*.tsbuildinfo
+target
+**/target
+*.wasm
+**/test_snapshots
+.turbo
+packages/soroban
