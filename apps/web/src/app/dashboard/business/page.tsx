@@ -3,6 +3,8 @@ import { KybStatus, RiskBand, type Passport } from '@fondealo/types';
 import { Navbar } from '@/components/navbar';
 import { PassportCard } from '@/components/passport-card';
 import { CreateOpportunityForm } from '@/components/create-opportunity-form';
+import { MyOpportunities } from '@/components/my-opportunities';
+import { ScoreBreakdown } from '@/components/score-breakdown';
 import { Coins, FileCheck, Repeat, TrendingUp } from '@/components/icons';
 
 // Placeholder data for the shell. Wired to the on-chain PassportClient in Phase 4.
@@ -53,6 +55,19 @@ export default function BusinessDashboard() {
                 </p>
                 <CreateOpportunityForm />
               </Card>
+
+              <Card className="p-6">
+                <h2 className="text-lg font-semibold text-slate-900">Your requests</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Check the status of everything submitted so far — nothing disappears into a
+                  black hole once you hit &ldquo;Create opportunity&rdquo;.
+                </p>
+                <div className="mt-4">
+                  <MyOpportunities />
+                </div>
+              </Card>
+
+              <ScoreBreakdown passport={demoPassport} />
 
               <Card className="p-6">
                 <h2 className="mb-4 text-lg font-semibold text-slate-900">Reputation journey</h2>

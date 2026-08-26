@@ -1,12 +1,9 @@
 'use client';
 
 import { useActionState } from 'react';
-import { Button } from '@fondealo/ui';
+import { Button, Field, SelectField, TextField } from '@fondealo/ui';
 import { RiskBand } from '@fondealo/types';
 import { createOpportunity, type ActionResult } from '@/lib/actions/opportunities';
-
-const inputClass =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30';
 
 const initialState: ActionResult | null = null;
 
@@ -16,57 +13,68 @@ export function CreateOpportunityForm() {
 
   return (
     <form action={formAction} className="mt-4 space-y-3">
+      <Field
+        label="Your Stellar address"
+        name="businessAddress"
+        placeholder="G…"
+        inputClassName="font-mono"
+        hint="No hay sesión de wallet todavía (llega en el Mes 1 del roadmap) — por ahora identifica tu negocio con la dirección."
+        required
+      />
       <div className="grid gap-3 sm:grid-cols-2">
-        <input
-          name="businessAddress"
-          placeholder="Your Stellar address (G…)"
-          className={`${inputClass} font-mono sm:col-span-2`}
-          required
-        />
-        <input name="legalName" placeholder="Legal / trade name" className={inputClass} required />
-        <input name="country" placeholder="Country" className={inputClass} required />
+        <Field label="Legal / trade name" name="legalName" placeholder="Bodega San Martín" required />
+        <Field label="Country" name="country" placeholder="Perú" required />
       </div>
-      <input name="title" placeholder="Opportunity title" className={inputClass} required />
-      <textarea
+      <Field label="Opportunity title" name="title" placeholder="Inventory financing — Lima" required />
+      <TextField
+        label="Description"
         name="description"
         placeholder="What is the financing for?"
         rows={2}
-        className={inputClass}
       />
       <div className="grid gap-3 sm:grid-cols-3">
-        <input
+        <Field
+          label="Amount"
           name="amount"
           type="number"
           min="1"
           step="1"
-          placeholder="Amount (USDC)"
-          className={inputClass}
+          placeholder="5000"
+          hint="USDC"
           required
         />
-        <input
+        <Field
+          label="Term"
           name="termDays"
           type="number"
           min="1"
-          placeholder="Term (days)"
-          className={inputClass}
+          placeholder="90"
+          hint="days"
           required
         />
-        <input
+        <Field
+          label="APR"
           name="aprBps"
           type="number"
           min="0"
-          placeholder="APR bps (1800 = 18%)"
-          className={inputClass}
+          placeholder="1800"
+          hint="basis points — 1800 = 18%"
           required
         />
       </div>
-      <select name="riskBand" className={inputClass} defaultValue={RiskBand.C} required>
+      <SelectField
+        label="Risk band"
+        name="riskBand"
+        defaultValue={RiskBand.C}
+        hint="Sin score en cadena todavía para negocios nuevos — la banda es autodeclarada hasta el Mes 1."
+        required
+      >
         {Object.values(RiskBand).map((band) => (
           <option key={band} value={band}>
-            Risk band {band}
+            {band}
           </option>
         ))}
-      </select>
+      </SelectField>
 
       <Button type="submit" disabled={pending}>
         {pending ? 'Creating…' : 'Create opportunity'}

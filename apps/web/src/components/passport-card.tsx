@@ -1,5 +1,5 @@
 import { Card } from '@fondealo/ui';
-import { type Passport } from '@fondealo/types';
+import { KybStatus, type Passport } from '@fondealo/types';
 import { ScoreGauge } from './score-gauge';
 import { ShieldCheck } from './icons';
 
@@ -10,6 +10,12 @@ export function PassportCard({ passport }: { passport: Passport }) {
     { label: 'Repaid', value: `${passport.loansRepaid}/${passport.loansTotal}` },
     { label: 'On-time streak', value: String(passport.onTimeStreak) },
   ];
+  const issuedDate = new Date(passport.issuedAt * 1000).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+
   return (
     <Card className="overflow-hidden">
       <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
@@ -21,6 +27,16 @@ export function PassportCard({ passport }: { passport: Passport }) {
           {passport.kybStatus}
         </span>
       </div>
+
+      {/* Verification banner — a claim ("KYB accepted") is a fact only once
+          it's tied to a date; this is what makes a Passport a record, not a form. */}
+      {passport.kybStatus === KybStatus.Accepted ? (
+        <div className="mx-6 mt-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-medium text-emerald-700">
+          <ShieldCheck width={14} height={14} />
+          KYB verified · Passport issued {issuedDate}
+        </div>
+      ) : null}
+
       <div className="grid place-items-center py-6">
         <ScoreGauge score={passport.score} band={passport.riskBand} size={180} />
       </div>
@@ -32,9 +48,11 @@ export function PassportCard({ passport }: { passport: Passport }) {
           </div>
         ))}
       </dl>
-      <div className="flex items-center justify-between border-t border-slate-100 px-6 py-3 text-xs text-slate-500">
-        <span className="font-mono">{passport.business}</span>
-        <span className="text-brand-600">portable across loans</span>
+      <div className="flex items-center justify-between border-t border-slate-100 px-6 py-3">
+        <span className="font-mono text-xs text-slate-500">{passport.business}</span>
+        <span className="rounded-full border border-brand-200 bg-white px-2 py-0.5 text-[11px] font-medium text-brand-700">
+          Portable across loans
+        </span>
       </div>
     </Card>
   );

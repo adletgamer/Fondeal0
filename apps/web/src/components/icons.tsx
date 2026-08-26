@@ -31,6 +31,15 @@ export function TrendingUp(p: IconProps) {
   );
 }
 
+export function XCircle(p: IconProps) {
+  return (
+    <svg {...base} {...p}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.5l5 5m0-5l-5 5" />
+    </svg>
+  );
+}
+
 export function Wallet(p: IconProps) {
   return (
     <svg {...base} {...p}>
