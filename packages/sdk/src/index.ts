@@ -5,4 +5,5 @@
 export * from './config';
 export * from './passport-client';
 export * from './escrow-client';
+export * from './stellar-tx';
 export * from './wallet';

@@ -16,6 +16,7 @@
     "@fondealo/sdk": "workspace:*",
     "@fondealo/types": "workspace:*",
     "@fondealo/ui": "workspace:*",
+    "@privy-io/react-auth": "^3.38.0",
     "next": "^15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

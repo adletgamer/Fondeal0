@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import { Badge, Card, Container } from '@fondealo/ui';
 import { buildRepaymentSchedule, maxProtectedPct, requiredCollateral } from '@fondealo/types';
-import { Navbar } from '@/components/navbar';
 import { PassportCard } from '@/components/passport-card';
 import { FundPanel } from '@/components/fund-panel';
 import { DataSourceBadge } from '@/components/data-source-badge';
@@ -40,7 +39,6 @@ export default async function OpportunityDetailPage({
 
   return (
     <>
-      <Navbar />
       <main className="bg-slate-50 pb-20">
         <Container className="py-10">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">

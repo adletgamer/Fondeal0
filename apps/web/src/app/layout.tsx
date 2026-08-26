@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Inter, Space_Grotesk } from 'next/font/google';
+import { PrivyProviders } from '@/components/privy-providers';
 import './globals.css';
 
 const inter = Inter({
@@ -48,7 +49,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
-        {children}
+        <PrivyProviders>{children}</PrivyProviders>
       </body>
     </html>
   );

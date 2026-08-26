@@ -1,8 +1,7 @@
 import { Badge, Card, Container } from '@fondealo/ui';
 import { COLLATERAL_CONFIG_V1, RiskBand, requiredCollateral } from '@fondealo/types';
-import { Navbar } from '@/components/navbar';
 import { SectionTabs } from '@/components/section-tabs';
-import { AddressLookupBanner } from '@/components/address-lookup-banner';
+import { WalletStatusBar } from '@/components/wallet-status-bar';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { PassportCard } from '@/components/passport-card';
 import { getBorrowerPassport, getBusinessOpportunities } from '@/lib/data/opportunities';
@@ -47,7 +46,6 @@ export default async function BusinessDashboard({
 
   return (
     <>
-      <Navbar />
       <SectionTabs tabs={TABS} active="/business" />
       <main className="bg-slate-50 pb-20">
         <Container className="py-10">
@@ -69,7 +67,7 @@ export default async function BusinessDashboard({
           </div>
 
           <div className="mb-6">
-            <AddressLookupBanner address={rawAddress} action="/business" placeholderLabel="loans" />
+            <WalletStatusBar />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[380px_1fr]">

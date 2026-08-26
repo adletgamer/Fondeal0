@@ -1,5 +1,4 @@
 import { Container } from '@fondealo/ui';
-import { Navbar } from '@/components/navbar';
 import { SectionTabs } from '@/components/section-tabs';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { MarketGrid } from '@/components/market-grid';
@@ -19,7 +18,6 @@ export default async function MarketPage() {
 
   return (
     <>
-      <Navbar />
       <SectionTabs tabs={TABS} active="/invest/market" />
       <main className="bg-slate-50 pb-20">
         <Container className="py-10">
