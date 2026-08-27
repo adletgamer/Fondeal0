@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { Badge, Card, Container } from '@fondealo/ui';
 import { COLLATERAL_CONFIG_V1, RiskBand, requiredCollateral } from '@fondealo/types';
 import { SectionTabs } from '@/components/section-tabs';
@@ -5,6 +6,7 @@ import { WalletStatusBar } from '@/components/wallet-status-bar';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { PassportCard } from '@/components/passport-card';
 import { getBorrowerPassport, getBusinessOpportunities } from '@/lib/data/opportunities';
+import { getSession } from '@/lib/auth/session';
 import { Calendar, Coins, Plus, ShieldCheck } from '@/components/icons';
 
 const TABS = [
@@ -18,13 +20,14 @@ const ACTIVE_STATUSES = new Set(['Open', 'Funded', 'Active']);
 
 export const dynamic = 'force-dynamic';
 
-export default async function BusinessDashboard({
-  searchParams,
-}: {
-  searchParams: Promise<{ address?: string }>;
-}) {
-  const { address: rawAddress } = await searchParams;
-  const address = rawAddress ?? 'GBODEGA…LIMA';
+export default async function BusinessDashboard() {
+  // The layout above already verified the session and matched its role to
+  // this section, and a role can only be persisted once a Stellar address
+  // exists (see chooseRole) — so `stellarAddress` here is never null in
+  // practice. The redirect is defense in depth, not the primary guard.
+  const session = await getSession();
+  if (!session?.stellarAddress) redirect('/onboarding');
+  const address = session.stellarAddress;
 
   const [{ source: passportSource, passport }, { source: loansSource, opportunities }] =
     await Promise.all([getBorrowerPassport(address), getBusinessOpportunities(address)]);

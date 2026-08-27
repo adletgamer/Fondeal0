@@ -39,6 +39,14 @@ enum OpportunityStatus {
   Cancelled
 }
 
+/// A wallet's chosen side of the marketplace. Set once during onboarding
+/// (docs/product-v2.md role-selection flow) and enforced server-side —
+/// a Business wallet can never load /invest and vice versa.
+enum UserRole {
+  Business
+  Investor
+}
+
 /// A registered business. `stellarAddress` is the on-chain identity key.
 model Business {
   id            String    @id @default(cuid())
@@ -56,12 +64,18 @@ model Business {
   @@index([country])
 }
 
-/// A wallet-authenticated user (SEP-10). A user may act as business and/or investor.
+/// A logged-in wallet. Identity is anchored to `privyUserId` (verified
+/// server-side from the Privy session on every request — never trusted from
+/// a client-supplied address); `stellarAddress` is the embedded Stellar
+/// wallet Privy creates on first login. `role` is null until onboarding's
+/// role-selection step persists it.
 model UserWallet {
-  id            String   @id @default(cuid())
-  stellarAddress String  @unique
-  createdAt     DateTime @default(now())
-  lastLoginAt   DateTime?
+  id             String    @id @default(cuid())
+  privyUserId    String?   @unique
+  stellarAddress String    @unique
+  role           UserRole?
+  createdAt      DateTime  @default(now())
+  lastLoginAt    DateTime?
 }
 
 /// KYB intake, shaped after SEP-12. `fields` holds provider-specific data (PII).

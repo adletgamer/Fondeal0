@@ -1,8 +1,10 @@
+import { redirect } from 'next/navigation';
 import { Badge, Card, Container } from '@fondealo/ui';
 import { SectionTabs } from '@/components/section-tabs';
 import { WalletStatusBar } from '@/components/wallet-status-bar';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { getInvestorPositions } from '@/lib/data/opportunities';
+import { getSession } from '@/lib/auth/session';
 
 const TABS = [
   { href: '/invest', label: 'Dashboard' },
@@ -20,13 +22,10 @@ const STATUS_TONE: Record<string, string> = {
 
 export const dynamic = 'force-dynamic';
 
-export default async function PositionsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ address?: string }>;
-}) {
-  const { address } = await searchParams;
-  const { source, positions } = await getInvestorPositions(address ?? 'no-session');
+export default async function PositionsPage() {
+  const session = await getSession();
+  if (!session?.stellarAddress) redirect('/onboarding');
+  const { source, positions } = await getInvestorPositions(session.stellarAddress);
 
   return (
     <>

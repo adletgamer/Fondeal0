@@ -18,12 +18,12 @@ export function Footer() {
             <div className="mb-3 font-semibold text-slate-900">Product</div>
             <ul className="space-y-2 text-slate-500">
               <li>
-                <Link href="/dashboard/business" className="hover:text-brand-700">
+                <Link href="/onboarding?intent=business" className="hover:text-brand-700">
                   For businesses
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard/investor" className="hover:text-brand-700">
+                <Link href="/onboarding?intent=invest" className="hover:text-brand-700">
                   For investors
                 </Link>
               </li>

@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@fondealo/database';
-import { RiskBand, type Opportunity } from '@fondealo/types';
+import { RiskBand } from '@fondealo/types';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -10,8 +10,10 @@ import { z } from 'zod';
  * off-chain projection — see docs/architecture.md for why Postgres is a
  * projection and Soroban stays authoritative for trust-bearing state.
  *
- * There's no SEP-10 session yet (Phase 6/7), so forms collect the Stellar
- * address directly instead of reading it from an authenticated session.
+ * `businessAddress`/`investorAddress` here are the caller's own verified
+ * Stellar address (from `getSession()` in the page, passed through a hidden
+ * form field) — never an arbitrary address a client could substitute to act
+ * as someone else.
  */
 
 const stellarAddress = z
@@ -73,8 +75,8 @@ export async function createOpportunity(
       },
     });
 
-    revalidatePath('/dashboard/investor');
-    revalidatePath('/dashboard/business');
+    revalidatePath('/invest');
+    revalidatePath('/business');
     return { ok: true, message: 'Opportunity created — it is now open for funding.' };
   } catch {
     return { ok: false, error: DB_UNREACHABLE };
@@ -117,7 +119,7 @@ export async function fundOpportunity(
       }),
     ]);
 
-    revalidatePath('/dashboard/investor');
+    revalidatePath('/invest');
     return { ok: true, message: isFull ? 'Fully funded! 🎉' : 'Funding recorded — thank you.' };
   } catch {
     return { ok: false, error: DB_UNREACHABLE };
@@ -212,73 +214,3 @@ export async function repayOpportunity(
   }
 }
 
-/**
- * Live, open/funded opportunities for the investor dashboard.
- * Returns `null` (not `[]`) on any DB error so callers can fall back to demo
- * data instead of rendering an empty state when Postgres isn't reachable yet.
- */
-export async function listOpenOpportunities(): Promise<Opportunity[] | null> {
-  try {
-    const rows = await prisma.opportunity.findMany({
-      where: { status: { in: ['Open', 'Funded'] } },
-      orderBy: { createdAt: 'desc' },
-      take: 12,
-      include: { business: true },
-    });
-    return rows.map((row) => ({
-      id: row.id,
-      business: row.business.stellarAddress,
-      title: row.title,
-      description: row.description,
-      amount: row.amount,
-      funded: row.funded,
-      termDays: row.termDays,
-      aprBps: row.aprBps,
-      riskBand: row.riskBand,
-      status: row.status,
-      createdAt: Math.floor(row.createdAt.getTime() / 1000),
-    }));
-  } catch {
-    return null;
-  }
-}
-
-/**
- * A business's own opportunities (every status, not just Open/Funded) so a
- * business owner can see what they submitted and where it stands — never
- * just a submit form with no way back to check on it.
- */
-export async function listBusinessOpportunities(
-  _prev: { ok: true; opportunities: Opportunity[] } | { ok: false; error: string } | null,
-  formData: FormData,
-): Promise<{ ok: true; opportunities: Opportunity[] } | { ok: false; error: string }> {
-  const parsed = stellarAddress.safeParse(formData.get('businessAddress'));
-  if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
-
-  try {
-    const business = await prisma.business.findUnique({
-      where: { stellarAddress: parsed.data },
-      include: { opportunities: { orderBy: { createdAt: 'desc' } } },
-    });
-    if (!business) return { ok: true, opportunities: [] };
-
-    return {
-      ok: true,
-      opportunities: business.opportunities.map((row) => ({
-        id: row.id,
-        business: parsed.data,
-        title: row.title,
-        description: row.description,
-        amount: row.amount,
-        funded: row.funded,
-        termDays: row.termDays,
-        aprBps: row.aprBps,
-        riskBand: row.riskBand,
-        status: row.status,
-        createdAt: Math.floor(row.createdAt.getTime() / 1000),
-      })),
-    };
-  } catch {
-    return { ok: false, error: DB_UNREACHABLE };
-  }
-}

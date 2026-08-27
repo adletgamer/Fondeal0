@@ -1,9 +1,11 @@
+import { redirect } from 'next/navigation';
 import { Badge, Card, Container } from '@fondealo/ui';
 import { SectionTabs } from '@/components/section-tabs';
 import { WalletStatusBar } from '@/components/wallet-status-bar';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { RiskDisclosure } from '@/components/risk-disclosure';
 import { getInvestorPositions } from '@/lib/data/opportunities';
+import { getSession } from '@/lib/auth/session';
 import { Coins, Landmark, ShieldCheck, TrendingUp } from '@/components/icons';
 
 const TABS = [
@@ -14,15 +16,10 @@ const TABS = [
 
 const DEPLOYED_STATUSES = new Set(['Open', 'Funded', 'Active']);
 
-export default async function InvestDashboard({
-  searchParams,
-}: {
-  searchParams: Promise<{ address?: string }>;
-}) {
-  const { address } = await searchParams;
-  // No address on file yet -> getInvestorPositions finds nothing on-chain or
-  // in the database and returns the labeled demo tier itself.
-  const { source, positions } = await getInvestorPositions(address ?? 'no-session');
+export default async function InvestDashboard() {
+  const session = await getSession();
+  if (!session?.stellarAddress) redirect('/onboarding');
+  const { source, positions } = await getInvestorPositions(session.stellarAddress);
 
   const deployed = positions
     .filter((p) => DEPLOYED_STATUSES.has(p.status))
