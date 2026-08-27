@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { Card, Container } from '@fondealo/ui';
 import { COLLATERAL_CONFIG_V1, RiskBand } from '@fondealo/types';
 import { SectionTabs } from '@/components/section-tabs';
@@ -6,6 +7,7 @@ import { DataSourceBadge } from '@/components/data-source-badge';
 import { PassportCard } from '@/components/passport-card';
 import { ScoreBreakdown } from '@/components/score-breakdown';
 import { getBorrowerPassport } from '@/lib/data/opportunities';
+import { getSession } from '@/lib/auth/session';
 import { FileCheck, Repeat, TrendingUp } from '@/components/icons';
 
 const TABS = [
@@ -16,13 +18,10 @@ const TABS = [
 
 export const dynamic = 'force-dynamic';
 
-export default async function BusinessPassportPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ address?: string }>;
-}) {
-  const { address: rawAddress } = await searchParams;
-  const address = rawAddress ?? 'GBODEGA…LIMA';
+export default async function BusinessPassportPage() {
+  const session = await getSession();
+  if (!session?.stellarAddress) redirect('/onboarding');
+  const address = session.stellarAddress;
   const { source, passport } = await getBorrowerPassport(address);
 
   return (

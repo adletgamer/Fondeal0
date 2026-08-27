@@ -1,8 +1,10 @@
+import { redirect } from 'next/navigation';
 import { Container } from '@fondealo/ui';
 import { SectionTabs } from '@/components/section-tabs';
 import { WalletStatusBar } from '@/components/wallet-status-bar';
 import { CollateralCalculatorForm } from '@/components/collateral-calculator-form';
 import { getBorrowerPassport } from '@/lib/data/opportunities';
+import { getSession } from '@/lib/auth/session';
 
 const TABS = [
   { href: '/business', label: 'Dashboard' },
@@ -12,13 +14,10 @@ const TABS = [
 
 export const dynamic = 'force-dynamic';
 
-export default async function NewRequestPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ address?: string }>;
-}) {
-  const { address: rawAddress } = await searchParams;
-  const address = rawAddress ?? 'GBODEGA…LIMA';
+export default async function NewRequestPage() {
+  const session = await getSession();
+  if (!session?.stellarAddress) redirect('/onboarding');
+  const address = session.stellarAddress;
   const { passport } = await getBorrowerPassport(address);
 
   return (

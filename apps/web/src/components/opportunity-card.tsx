@@ -4,8 +4,7 @@ import { maxProtectedPct, requiredCollateral, type Opportunity } from '@fondealo
 import { Building, ShieldCheck } from './icons';
 
 // Semantic signal, not decoration: border + text in one solid tone on a
-// neutral (white) surface — no tinted fill (see docs/design rationale in
-// apps/web/src/app/dashboard/investor/page.tsx).
+// neutral (white) surface — no tinted fill.
 const BAND_COLOR: Record<string, string> = {
   A: 'text-brand-700 border-brand-300',
   B: 'text-brand-700 border-brand-300',

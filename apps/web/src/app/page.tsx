@@ -60,13 +60,13 @@ function Hero() {
             reputación crediticia on-chain, reutilizables entre préstamos.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/dashboard/business">
+            <Link href="/onboarding?intent=business">
               <Button size="lg">
                 Get your Business Passport
                 <ArrowRight width={18} height={18} />
               </Button>
             </Link>
-            <Link href="/dashboard/investor">
+            <Link href="/onboarding?intent=invest">
               <Button variant="ghost-light" size="lg">
                 Fund opportunities in USDC
               </Button>
@@ -292,7 +292,7 @@ function Audiences() {
       title: 'Turn a clean track record into cheaper capital',
       body: 'Register, complete KYB, get your Passport, and request USDC financing. Every repayment makes the next loan cheaper.',
       cta: 'Business dashboard',
-      href: '/dashboard/business',
+      href: '/onboarding?intent=business',
       variant: 'primary' as const,
     },
     {
@@ -301,7 +301,7 @@ function Audiences() {
       title: 'Fund vetted SMEs and earn USDC returns',
       body: 'Deposit USDC, back opportunities scored by on-chain reputation, and receive returns as businesses repay.',
       cta: 'Investor dashboard',
-      href: '/dashboard/investor',
+      href: '/onboarding?intent=invest',
       variant: 'dark' as const,
     },
   ];
@@ -345,7 +345,7 @@ function CtaBand() {
               Fondealo is a Testnet MVP built for the Stellar Community Fund.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Link href="/dashboard/business">
+              <Link href="/onboarding">
                 <Button size="lg">
                   Get started
                   <ArrowRight width={18} height={18} />
