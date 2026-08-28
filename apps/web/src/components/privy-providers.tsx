@@ -22,7 +22,10 @@ export function PrivyProviders({ children }: { children: ReactNode }) {
     <PrivyProvider
       appId={appId}
       config={{
-        loginMethods: ['email', 'google', 'wallet'],
+        // Only 'google' is disabled on the Privy dashboard's OAuth config
+        // right now — offering it here would show a login option that
+        // fails the moment someone clicks it.
+        loginMethods: ['email', 'wallet'],
         appearance: {
           theme: 'light',
           accentColor: '#10b981',
