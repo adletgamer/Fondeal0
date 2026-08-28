@@ -12,7 +12,8 @@
     "NEXT_PUBLIC_ESCROW_CONTRACT_ID",
     "NEXT_PUBLIC_PRIVY_APP_ID",
     "PRIVY_APP_SECRET",
-    "DATABASE_URL"
+    "DATABASE_URL",
+    "DATABASE_URL_UNPOOLED"
   ],
   "tasks": {
     "build": {
