@@ -1,9 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { SESSION_COOKIE_NAME } from '@/lib/auth/session-cookie';
 
 /**
  * First line of defense against route bypass: /business and /invest must
  * not be reachable — not even their login-prompt shell — by a request that
- * carries no Privy session cookie at all. This only checks for the cookie's
+ * carries no session cookie at all. This only checks for the cookie's
  * *presence* (cheap, Edge-safe, no crypto or DB); the layouts underneath
  * (apps/web/src/app/business/layout.tsx, .../invest/layout.tsx) do the real
  * work of verifying the token's signature and checking the persisted role
@@ -18,7 +19,7 @@ export function middleware(request: NextRequest) {
   );
   if (!isProtected) return NextResponse.next();
 
-  if (!request.cookies.has('privy-id-token')) {
+  if (!request.cookies.has(SESSION_COOKIE_NAME)) {
     const url = request.nextUrl.clone();
     url.pathname = '/onboarding';
     url.search = '';

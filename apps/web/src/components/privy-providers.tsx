@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { PrivyProvider } from '@privy-io/react-auth';
+import { SessionSync } from './session-sync';
 
 /**
  * Privy is the login + wallet layer for the whole app: email/social login
@@ -33,6 +34,7 @@ export function PrivyProviders({ children }: { children: ReactNode }) {
         },
       }}
     >
+      <SessionSync />
       {children}
     </PrivyProvider>
   );

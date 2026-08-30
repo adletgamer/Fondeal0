@@ -3,6 +3,9 @@ import { cookies } from 'next/headers';
 import { PrivyClient } from '@privy-io/server-auth';
 import { prisma } from '@fondealo/database';
 import type { UserRole } from '@fondealo/database';
+import { SESSION_COOKIE_NAME } from './session-cookie';
+
+export { SESSION_COOKIE_NAME };
 
 /**
  * Server-verified identity. Never trust a client-supplied address (query
@@ -19,7 +22,20 @@ export interface Session {
   role: UserRole | null;
 }
 
-function privyClient(): PrivyClient | null {
+/**
+ * Our own cookie (name defined in ./session-cookie), not Privy's. Privy's
+ * automatic `privy-id-token` cookie turned out to be unreliable here —
+ * whether it's set at all depends on dashboard-side domain verification that
+ * differs between dev and prod app tiers (see
+ * docs/guide/react/configuration/cookies), and in practice it never showed
+ * up on fondealo.vercel.app. Instead, `<SessionSync>` reads the identity
+ * token client-side via `useIdentityToken()` — documented by Privy
+ * specifically for "passing the identity token in your requests" — and hands
+ * it to `syncSession()` (apps/web/src/lib/actions/session.ts), which verifies
+ * it and sets this cookie itself. That makes session persistence entirely
+ * our own responsibility instead of a guess about Privy's cookie behavior.
+ */
+export function privyClient(): PrivyClient | null {
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
   const appSecret = process.env.PRIVY_APP_SECRET;
   if (!appId || !appSecret) return null;
@@ -48,7 +64,7 @@ export const getSession = cache(async (): Promise<Session | null> => {
   if (!client) return null;
 
   const jar = await cookies();
-  const idToken = jar.get('privy-id-token')?.value;
+  const idToken = jar.get(SESSION_COOKIE_NAME)?.value;
   if (!idToken) return null;
 
   let user;
