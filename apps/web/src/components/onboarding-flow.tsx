@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useTransition, type ReactNode } from 'react';
+import { Suspense, useState, useTransition, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button, Card, Container } from '@fondealo/ui';
 import { useStellarWallet, type StellarWalletState } from '@/hooks/use-stellar-wallet';
@@ -71,6 +71,7 @@ function OnboardingContent({
 }) {
   const { ready, authenticated, stellarAddress, creatingWallet, walletError, login } = wallet;
   const [isPending, startTransition] = useTransition();
+  const [roleError, setRoleError] = useState<string | null>(null);
 
   if (!ready) return <Spinner />;
 
@@ -113,8 +114,10 @@ function OnboardingContent({
   }
 
   function pick(role: 'Business' | 'Investor') {
-    startTransition(() => {
-      chooseRole(role);
+    setRoleError(null);
+    startTransition(async () => {
+      const result = await chooseRole(role);
+      if (result?.error) setRoleError(result.error);
     });
   }
 
@@ -166,6 +169,9 @@ function OnboardingContent({
             </button>
           ))}
       </div>
+      {roleError ? (
+        <p className="mx-auto mt-6 max-w-md text-center text-sm text-red-400">{roleError}</p>
+      ) : null}
     </Shell>
   );
 }

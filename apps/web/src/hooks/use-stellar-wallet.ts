@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy, useUser } from '@privy-io/react-auth';
 import { useCreateWallet } from '@privy-io/react-auth/extended-chains';
 
 export interface StellarWalletState {
@@ -26,6 +26,7 @@ export interface StellarWalletState {
 export function useStellarWallet(): StellarWalletState {
   const { ready, authenticated, user, login, logout } = usePrivy();
   const { createWallet } = useCreateWallet();
+  const { refreshUser } = useUser();
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const attempted = useRef(false);
@@ -43,11 +44,20 @@ export function useStellarWallet(): StellarWalletState {
     setCreating(true);
     setError(null);
     createWallet({ chainType: 'stellar' })
+      .then(() =>
+        // Linking a new account (the Stellar wallet) makes Privy reissue the
+        // identity token, but the `privy-id-token` cookie our server-side
+        // getSession() reads doesn't reliably carry that update yet — without
+        // this, choosing a role right after wallet creation reads a stale
+        // token whose linkedAccounts don't include the new wallet, and
+        // chooseRole() sees no Stellar address at all.
+        refreshUser(),
+      )
       .catch((err) => {
         setError(err instanceof Error ? err.message : 'Could not create your Stellar wallet.');
       })
       .finally(() => setCreating(false));
-  }, [ready, authenticated, stellarAddress, createWallet]);
+  }, [ready, authenticated, stellarAddress, createWallet, refreshUser]);
 
   useEffect(() => {
     // Let a fresh login retry wallet creation if a previous attempt errored.
