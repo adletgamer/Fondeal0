@@ -15,9 +15,9 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@creit.tech/stellar-wallets-kit": "^2.5.0",
+    "@creit.tech/stellar-wallets-kit": "^2.6.0",
     "@fondealo/types": "workspace:*",
-    "@stellar/stellar-sdk": "^16.2.0",
+    "@stellar/stellar-sdk": "^16.3.0",
     "buffer": "^6.0.3"
   },
   "devDependencies": {
