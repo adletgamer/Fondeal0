@@ -1,7 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, type ReactNode } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, type ReactNode } from 'react';
 import { Button, Card, Container } from '@fondealo/ui';
 import { useStellarWallet, type StellarWalletState } from '@/hooks/use-stellar-wallet';
 import { Lock, ShieldCheck, Sparkle } from './icons';
@@ -11,16 +10,23 @@ const PRIVY_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_PRIVY_APP_ID);
 /**
  * Gates /invest and /business behind a real login: email/social sign-in via
  * Privy creates a real Stellar keypair (Tier 2 chain support) on first use —
- * no seed phrase, no browser extension required. Once logged in, the
- * connected address is synced into the URL (`?address=`) so every existing
- * server-rendered page under these sections keeps working unchanged.
+ * no seed phrase, no browser extension required. Server components under
+ * these sections resolve identity from the verified session cookie
+ * (`getSession()`), never from the URL — the connected address is
+ * deliberately kept out of the query string.
  *
  * Split into an outer component that never calls a Privy hook and an inner
  * one that always does, so `useStellarWallet` (which needs `PrivyProvider`
  * in the tree) is only ever mounted when Privy is actually configured —
  * no conditional hook calls.
  */
-export function AuthGate({ section, children }: { section: 'invest' | 'business'; children: ReactNode }) {
+export function AuthGate({
+  section,
+  children,
+}: {
+  section: 'invest' | 'business';
+  children: ReactNode;
+}) {
   if (!PRIVY_CONFIGURED) {
     return (
       <main className="bg-slate-50 py-20">
@@ -29,13 +35,17 @@ export function AuthGate({ section, children }: { section: 'invest' | 'business'
             <span className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-amber-50 text-amber-600">
               <Lock width={22} height={22} />
             </span>
-            <h1 className="font-display text-xl font-bold text-slate-900">Login not configured yet</h1>
+            <h1 className="font-display text-xl font-bold text-slate-900">
+              Login not configured yet
+            </h1>
             <p className="mt-2 text-sm text-slate-500">
               This section is gated behind a Privy login, but{' '}
-              <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">NEXT_PUBLIC_PRIVY_APP_ID</code>{' '}
+              <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">
+                NEXT_PUBLIC_PRIVY_APP_ID
+              </code>{' '}
               isn&apos;t set. Add it (and{' '}
-              <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">PRIVY_APP_SECRET</code>) to enable
-              real login and Stellar wallet creation.
+              <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">PRIVY_APP_SECRET</code>)
+              to enable real login and Stellar wallet creation.
             </p>
           </Card>
         </Container>
@@ -81,17 +91,6 @@ function AuthGateContent({
   children: ReactNode;
 }) {
   const { ready, authenticated, stellarAddress, creatingWallet, walletError, login } = wallet;
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    if (!stellarAddress) return;
-    if (searchParams.get('address') === stellarAddress) return;
-    const next = new URLSearchParams(searchParams.toString());
-    next.set('address', stellarAddress);
-    router.replace(`${pathname}?${next.toString()}`);
-  }, [stellarAddress, searchParams, pathname, router]);
 
   if (!ready) {
     return (
@@ -137,7 +136,9 @@ function AuthGateContent({
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600" />
           <p className="text-sm font-medium text-slate-600">Setting up your Stellar wallet…</p>
           {walletError ? (
-            <p className="mt-2 max-w-xs text-xs text-red-600">{walletError} Try refreshing the page.</p>
+            <p className="mt-2 max-w-xs text-xs text-red-600">
+              {walletError} Try refreshing the page.
+            </p>
           ) : null}
         </div>
       </main>

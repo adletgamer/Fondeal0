@@ -4,6 +4,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePrivy, useUser } from '@privy-io/react-auth';
 import { useCreateWallet } from '@privy-io/react-auth/extended-chains';
 
+/** Auto-retry Stellar wallet creation a couple of times before asking the user to reload. */
+const MAX_CREATE_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 1500;
+
 export interface StellarWalletState {
   ready: boolean;
   authenticated: boolean;
@@ -29,7 +33,8 @@ export function useStellarWallet(): StellarWalletState {
   const { refreshUser } = useUser();
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const attempted = useRef(false);
+  const [retryTick, setRetryTick] = useState(0);
+  const attempts = useRef(0);
 
   const stellarAddress = useMemo(() => {
     const account = user?.linkedAccounts.find(
@@ -39,29 +44,47 @@ export function useStellarWallet(): StellarWalletState {
   }, [user]);
 
   useEffect(() => {
-    if (!ready || !authenticated || stellarAddress || attempted.current) return;
-    attempted.current = true;
+    // Wait for `user` to actually hydrate — `authenticated` flips true a beat
+    // before `user.linkedAccounts` is populated, and acting on that gap can
+    // fire createWallet for someone who already has a Stellar wallet.
+    if (!ready || !authenticated || !user || stellarAddress) return;
+    if (attempts.current >= MAX_CREATE_ATTEMPTS) return;
+
+    let cancelled = false;
+    attempts.current += 1;
     setCreating(true);
     setError(null);
+
     createWallet({ chainType: 'stellar' })
       .then(() =>
         // Linking a new account (the Stellar wallet) makes Privy reissue the
-        // identity token, but the `privy-id-token` cookie our server-side
-        // getSession() reads doesn't reliably carry that update yet — without
-        // this, choosing a role right after wallet creation reads a stale
-        // token whose linkedAccounts don't include the new wallet, and
-        // chooseRole() sees no Stellar address at all.
+        // identity token; refreshUser() pulls that fresh token client-side so
+        // <SessionSync> can push it to the server before the user picks a
+        // role — otherwise chooseRole() reads a token whose linkedAccounts
+        // don't include the new wallet and sees no Stellar address at all.
         refreshUser(),
       )
       .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Could not create your Stellar wallet.');
+        if (cancelled) return;
+        const retriable = attempts.current < MAX_CREATE_ATTEMPTS;
+        setError(
+          (err instanceof Error ? err.message : 'Could not create your Stellar wallet.') +
+            (retriable ? ' Retrying…' : ' Please refresh the page.'),
+        );
+        if (retriable) {
+          window.setTimeout(() => !cancelled && setRetryTick((t) => t + 1), RETRY_DELAY_MS);
+        }
       })
-      .finally(() => setCreating(false));
-  }, [ready, authenticated, stellarAddress, createWallet, refreshUser]);
+      .finally(() => !cancelled && setCreating(false));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, authenticated, user, stellarAddress, createWallet, refreshUser, retryTick]);
 
   useEffect(() => {
-    // Let a fresh login retry wallet creation if a previous attempt errored.
-    if (!authenticated) attempted.current = false;
+    // Let a fresh login retry wallet creation if every attempt errored.
+    if (!authenticated) attempts.current = 0;
   }, [authenticated]);
 
   const funded = useRef(false);
@@ -71,7 +94,9 @@ export function useStellarWallet(): StellarWalletState {
     // Fund the fresh Testnet account with XLM so it can pay transaction fees.
     // Friendbot is idempotent-ish: calling it on an already-funded account
     // just errors harmlessly, which we ignore either way.
-    fetch(`https://friendbot.stellar.org/?addr=${encodeURIComponent(stellarAddress)}`).catch(() => {});
+    fetch(`https://friendbot.stellar.org/?addr=${encodeURIComponent(stellarAddress)}`).catch(
+      () => {},
+    );
   }, [stellarAddress]);
 
   return {

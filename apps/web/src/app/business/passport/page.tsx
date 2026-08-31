@@ -4,7 +4,7 @@ import { COLLATERAL_CONFIG_V1, RiskBand } from '@fondealo/types';
 import { SectionTabs } from '@/components/section-tabs';
 import { WalletStatusBar } from '@/components/wallet-status-bar';
 import { DataSourceBadge } from '@/components/data-source-badge';
-import { PassportCard } from '@/components/passport-card';
+import { PassportV2 } from '@/components/passport-v2';
 import { ScoreBreakdown } from '@/components/score-breakdown';
 import { getBorrowerPassport } from '@/lib/data/opportunities';
 import { getSession } from '@/lib/auth/session';
@@ -44,7 +44,7 @@ export default async function BusinessPassportPage() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-            <PassportCard passport={passport} />
+            <PassportV2 passport={passport} />
 
             <div className="grid content-start gap-6">
               <ScoreBreakdown passport={passport} />
@@ -54,9 +54,9 @@ export default async function BusinessPassportPage() {
                   Score → collateral, band by band
                 </h2>
                 <p className="mb-4 text-sm text-slate-500">
-                  This is the whole flywheel: repay on time → score rises → your band improves →
-                  the next loan needs less locked capital. Nothing here is negotiable or
-                  discretionary — it&apos;s the same table every business reads from.
+                  This is the whole flywheel: repay on time → score rises → your band improves → the
+                  next loan needs less locked capital. Nothing here is negotiable or discretionary —
+                  it&apos;s the same table every business reads from.
                 </p>
                 <div className="divide-y divide-slate-100">
                   {Object.values(RiskBand).map((band) => {

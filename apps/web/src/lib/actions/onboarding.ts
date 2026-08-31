@@ -47,13 +47,29 @@ export async function chooseRole(role: 'Business' | 'Investor'): Promise<ChooseR
     };
   }
 
+  let updatedCount: number;
   try {
-    await prisma.userWallet.update({
-      where: { privyUserId: session.privyUserId },
+    // Conditional (role: null) update so "write once" is enforced by the
+    // database, not by the read-then-write above — two tabs or a double
+    // click can't land two different roles, and whichever request commits
+    // first wins for good.
+    const result = await prisma.userWallet.updateMany({
+      where: { privyUserId: session.privyUserId, role: null },
       data: { role },
     });
+    updatedCount = result.count;
   } catch {
     return { error: "Couldn't save your role — the database may be unreachable. Try again." };
+  }
+
+  if (updatedCount === 0) {
+    // Someone (this user, another tab) already set a role between our
+    // getSession() read and now — honour the persisted one.
+    const fresh = await prisma.userWallet.findUnique({
+      where: { privyUserId: session.privyUserId },
+    });
+    if (fresh?.role) redirect(SECTION_FOR_ROLE[fresh.role]);
+    return { error: "Couldn't save your role. Refresh the page and try again." };
   }
 
   redirect(SECTION_FOR_ROLE[role]);

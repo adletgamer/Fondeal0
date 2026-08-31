@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { Badge, Card, Container } from '@fondealo/ui';
 import { buildRepaymentSchedule, maxProtectedPct, requiredCollateral } from '@fondealo/types';
-import { PassportCard } from '@/components/passport-card';
+import { PassportV2 } from '@/components/passport-v2';
 import { FundPanel } from '@/components/fund-panel';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { RiskDisclosure } from '@/components/risk-disclosure';
@@ -82,8 +82,14 @@ export default async function OpportunityDetailPage({
                 </div>
 
                 <div className="mt-5 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 sm:grid-cols-4">
-                  <Stat label="Principal" value={`${Number(opportunity.amount).toLocaleString()} USDC`} />
-                  <Stat label="Collateral locked" value={`${Number(collateral).toLocaleString()} USDC`} />
+                  <Stat
+                    label="Principal"
+                    value={`${Number(opportunity.amount).toLocaleString()} USDC`}
+                  />
+                  <Stat
+                    label="Collateral locked"
+                    value={`${Number(collateral).toLocaleString()} USDC`}
+                  />
                   <Stat label="Max protected" value={`${protectedPct}%`} accent />
                   <Stat label="Term" value={`${opportunity.termDays} days`} />
                 </div>
@@ -97,7 +103,7 @@ export default async function OpportunityDetailPage({
 
               <div>
                 <h2 className="mb-3 text-lg font-semibold text-slate-900">The business</h2>
-                <PassportCard passport={passport} />
+                <PassportV2 passport={passport} />
               </div>
 
               <Card className="p-6">
@@ -122,20 +128,29 @@ export default async function OpportunityDetailPage({
                           <td className="py-2.5 text-slate-500">{s.index}</td>
                           <td className="py-2.5 text-slate-600">Day {s.dueInDays}</td>
                           <td className="py-2.5 text-right text-slate-700">
-                            {Number(s.principal).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            {Number(s.principal).toLocaleString(undefined, {
+                              maximumFractionDigits: 2,
+                            })}
                           </td>
                           <td className="py-2.5 text-right text-slate-700">
-                            {Number(s.interest).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            {Number(s.interest).toLocaleString(undefined, {
+                              maximumFractionDigits: 2,
+                            })}
                           </td>
                           <td className="py-2.5 text-right font-semibold text-slate-900">
-                            {Number(s.total).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            {Number(s.total).toLocaleString(undefined, {
+                              maximumFractionDigits: 2,
+                            })}
                           </td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
                       <tr className="border-t border-slate-200">
-                        <td colSpan={4} className="py-2.5 text-right text-sm font-medium text-slate-500">
+                        <td
+                          colSpan={4}
+                          className="py-2.5 text-right text-sm font-medium text-slate-500"
+                        >
                           Total due
                         </td>
                         <td className="py-2.5 text-right text-sm font-bold text-slate-900">
@@ -166,11 +181,23 @@ export default async function OpportunityDetailPage({
   );
 }
 
-function Stat({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+function Stat({
+  label,
+  value,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
   return (
     <div>
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</div>
-      <div className={`mt-0.5 font-display text-lg font-bold ${accent ? 'text-emerald-600' : 'text-slate-900'}`}>
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+        {label}
+      </div>
+      <div
+        className={`mt-0.5 font-display text-lg font-bold ${accent ? 'text-emerald-600' : 'text-slate-900'}`}
+      >
         {value}
       </div>
     </div>
