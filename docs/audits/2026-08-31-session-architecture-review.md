@@ -34,17 +34,21 @@ Key properties:
 
 ## 2. Risks & edge cases
 
-### 2.1 Session expiration (the main UX risk)
+### 2.1 Session expiration — **FIXED** in `feat/mvp-hardening-passport-v2`
 
 The identity token expires ~1 h after issue. Privy refreshes it in the background **while a tab is open** and `useIdentityToken()` emits the new value, which `<SessionSync>` pushes to the server.
 
-**Gap:** a user who leaves a tab open past expiry and then clicks a protected link *before* the refresh + re-sync round-trip completes gets:
+**Was:** a user who left a tab open past expiry and then clicked a protected link *before* the refresh + re-sync round-trip completed got bounced to `/onboarding` and had to manually navigate back — reads as "it logged me out."
 
-`click → middleware OK (cookie present) → layout getSession() = null → page redirect('/onboarding') → SessionSync pushes fresh token → user manually navigates back`
+**Now — self-healing recovery:**
 
-- No data is exposed and nothing breaks, but it reads as "it logged me out."
-- **Mitigated** by F7 (retry on sync failure) and by Privy's proactive refresh, but not eliminated.
-- **Real fix (post-MVP):** on `getSession() === null` while Privy is still `authenticated` client-side, have `<AuthGate>` / a small boundary trigger `syncSession()` and re-fetch instead of showing the login screen. I.e. distinguish "genuinely logged out" from "cookie behind live state."
+1. `syncSession()` returns `{ ok, changed }` — `changed` is true when the cookie was absent or held a different token.
+2. `<SessionSync>` tracks the *first* sync of each page mount. When that first sync `changed` the cookie (login, or expiry recovery — never an hourly rotation on an already-authed page), it calls `router.refresh()`, re-running the server components against the fresh cookie.
+3. `/onboarding` receives `hasServerSession` from the server. When Privy says `authenticated` but the server render saw no session, `<OnboardingFlow>` shows a **"Restoring your session…"** state (2 s grace) instead of flashing the role picker — `router.refresh()` almost always redirects the returning user to their dashboard before the grace elapses.
+
+Net: token expiry now costs one at-most-2 s "Restoring…" spinner, no logout, no manual navigation. A brand-new user hits the same path (server render predates their login) and proceeds to role selection after the same short grace / the refresh, whichever is first.
+
+**Still open (P2):** a user *sitting inside* `/business` when the token expires still takes one bounce through `/onboarding` on their next navigation (the section layout's page-level `getSession()` guard fires before any client code runs), then recovers there. Removing that last bounce means a client recovery boundary in the section layouts — deferred.
 
 ### 2.2 Race conditions
 
@@ -93,7 +97,8 @@ The identity token expires ~1 h after issue. Privy refreshes it in the backgroun
 
 | Priority | Item |
 | --- | --- |
-| P1 (post-demo) | Distinguish "logged out" from "cookie behind live state" — auto re-sync on `getSession() === null` while Privy is `authenticated`. Removes the only real "it logged me out" moment. |
+| ~~P1~~ **done** | ~~Distinguish "logged out" from "cookie behind live state"~~ — shipped: `syncSession` `changed` flag + `<SessionSync>` `router.refresh()` + `/onboarding` "Restoring…" state. |
+| P2 | Client recovery boundary in the `/business` + `/invest` layouts so an in-section expiry doesn't bounce through `/onboarding` at all. |
 | P2 | Edge-side JWT signature check in `middleware.ts` using Privy's JWKS (keeps forged cookies from ever reaching a render). |
 | P2 | Real-device pass: iOS Safari + Android Chrome, email OTP, wallet-creation, backgrounding. |
 | P3 | Revisit `UserWallet` keying so `privyUserId` is the stable primary identity and `stellarAddress` can change without a unique-constraint hazard. |

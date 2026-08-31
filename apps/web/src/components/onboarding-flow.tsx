@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useTransition, type ReactNode } from 'react';
+import { Suspense, useEffect, useState, useTransition, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button, Card, Container } from '@fondealo/ui';
 import { useStellarWallet, type StellarWalletState } from '@/hooks/use-stellar-wallet';
@@ -32,16 +32,19 @@ function Spinner() {
  * State 5's target once a role already exists is decided server-side in
  * app/onboarding/page.tsx before this component ever mounts.
  */
-export function OnboardingFlow() {
+export function OnboardingFlow({ hasServerSession = false }: { hasServerSession?: boolean }) {
   if (!PRIVY_CONFIGURED) {
     return (
       <Shell>
         <Card className="mx-auto max-w-lg border-white/10 bg-white/5 p-8 text-center backdrop-blur">
           <h1 className="font-display text-xl font-bold text-white">Login not configured yet</h1>
           <p className="mt-2 text-sm text-slate-300">
-            Set <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs">NEXT_PUBLIC_PRIVY_APP_ID</code>{' '}
-            and <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs">PRIVY_APP_SECRET</code> to enable
-            login.
+            Set{' '}
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs">
+              NEXT_PUBLIC_PRIVY_APP_ID
+            </code>{' '}
+            and <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs">PRIVY_APP_SECRET</code>{' '}
+            to enable login.
           </p>
         </Card>
       </Shell>
@@ -50,30 +53,56 @@ export function OnboardingFlow() {
 
   return (
     <Suspense fallback={<Spinner />}>
-      <ConnectedOnboarding />
+      <ConnectedOnboarding hasServerSession={hasServerSession} />
     </Suspense>
   );
 }
 
-function ConnectedOnboarding() {
+function ConnectedOnboarding({ hasServerSession }: { hasServerSession: boolean }) {
   const wallet = useStellarWallet();
   const searchParams = useSearchParams();
   const intent = searchParams.get('intent') === 'invest' ? 'Investor' : 'Business';
-  return <OnboardingContent wallet={wallet} intent={intent} />;
+  return <OnboardingContent wallet={wallet} intent={intent} hasServerSession={hasServerSession} />;
 }
+
+/** How long to wait for <SessionSync>'s recovery before assuming this really is a new user. */
+const RECOVERY_GRACE_MS = 2000;
 
 function OnboardingContent({
   wallet,
   intent,
+  hasServerSession,
 }: {
   wallet: StellarWalletState;
   intent: 'Business' | 'Investor';
+  hasServerSession: boolean;
 }) {
   const { ready, authenticated, stellarAddress, creatingWallet, walletError, login } = wallet;
   const [isPending, startTransition] = useTransition();
   const [roleError, setRoleError] = useState<string | null>(null);
+  const [graceElapsed, setGraceElapsed] = useState(false);
+
+  useEffect(() => {
+    if (hasServerSession || !authenticated) return;
+    const t = window.setTimeout(() => setGraceElapsed(true), RECOVERY_GRACE_MS);
+    return () => window.clearTimeout(t);
+  }, [hasServerSession, authenticated]);
 
   if (!ready) return <Spinner />;
+
+  // Privy says we're signed in but the server render didn't see a session —
+  // <SessionSync> is mid-recovery and about to router.refresh() us to the
+  // right place. Hold a restoring state rather than flashing the role picker.
+  if (authenticated && !hasServerSession && !graceElapsed) {
+    return (
+      <Shell>
+        <div className="mx-auto max-w-lg text-center">
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-brand-400" />
+          <p className="text-sm font-medium text-slate-200">Restoring your session…</p>
+        </div>
+      </Shell>
+    );
+  }
 
   if (!authenticated) {
     return (
@@ -84,8 +113,8 @@ function OnboardingContent({
           </span>
           <h1 className="font-display text-2xl font-bold text-white">Get started with Fondealo</h1>
           <p className="mt-2 text-sm text-slate-300">
-            One login creates a real Stellar wallet for you — no seed phrase, no extension. It
-            takes about ten seconds.
+            One login creates a real Stellar wallet for you — no seed phrase, no extension. It takes
+            about ten seconds.
           </p>
           <Button onClick={login} size="lg" className="mt-6 w-full">
             Log in &amp; create my wallet
