@@ -1,9 +1,10 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Badge, Card, Container } from '@fondealo/ui';
 import { buildRepaymentSchedule, requiredCollateral } from '@fondealo/types';
 import { RepayForm } from '@/components/repay-form';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { getOpportunityDetail, getRepaidSoFar } from '@/lib/data/opportunities';
+import { getSession } from '@/lib/auth/session';
 import { Calendar } from '@/components/icons';
 
 export const dynamic = 'force-dynamic';
@@ -14,8 +15,17 @@ function installmentsFor(termDays: number): number {
 
 export default async function LoanDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+
+  // The /business layout only proves the caller is *a* Business — not that
+  // this loan is theirs. Without this check, any logged-in business could
+  // read another business's principal, rate, and full repayment history by
+  // walking loan ids (the IDOR the ?address= removal was meant to close).
+  const session = await getSession();
+  if (!session?.stellarAddress) redirect('/onboarding');
+
   const { source, opportunity } = await getOpportunityDetail(id);
   if (!opportunity) notFound();
+  if (opportunity.business !== session.stellarAddress) notFound();
 
   const collateral = requiredCollateral(opportunity.amount, opportunity.riskBand);
   const schedule = buildRepaymentSchedule(
@@ -25,7 +35,8 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ id:
     installmentsFor(opportunity.termDays),
   );
   const totalDue = schedule.reduce((sum, s) => sum + Number(s.total), 0);
-  const repaidSoFar = opportunity.status === 'Repaid' ? totalDue : await getRepaidSoFar(opportunity.id);
+  const repaidSoFar =
+    opportunity.status === 'Repaid' ? totalDue : await getRepaidSoFar(opportunity.id);
   const remaining = Math.max(0, totalDue - repaidSoFar);
 
   return (
@@ -54,9 +65,18 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ id:
             <div className="grid content-start gap-6">
               <Card className="p-6">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  <Stat label="Principal" value={`${Number(opportunity.amount).toLocaleString()} USDC`} />
-                  <Stat label="Collateral locked" value={`${Number(collateral).toLocaleString()} USDC`} />
-                  <Stat label="Total due" value={`${totalDue.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`} />
+                  <Stat
+                    label="Principal"
+                    value={`${Number(opportunity.amount).toLocaleString()} USDC`}
+                  />
+                  <Stat
+                    label="Collateral locked"
+                    value={`${Number(collateral).toLocaleString()} USDC`}
+                  />
+                  <Stat
+                    label="Total due"
+                    value={`${totalDue.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`}
+                  />
                   <Stat
                     label="Remaining"
                     value={`${remaining.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`}
@@ -85,7 +105,9 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ id:
                           <td className="py-2.5 text-slate-500">{s.index}</td>
                           <td className="py-2.5 text-slate-600">Day {s.dueInDays}</td>
                           <td className="py-2.5 text-right font-semibold text-slate-900">
-                            {Number(s.total).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            {Number(s.total).toLocaleString(undefined, {
+                              maximumFractionDigits: 2,
+                            })}
                           </td>
                         </tr>
                       ))}
@@ -122,11 +144,23 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ id:
   );
 }
 
-function Stat({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+function Stat({
+  label,
+  value,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
   return (
     <div>
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</div>
-      <div className={`mt-0.5 font-display text-lg font-bold ${accent ? 'text-emerald-600' : 'text-slate-900'}`}>
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+        {label}
+      </div>
+      <div
+        className={`mt-0.5 font-display text-lg font-bold ${accent ? 'text-emerald-600' : 'text-slate-900'}`}
+      >
         {value}
       </div>
     </div>

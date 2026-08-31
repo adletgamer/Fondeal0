@@ -4,7 +4,7 @@ import { COLLATERAL_CONFIG_V1, RiskBand, requiredCollateral } from '@fondealo/ty
 import { SectionTabs } from '@/components/section-tabs';
 import { WalletStatusBar } from '@/components/wallet-status-bar';
 import { DataSourceBadge } from '@/components/data-source-badge';
-import { PassportCard } from '@/components/passport-card';
+import { PassportV2 } from '@/components/passport-v2';
 import { getBorrowerPassport, getBusinessOpportunities } from '@/lib/data/opportunities';
 import { getSession } from '@/lib/auth/session';
 import { Calendar, Coins, Plus, ShieldCheck } from '@/components/icons';
@@ -74,7 +74,7 @@ export default async function BusinessDashboard() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-            <PassportCard passport={passport} />
+            <PassportV2 passport={passport} />
 
             <div className="grid content-start gap-6">
               <div className="grid gap-4 sm:grid-cols-3">
@@ -92,7 +92,9 @@ export default async function BusinessDashboard() {
                 <Card className="p-5">
                   <div className="flex items-center gap-2 text-slate-500">
                     <Calendar width={16} height={16} />
-                    <span className="text-xs font-semibold uppercase tracking-wide">Next payment</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide">
+                      Next payment
+                    </span>
                   </div>
                   <div className="mt-2 font-display text-2xl font-bold text-slate-900">
                     {nextDue ? new Date(nextDue.dueAt * 1000).toLocaleDateString() : '—'}
@@ -121,7 +123,10 @@ export default async function BusinessDashboard() {
               <Card className="p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-slate-900">Your loans</h2>
-                  <a href="/business/new" className="text-sm font-medium text-brand-600 hover:underline">
+                  <a
+                    href="/business/new"
+                    className="text-sm font-medium text-brand-600 hover:underline"
+                  >
                     + New request
                   </a>
                 </div>
@@ -141,8 +146,9 @@ export default async function BusinessDashboard() {
                             {o.title}
                           </a>
                           <div className="text-xs text-slate-500">
-                            {Number(o.funded).toLocaleString()} / {Number(o.amount).toLocaleString()} USDC
-                            &nbsp;· {o.termDays}d · {(o.aprBps / 100).toFixed(1)}% APR
+                            {Number(o.funded).toLocaleString()} /{' '}
+                            {Number(o.amount).toLocaleString()} USDC &nbsp;· {o.termDays}d ·{' '}
+                            {(o.aprBps / 100).toFixed(1)}% APR
                           </div>
                         </div>
                         <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">

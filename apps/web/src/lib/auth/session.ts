@@ -77,37 +77,68 @@ export const getSession = cache(async (): Promise<Session | null> => {
   const tokenAddress = extractStellarAddress(user);
 
   try {
-    const existing = await prisma.userWallet.findUnique({ where: { privyUserId: user.id } });
-    if (existing) {
-      const stellarAddress = tokenAddress ?? existing.stellarAddress;
-      if (tokenAddress && tokenAddress !== existing.stellarAddress) {
-        await prisma.userWallet.update({
-          where: { privyUserId: user.id },
-          data: { stellarAddress: tokenAddress, lastLoginAt: new Date() },
-        });
-      } else {
-        await prisma.userWallet.update({
-          where: { privyUserId: user.id },
-          data: { lastLoginAt: new Date() },
-        });
+    return await resolveWallet(user.id, tokenAddress);
+  } catch (err) {
+    // A unique-constraint conflict here almost always means a concurrent
+    // first-login request (two tabs, or SessionSync racing a navigation)
+    // created the row a moment ago — re-read once before giving up.
+    if (isUniqueConflict(err)) {
+      try {
+        return await resolveWallet(user.id, tokenAddress);
+      } catch {
+        /* fall through */
       }
-      return { privyUserId: user.id, stellarAddress, role: existing.role };
     }
-
-    if (!tokenAddress) {
-      // Logged in, but the embedded Stellar wallet hasn't finished being
-      // created yet (client-side useStellarWallet handles that) — nothing
-      // to persist until it exists.
-      return { privyUserId: user.id, stellarAddress: null, role: null };
-    }
-
-    const created = await prisma.userWallet.create({
-      data: { privyUserId: user.id, stellarAddress: tokenAddress },
-    });
-    return { privyUserId: user.id, stellarAddress: created.stellarAddress, role: created.role };
-  } catch {
     // Database unreachable — fail closed on role (no cross-role access by
     // accident) but still report identity from the verified token alone.
     return { privyUserId: user.id, stellarAddress: tokenAddress, role: null };
   }
 });
+
+/** How stale `lastLoginAt` may get before we spend a write refreshing it. */
+const LAST_LOGIN_THROTTLE_MS = 60 * 60 * 1000;
+
+function isUniqueConflict(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && (err as { code?: string }).code === 'P2002';
+}
+
+/**
+ * Reads (or lazily creates) the `UserWallet` row for a verified Privy user.
+ * `upsert` instead of find-then-create/update so two concurrent first-login
+ * requests can't both take the `create` branch; the caller retries once on
+ * the unique-constraint race that can still slip through.
+ */
+async function resolveWallet(privyUserId: string, tokenAddress: string | null): Promise<Session> {
+  const existing = await prisma.userWallet.findUnique({ where: { privyUserId } });
+
+  if (!existing && !tokenAddress) {
+    // Logged in, but the embedded Stellar wallet hasn't finished being
+    // created yet (client-side useStellarWallet handles that) — nothing to
+    // persist until it exists.
+    return { privyUserId, stellarAddress: null, role: null };
+  }
+
+  const addressChanged = Boolean(
+    tokenAddress && existing && tokenAddress !== existing.stellarAddress,
+  );
+  const loginStale =
+    !existing?.lastLoginAt || Date.now() - existing.lastLoginAt.getTime() > LAST_LOGIN_THROTTLE_MS;
+
+  if (existing && !addressChanged && !loginStale) {
+    return {
+      privyUserId,
+      stellarAddress: existing.stellarAddress,
+      role: existing.role,
+    };
+  }
+
+  const wallet = await prisma.userWallet.upsert({
+    where: { privyUserId },
+    create: { privyUserId, stellarAddress: tokenAddress as string, lastLoginAt: new Date() },
+    update: {
+      lastLoginAt: new Date(),
+      ...(addressChanged ? { stellarAddress: tokenAddress as string } : {}),
+    },
+  });
+  return { privyUserId, stellarAddress: wallet.stellarAddress, role: wallet.role };
+}

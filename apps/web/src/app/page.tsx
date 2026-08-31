@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { Badge, Button, Card, Container } from '@fondealo/ui';
-import { RiskBand } from '@fondealo/types';
+import { KybStatus, RiskBand, type Passport } from '@fondealo/types';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import { ScoreGauge } from '@/components/score-gauge';
+import { PassportV2 } from '@/components/passport-v2';
 import {
   ArrowRight,
   Building,
@@ -12,7 +13,6 @@ import {
   Landmark,
   Layers,
   Lock,
-  Repeat,
   ShieldCheck,
   Sparkle,
   TrendingUp,
@@ -89,43 +89,25 @@ function Hero() {
   );
 }
 
-/** Glassmorphic mock of the on-chain Business Passport — the hero visual. */
+const SHOWCASE_PASSPORT: Passport = {
+  business: 'GBODEGA4LIMAX7YQ2K9WESTELLARDEMOADDR000000000000000000000',
+  kybStatus: KybStatus.Accepted,
+  score: 720,
+  riskBand: RiskBand.B,
+  loansTotal: 8,
+  loansRepaid: 8,
+  onTimeStreak: 8,
+  issuedAt: 1_735_689_600,
+  updatedAt: 1_766_000_000,
+  dataHash: '0x…',
+};
+
+/** The on-chain Business Passport, rendered as the product's signature object — the hero visual. */
 function PassportShowcase() {
   return (
     <div className="relative w-full max-w-sm">
-      <div className="absolute -inset-4 rounded-[2rem] bg-brand-500/20 blur-2xl" aria-hidden />
-      <div className="relative animate-float rounded-3xl border border-white/10 bg-white/[0.06] p-6 backdrop-blur-xl">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-medium text-slate-200">
-            <ShieldCheck width={18} height={18} className="text-brand-300" />
-            Business Passport
-          </div>
-          <span className="rounded-full bg-brand-500/15 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-300">
-            KYB · Accepted
-          </span>
-        </div>
-        <div className="my-6 grid place-items-center">
-          <ScoreGauge score={720} band={RiskBand.B} size={176} />
-        </div>
-        <dl className="grid grid-cols-3 gap-2 text-center">
-          {[
-            ['Repaid', '8 / 8'],
-            ['Streak', '8'],
-            ['Since', '2025'],
-          ].map(([k, v]) => (
-            <div key={k} className="rounded-xl bg-white/5 py-3">
-              <dt className="text-[11px] uppercase tracking-wide text-slate-400">{k}</dt>
-              <dd className="mt-0.5 font-display text-sm font-semibold text-white">{v}</dd>
-            </div>
-          ))}
-        </dl>
-        <div className="mt-4 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300">
-          <span className="font-mono">GBODEGA…LIMA</span>
-          <span className="inline-flex items-center gap-1 text-brand-300">
-            <Repeat width={13} height={13} /> portable
-          </span>
-        </div>
-      </div>
+      <div className="absolute -inset-6 rounded-[2.5rem] bg-brand-500/20 blur-3xl" aria-hidden />
+      <PassportV2 passport={SHOWCASE_PASSPORT} variant="showcase" className="relative" />
     </div>
   );
 }
