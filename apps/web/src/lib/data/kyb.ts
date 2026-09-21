@@ -5,6 +5,7 @@ export interface KybState {
   status: 'None' | 'Accepted' | 'Rejected' | 'Processing';
   legalName: string | null;
   country: string | null;
+  sector: string | null;
   providerRef: string | null;
   reviewedAt: string | null;
 }
@@ -13,6 +14,7 @@ const NONE: KybState = {
   status: 'None',
   legalName: null,
   country: null,
+  sector: null,
   providerRef: null,
   reviewedAt: null,
 };
@@ -30,6 +32,7 @@ export async function getKybState(address: string): Promise<KybState | null> {
       status: latest.status,
       legalName: business.legalName,
       country: business.country,
+      sector: business.sector,
       providerRef: latest.providerRef,
       reviewedAt: latest.reviewedAt?.toISOString() ?? null,
     };

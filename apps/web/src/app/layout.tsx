@@ -1,12 +1,19 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { Inter, Space_Grotesk } from 'next/font/google';
+import { Fraunces, Instrument_Sans, Space_Grotesk } from 'next/font/google';
 import { PrivyProviders } from '@/components/privy-providers';
 import './globals.css';
 
-const inter = Inter({
+const instrumentSans = Instrument_Sans({
   subsets: ['latin'],
   variable: '--font-sans',
+  display: 'swap',
+});
+
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-serif',
+  style: ['normal', 'italic'],
   display: 'swap',
 });
 
@@ -47,7 +54,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+    <html
+      lang="en"
+      className={`${instrumentSans.variable} ${spaceGrotesk.variable} ${fraunces.variable}`}
+    >
       <body className="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
         <PrivyProviders>{children}</PrivyProviders>
       </body>

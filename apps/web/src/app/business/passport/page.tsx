@@ -4,11 +4,12 @@ import { COLLATERAL_CONFIG_V1, RiskBand } from '@fondealo/types';
 import { SectionTabs } from '@/components/section-tabs';
 import { WalletStatusBar } from '@/components/wallet-status-bar';
 import { DataSourceBadge } from '@/components/data-source-badge';
-import { PassportV2 } from '@/components/passport-v2';
 import { ScoreBreakdown } from '@/components/score-breakdown';
 import { getBorrowerPassport } from '@/lib/data/opportunities';
 import { getSession } from '@/lib/auth/session';
 import { getKybState } from '@/lib/data/kyb';
+import { getPassportTheme } from '@/lib/data/passport-theme';
+import { PassportStudio } from '@/components/passport-studio';
 import { FileCheck, Repeat, TrendingUp } from '@/components/icons';
 
 const TABS = [
@@ -26,7 +27,13 @@ export default async function BusinessPassportPage() {
   const kyb = await getKybState(session.stellarAddress);
   if (kyb && kyb.status !== 'Accepted') redirect('/business/verify');
   const address = session.stellarAddress;
-  const { source, passport } = await getBorrowerPassport(address);
+  const [{ source, passport }, theme] = await Promise.all([
+    getBorrowerPassport(address),
+    getPassportTheme(address),
+  ]);
+  const holder = kyb?.legalName
+    ? { name: kyb.legalName, place: [kyb.country, kyb.sector].filter(Boolean).join(' · ') }
+    : undefined;
 
   return (
     <>
@@ -47,17 +54,19 @@ export default async function BusinessPassportPage() {
             <WalletStatusBar />
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-            <PassportV2
-              passport={passport}
-              explorerUrl={
-                source === 'chain'
-                  ? `https://stellar.expert/explorer/testnet/account/${passport.business}`
-                  : undefined
-              }
-            />
+          <PassportStudio
+            passport={passport}
+            holder={holder}
+            initialTheme={theme}
+            explorerUrl={
+              source === 'chain'
+                ? `https://stellar.expert/explorer/testnet/account/${passport.business}`
+                : undefined
+            }
+          />
 
-            <div className="grid content-start gap-6">
+          <div className="mt-6">
+            <div className="grid gap-6 lg:grid-cols-2">
               <ScoreBreakdown passport={passport} />
 
               <Card className="p-6">

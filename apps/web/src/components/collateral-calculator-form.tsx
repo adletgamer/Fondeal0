@@ -100,8 +100,8 @@ export function CollateralCalculatorForm({
 
           {balanceUsdc !== null && balanceUsdc < collateral ? (
             <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              You have {balanceUsdc.toLocaleString()} USDC available but this request locks{' '}
-              {collateral.toLocaleString()} USDC. Add test funds from the dashboard first.
+              You have {balanceUsdc.toLocaleString('en-US')} USDC available but this request locks{' '}
+              {collateral.toLocaleString('en-US')} USDC. Add test funds from the dashboard first.
             </p>
           ) : null}
 
@@ -109,7 +109,9 @@ export function CollateralCalculatorForm({
             type="submit"
             disabled={pending || amount <= 0 || (balanceUsdc !== null && balanceUsdc < collateral)}
           >
-            {pending ? 'Locking collateral…' : `Lock ${collateral.toLocaleString()} USDC & create`}
+            {pending
+              ? 'Locking collateral…'
+              : `Lock ${collateral.toLocaleString('en-US')} USDC & create`}
           </Button>
 
           {state && !state.ok ? <p className="text-xs text-red-600">{state.error}</p> : null}
@@ -123,24 +125,24 @@ export function CollateralCalculatorForm({
         </h3>
 
         <div className="mt-4 space-y-4">
-          <Row label="Requested amount" value={`${amount.toLocaleString()} USDC`} />
+          <Row label="Requested amount" value={`${amount.toLocaleString('en-US')} USDC`} />
           <Row
             label={`Required collateral (band ${riskBand}, ${config.collateralRatioBps / 100}%)`}
-            value={`${collateral.toLocaleString()} USDC`}
+            value={`${collateral.toLocaleString('en-US')} USDC`}
             accent
           />
           <Row label="Investor protection" value={`${protectedPct}% of principal`} />
           <Row label="Suggested APR" value={`${(config.suggestedAprBps / 100).toFixed(1)}%`} />
           <Row
             label={`Total to repay over ${termDays}d`}
-            value={`${totalDue.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`}
+            value={`${totalDue.toLocaleString('en-US', { maximumFractionDigits: 2 })} USDC`}
           />
         </div>
 
         <div className="mt-5 rounded-lg border border-brand-200 bg-brand-50/60 p-3 text-sm text-brand-800">
-          You will lock <strong>{collateral.toLocaleString()} USDC</strong> of your own working
-          capital. Repay in full and it comes straight back — plus your score goes up, which lowers
-          this ratio on your next loan.
+          You will lock <strong>{collateral.toLocaleString('en-US')} USDC</strong> of your own
+          working capital. Repay in full and it comes straight back — plus your score goes up, which
+          lowers this ratio on your next loan.
         </div>
 
         {schedule.length > 0 ? (
@@ -153,7 +155,7 @@ export function CollateralCalculatorForm({
                 <li key={s.index} className="flex justify-between">
                   <span>Day {s.dueInDays}</span>
                   <span className="font-medium text-slate-700">
-                    {Number(s.total).toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC
+                    {Number(s.total).toLocaleString('en-US', { maximumFractionDigits: 2 })} USDC
                   </span>
                 </li>
               ))}

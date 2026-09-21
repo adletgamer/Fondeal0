@@ -8,6 +8,7 @@ import { RiskDisclosure } from '@/components/risk-disclosure';
 import { getBorrowerPassport, getOpportunityDetail } from '@/lib/data/opportunities';
 import { Calendar, ShieldCheck } from '@/components/icons';
 import { getSession } from '@/lib/auth/session';
+import { getPassportTheme } from '@/lib/data/passport-theme';
 import { getWalletSummary } from '@/lib/wallet/ledger';
 
 export const dynamic = 'force-dynamic';
@@ -27,6 +28,7 @@ export default async function OpportunityDetailPage({
 
   const { passport } = await getBorrowerPassport(opportunity.business);
   const session = await getSession();
+  const theme = await getPassportTheme(opportunity.business);
   const wallet = session?.stellarAddress ? await getWalletSummary(session.stellarAddress) : null;
 
   const collateral = requiredCollateral(opportunity.amount, opportunity.riskBand);
@@ -107,7 +109,7 @@ export default async function OpportunityDetailPage({
 
               <div>
                 <h2 className="mb-3 text-lg font-semibold text-slate-900">The business</h2>
-                <PassportV2 passport={passport} />
+                <PassportV2 passport={passport} theme={theme} />
               </div>
 
               <Card className="p-6">

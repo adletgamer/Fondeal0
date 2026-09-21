@@ -55,18 +55,22 @@ enum UserRole {
 
 /// A registered business. `stellarAddress` is the on-chain identity key.
 model Business {
-  id             String   @id @default(cuid())
-  stellarAddress String   @unique
-  legalName      String
-  country        String
-  email          String?
+  id              String   @id @default(cuid())
+  stellarAddress  String   @unique
+  legalName       String
+  country         String
+  email           String?
   /// KYB profile captured at registration (docs/strategy/verifier-network.md).
-  sector         String?
-  taxId          String?
-  foundedYear    Int?
-  revenueBand    String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  sector          String?
+  taxId           String?
+  foundedYear     Int?
+  revenueBand     String?
+  /// Off-chain look of the Passport (identity layer only — never credit data).
+  passportTheme   String?
+  passportAccent  String?
+  passportPattern String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   kybSubmissions KybSubmission[]
   opportunities  Opportunity[]

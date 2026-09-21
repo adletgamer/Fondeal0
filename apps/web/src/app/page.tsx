@@ -1,22 +1,13 @@
 import Link from 'next/link';
-import { Badge, Button, Card, Container } from '@fondealo/ui';
-import { KybStatus, RiskBand, type Passport } from '@fondealo/types';
+import { Badge, Button, Container } from '@fondealo/ui';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
-import { PassportV2 } from '@/components/passport-v2';
+import { PassportShowcase } from '@/components/passport-showcase';
+import { ReputationSimulator } from '@/components/reputation-simulator';
+import { LayerExplainer } from '@/components/layer-explainer';
 import { ReputationRing } from '@/components/reputation-ring';
-import {
-  ArrowRight,
-  Building,
-  Coins,
-  FileCheck,
-  Landmark,
-  Layers,
-  Lock,
-  ShieldCheck,
-  Sparkle,
-  TrendingUp,
-} from '@/components/icons';
+import { SHOWCASE_PASSPORT } from '@/lib/showcase';
+import { ArrowRight, Check, Lock, Sparkle } from '@/components/icons';
 
 export default function Home() {
   return (
@@ -32,7 +23,8 @@ export default function Home() {
         <Hero />
         <Composability />
         <HowItWorks />
-        <Differentiators />
+        <TwoLayers />
+        <ReputationSection />
         <Audiences />
         <CtaBand />
       </main>
@@ -42,31 +34,38 @@ export default function Home() {
 }
 
 /* ------------------------------- Hero ------------------------------- */
+const PROOF = [
+  { title: '3 Soroban contracts', body: 'Passport · Score · Escrow' },
+  { title: 'Non-custodial', body: 'Your wallet, your keys' },
+  { title: 'PII stays off-chain', body: 'Only a hash goes on-chain' },
+  { title: 'Stellar · USDC', body: 'Protocol 27 settlement' },
+];
+
 function Hero() {
   return (
     <section className="relative overflow-hidden bg-night-950 text-white">
-      <div className="absolute inset-0 bg-grid mask-fade-b opacity-70" aria-hidden />
+      <div className="absolute inset-0 bg-grid mask-fade-b opacity-60" aria-hidden />
       <div className="absolute inset-0 bg-radial-brand" aria-hidden />
-      <Container className="relative grid items-center gap-12 py-20 lg:grid-cols-[1.05fr_0.95fr] lg:py-28">
+      <Container className="relative grid items-center gap-14 pb-16 pt-14 lg:grid-cols-[1.08fr_0.92fr] lg:gap-10 lg:pb-20 lg:pt-20">
         <div className="animate-fade-up">
-          <Badge variant="outline" className="mb-6">
+          <Badge variant="outline" className="mb-7">
             <Sparkle width={14} height={14} className="text-brand-300" />
             Stellar · Soroban · USDC
           </Badge>
-          <h1 className="font-display text-4xl font-bold leading-[1.05] sm:text-5xl lg:text-6xl">
-            <span className="text-gradient">Portable credit infrastructure</span> for Latin American
-            businesses.
+          <h1 className="font-serif text-[2.6rem] font-medium leading-[1.03] tracking-tight sm:text-6xl lg:text-[4.35rem]">
+            <em className="text-gradient pr-1 italic">Portable credit infrastructure</em> for Latin
+            American businesses.
           </h1>
-          <p className="mt-6 max-w-xl text-lg text-slate-300">
-            Fondealo gives every Latin American SME a reusable{' '}
-            <strong className="font-semibold text-white">Business Passport</strong> and a portable
-            credit reputation that grows with each repayment — and survives across loans.
+          <p className="mt-7 max-w-xl text-lg leading-relaxed text-slate-300">
+            Every SME gets one{' '}
+            <strong className="font-semibold text-white">Business Passport</strong> — a
+            non-transferable credential and a credit reputation that grows with each repayment, and
+            follows the business from loan to loan.
           </p>
           <p className="mt-3 max-w-xl text-sm text-slate-400">
-            Infraestructura de crédito para PyMEs latinoamericanas, sobre Stellar. Identidad y
-            reputación crediticia on-chain, reutilizables entre préstamos.
+            Infraestructura de crédito para PyMEs latinoamericanas, sobre Stellar.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-9 flex flex-wrap gap-3">
             <Link href="/onboarding?intent=business">
               <Button size="lg">
                 Get your Business Passport
@@ -79,29 +78,50 @@ function Hero() {
               </Button>
             </Link>
           </div>
-          <div className="mt-8 flex items-center gap-6 text-xs text-slate-400">
-            <span className="inline-flex items-center gap-1.5">
-              <Lock width={14} height={14} /> Non-custodial · SEP-10
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Layers width={14} height={14} /> Composes with Blend
-            </span>
-          </div>
         </div>
+
         <div className="animate-fade-up lg:justify-self-end">
           <PassportShowcase />
         </div>
       </Container>
-      <Container className="relative pb-10">
-        <ul className="grid gap-4 border-t border-white/10 pt-6 sm:grid-cols-2 lg:grid-cols-4">
-          {PROOF.map(({ icon: Icon, title, body }) => (
-            <li key={title} className="flex items-start gap-3">
-              <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/[0.06] text-brand-300">
-                <Icon width={16} height={16} />
+
+      <Container className="relative pb-2">
+        <ul className="grid grid-cols-2 border-t border-white/10 lg:grid-cols-4 lg:divide-x lg:divide-white/10">
+          {PROOF.map(({ title, body }) => (
+            <li key={title} className="px-1 py-5 lg:px-6 lg:first:pl-0">
+              <span className="block font-display text-[15px] font-semibold text-white">
+                {title}
               </span>
-              <span>
-                <span className="block text-sm font-semibold text-white">{title}</span>
-                <span className="block text-xs text-slate-400">{body}</span>
+              <span className="mt-0.5 block text-xs text-slate-400">{body}</span>
+            </li>
+          ))}
+        </ul>
+      </Container>
+    </section>
+  );
+}
+
+/* --------------------------- Composability -------------------------- */
+function Composability() {
+  const legos = [
+    ['Blend', 'lending'],
+    ['Reflector', 'oracle'],
+    ['DeFindex', 'yield'],
+    ['USDC', 'settlement'],
+  ];
+  return (
+    <section id="compose" className="scroll-mt-20 border-b border-slate-200 bg-white">
+      <Container className="flex flex-wrap items-center justify-between gap-x-12 gap-y-4 py-7">
+        <p className="max-w-sm text-sm leading-relaxed text-slate-600">
+          We don&apos;t rebuild lending. We compose the Stellar money-legos and own the credit
+          layer.
+        </p>
+        <ul className="flex flex-wrap items-baseline gap-x-9 gap-y-2">
+          {legos.map(([name, role]) => (
+            <li key={name} className="font-display text-xl font-semibold text-slate-800">
+              {name}
+              <span className="ml-1.5 text-xs font-normal uppercase tracking-wider text-slate-500">
+                {role}
               </span>
             </li>
           ))}
@@ -111,224 +131,220 @@ function Hero() {
   );
 }
 
-const PROOF = [
-  { icon: Layers, title: '3 Soroban contracts', body: 'Passport · Score · Escrow' },
-  { icon: Lock, title: 'Non-custodial', body: 'Your wallet, your keys' },
-  { icon: ShieldCheck, title: 'Privacy by design', body: 'PII off-chain, only a hash on-chain' },
-  { icon: Coins, title: 'Built on Stellar', body: 'Protocol 27 · USDC settlement' },
-];
-
-const SHOWCASE_PASSPORT: Passport = {
-  business: 'GBODEGA4LIMAX7YQ2K9WESTELLARDEMOADDR000000000000000000000',
-  kybStatus: KybStatus.Accepted,
-  score: 720,
-  riskBand: RiskBand.B,
-  loansTotal: 8,
-  loansRepaid: 8,
-  onTimeStreak: 8,
-  issuedAt: 1_735_689_600,
-  updatedAt: 1_772_323_200,
-  dataHash: '0x…',
-};
-
-/** The on-chain Business Passport, rendered as the product's signature object — the hero visual. */
-function PassportShowcase() {
-  return (
-    <div className="relative w-full max-w-sm">
-      <div className="absolute -inset-6 rounded-[2.5rem] bg-brand-500/20 blur-3xl" aria-hidden />
-      <PassportV2
-        passport={SHOWCASE_PASSPORT}
-        variant="showcase"
-        holder={{ name: 'Café Andino SAC', place: 'Peru · Retail' }}
-        stats={[
-          { k: 'Repaid', v: '8 / 8' },
-          { k: 'On-time', v: '94%' },
-          { k: 'History', v: '14 mo' },
-        ]}
-        signals={[
-          { k: 'Payments', v: '+32' },
-          { k: 'KYB', v: 'Verified' },
-          { k: 'Repayment', v: '+18' },
-        ]}
-        className="relative"
-      />
-    </div>
-  );
-}
-
-/* --------------------------- Composability -------------------------- */
-function Composability() {
-  const legos = [
-    { name: 'Blend', role: 'Lending', icon: Landmark },
-    { name: 'Reflector', role: 'Oracle', icon: TrendingUp },
-    { name: 'DeFindex', role: 'Yield', icon: Layers },
-    { name: 'USDC', role: 'Settlement', icon: Coins },
-  ];
-  return (
-    <section id="compose" className="scroll-mt-20 border-b border-slate-200 bg-white py-12">
-      <Container>
-        <p className="text-center text-sm font-medium uppercase tracking-wide text-slate-500">
-          We don&apos;t rebuild lending — we compose the Stellar money-legos and own the credit
-          layer
-        </p>
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {legos.map(({ name, role, icon: Icon }) => (
-            <div
-              key={name}
-              className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
-            >
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand-600">
-                <Icon width={20} height={20} />
-              </span>
-              <span>
-                <span className="block font-display font-semibold text-slate-900">{name}</span>
-                <span className="block text-xs text-slate-500">{role}</span>
-              </span>
-            </div>
-          ))}
-        </div>
-      </Container>
-    </section>
-  );
-}
-
 /* --------------------------- How it works --------------------------- */
 function HowItWorks() {
   const steps = [
     {
-      icon: FileCheck,
       title: 'Verify once, reuse everywhere',
-      body: 'A business completes KYB and receives a Business Passport — an on-chain identity any lender on Stellar can read.',
+      body: 'Complete KYB and receive a Business Passport — an on-chain identity any lender on Stellar can read.',
     },
     {
-      icon: Coins,
       title: 'Raise financing in USDC',
-      body: 'Create a funding opportunity. Investors deposit USDC and fund it; the risk band sets a fair rate.',
+      body: 'Open a funding opportunity. Investors fund it in USDC and the risk band sets a fair rate.',
     },
     {
-      icon: TrendingUp,
-      title: 'Repay and your score compounds',
-      body: 'Every on-time, externally-funded repayment raises the score, lowers risk, and unlocks cheaper capital next time.',
+      title: 'Repay, and your score compounds',
+      body: 'Each on-time, externally-funded repayment lifts the score, lowers your collateral and unlocks cheaper capital.',
     },
   ];
   return (
-    <section id="how" className="scroll-mt-20 py-20 lg:py-24">
-      <Container>
-        <SectionHeading
-          eyebrow="How it works"
-          title="One clean loop, from identity to reputation"
-          subtitle="Register → KYB → Business Passport → fund in USDC → repay → score up."
-        />
-        <div className="mt-14 grid gap-6 md:grid-cols-3">
-          {steps.map(({ icon: Icon, title, body }, i) => (
-            <Card key={title} className="relative p-6">
-              <span className="absolute right-5 top-5 font-display text-5xl font-bold text-slate-100">
-                {i + 1}
-              </span>
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-600 text-white shadow-glow">
-                <Icon width={22} height={22} />
-              </span>
-              <h3 className="mt-5 text-lg font-semibold text-slate-900">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-500">{body}</p>
-            </Card>
-          ))}
+    <section id="how" className="scroll-mt-20 bg-slate-50 py-20 lg:py-28">
+      <Container className="grid items-start gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
+        <div>
+          <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-700">
+            How it works
+          </span>
+          <h2 className="mt-4 font-serif text-4xl font-medium leading-[1.08] tracking-tight text-slate-900 sm:text-5xl">
+            Repay once. Borrow cheaper next time.
+          </h2>
+          <ol className="mt-12 space-y-9">
+            {steps.map((s, i) => (
+              <li key={s.title} className="relative grid grid-cols-[3rem_1fr] gap-5">
+                {i < steps.length - 1 ? (
+                  <span
+                    className="absolute left-[1.05rem] top-11 h-[calc(100%+0.25rem)] w-px bg-slate-300"
+                    aria-hidden
+                  />
+                ) : null}
+                <span className="font-serif text-4xl font-medium leading-none text-brand-600">
+                  {i + 1}
+                </span>
+                <div>
+                  <h3 className="font-display text-lg font-semibold text-slate-900">{s.title}</h3>
+                  <p className="mt-1.5 text-[15px] leading-relaxed text-slate-600">{s.body}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="lg:sticky lg:top-24">
+          <ReputationSimulator />
         </div>
       </Container>
     </section>
   );
 }
 
-/* -------------------------- Differentiators ------------------------- */
-function Differentiators() {
+/* --------------------------- Two-layer passport --------------------------- */
+const YOU_CONTROL = ['Colour theme', 'Pattern', 'How your name is presented'];
+const WE_ATTEST = ['KYB status', 'Credit score & risk band', 'Repayment history', 'On-chain proof'];
+
+const CONTRACT_ROWS: { call: string; who: string }[] = [
+  { call: 'issue()  get()  is_active()', who: 'read / issue' },
+  { call: 'update_metadata()', who: 'owner only' },
+  { call: 'freeze()  revoke()  add_credential()', who: 'issuer only' },
+  { call: 'apply_reputation()', who: 'score engine only' },
+];
+
+function TwoLayers() {
   return (
-    <section id="passport" className="scroll-mt-20 bg-white py-20 lg:py-24">
-      <Container>
-        <SectionHeading
-          eyebrow="What makes Fondealo different"
-          title="The credit layer Stellar DeFi is missing"
-          subtitle="Two primitives other lenders can consume: a reusable identity and a portable reputation."
-        />
-        <div className="mt-14 grid gap-6 lg:grid-cols-2">
-          <Card className="overflow-hidden">
-            <div className="flex items-start gap-4 p-8">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-brand-600 text-white">
-                <ShieldCheck width={24} height={24} />
-              </span>
-              <div>
-                <h3 className="text-xl font-semibold text-slate-900">Business Passport</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                  A reusable, verifiable business identity stored on Soroban: KYB status, score,
-                  risk band, and repayment history. Read by any contract — PII stays off-chain, only
-                  a hash commitment goes on it.
-                </p>
-              </div>
+    <section
+      id="passport"
+      className="scroll-mt-20 relative overflow-hidden bg-night-950 py-20 text-white lg:py-28"
+    >
+      <div className="absolute inset-0 bg-grid opacity-40 mask-fade-b" aria-hidden />
+      <Container className="relative grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20">
+        <div>
+          <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-300">
+            Business Passport
+          </span>
+          <h2 className="mt-4 font-serif text-4xl font-medium leading-[1.08] tracking-tight sm:text-5xl">
+            Yours to style. <em className="text-gradient italic">Ours to verify.</em>
+          </h2>
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-300">
+            The top of the Passport is your identity, and you decide how it looks. The bottom is
+            your standing, and nobody — you included — gets to restyle it.
+          </p>
+
+          <div className="mt-8 grid gap-8 sm:grid-cols-2">
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">
+                You control
+              </h3>
+              <ul className="mt-3 space-y-2 text-[15px] text-slate-200">
+                {YOU_CONTROL.map((t) => (
+                  <li key={t} className="flex items-center gap-2.5">
+                    <Sparkle width={13} height={13} className="shrink-0 text-brand-300" />
+                    {t}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="grid gap-px bg-slate-100 text-sm sm:grid-cols-2">
-              {[
-                'KYB-gated issuance',
-                'Verifiable from Soroban',
-                'TTL-kept-alive',
-                'Composable trust primitive',
-              ].map((f) => (
-                <li key={f} className="flex items-center gap-2 bg-white px-8 py-3 text-slate-600">
-                  <ShieldCheck width={15} height={15} className="text-brand-500" />
-                  {f}
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Fondealo attests
+              </h3>
+              <ul className="mt-3 space-y-2 text-[15px] text-slate-200">
+                {WE_ATTEST.map((t) => (
+                  <li key={t} className="flex items-center gap-2.5">
+                    <Lock width={13} height={13} className="shrink-0 text-slate-400" />
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-wider text-slate-500">
+              <span>BusinessPassport · Soroban</span>
+              <span>non-transferable</span>
+            </div>
+            <ul className="mt-4 space-y-2 font-mono text-[13px]">
+              {CONTRACT_ROWS.map((r) => (
+                <li
+                  key={r.call}
+                  className="flex flex-wrap items-baseline justify-between gap-x-4 text-slate-200"
+                >
+                  <span>{r.call}</span>
+                  <span className="text-xs text-slate-500">{r.who}</span>
                 </li>
               ))}
+              <li className="flex flex-wrap items-baseline justify-between gap-x-4 border-t border-white/10 pt-3">
+                <span className="text-red-300/90 line-through decoration-red-300/50">
+                  transfer() approve() transfer_from()
+                </span>
+                <span className="text-xs text-slate-500">deliberately absent</span>
+              </li>
             </ul>
-          </Card>
+            <p className="mt-4 text-xs leading-relaxed text-slate-400">
+              A credential can&apos;t be sold, lent or faked: ownership never moves. Implemented and
+              tested in <code className="text-slate-300">packages/soroban</code>; Testnet deployment
+              is next.
+            </p>
+          </div>
+        </div>
 
-          <Card className="overflow-hidden">
-            <div className="grid gap-6 p-8 sm:grid-cols-[auto_1fr] sm:items-center">
-              <div className="w-full max-w-[290px] justify-self-center rounded-2xl bg-night-950 p-5">
-                <ReputationRing passport={SHOWCASE_PASSPORT} size={190} />
+        <LayerExplainer />
+      </Container>
+    </section>
+  );
+}
+
+/* --------------------------- Reputation ring --------------------------- */
+const LAYERS = [
+  {
+    name: 'Identity',
+    color: '#34d399',
+    body: 'KYB verified by a provider. PII stays off-chain; only a hash commitment goes on-chain.',
+  },
+  {
+    name: 'Repayment',
+    color: '#22d3ee',
+    body: 'The share of loans repaid. On-time, investor-funded repayments are what raise the score.',
+  },
+  {
+    name: 'Activity',
+    color: '#fbbf24',
+    body: 'How many loans the business has actually taken through Fondealo.',
+  },
+  {
+    name: 'Longevity',
+    color: '#a78bfa',
+    body: 'How long the Passport has been building history. Reputation takes time.',
+  },
+];
+
+function ReputationSection() {
+  return (
+    <section className="bg-white py-20 lg:py-28">
+      <Container className="grid items-center gap-14 lg:grid-cols-[1fr_auto] lg:gap-24">
+        <div>
+          <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-700">
+            Credit Reputation Ring
+          </span>
+          <h2 className="mt-4 max-w-xl font-serif text-4xl font-medium leading-[1.08] tracking-tight text-slate-900 sm:text-5xl">
+            One score. Four ways to read it.
+          </h2>
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-600">
+            The on-chain score is a single deterministic number. The ring shows what it is made of,
+            so a lender can see why a business looks the way it does — and a business can see what
+            to improve.
+          </p>
+          <dl className="mt-10 grid gap-x-10 gap-y-7 sm:grid-cols-2">
+            {LAYERS.map((l) => (
+              <div key={l.name}>
+                <dt className="flex items-center gap-2.5 font-display text-base font-semibold text-slate-900">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ background: l.color }}
+                    aria-hidden
+                  />
+                  {l.name}
+                </dt>
+                <dd className="mt-1.5 text-[15px] leading-relaxed text-slate-600">{l.body}</dd>
               </div>
-              <div>
-                <h3 className="text-xl font-semibold text-slate-900">Credit Reputation Ring</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                  One deterministic on-chain score, read through four layers: Identity, Repayment,
-                  Activity and Longevity. Each successful repayment compounds it — with diminishing
-                  returns near the cap. Self-funded round-trips are score-neutral, so reputation
-                  can&apos;t be gamed.
-                </p>
-                <dl className="mt-4 space-y-2.5 text-sm">
-                  {[
-                    [
-                      'Identity',
-                      'KYB verified by a provider. PII stays off-chain; only a hash commitment goes on-chain.',
-                    ],
-                    [
-                      'Repayment',
-                      'Share of loans repaid. On-time, investor-funded repayments are what raise the score.',
-                    ],
-                    [
-                      'Activity',
-                      'How many loans the business has actually taken through Fondealo.',
-                    ],
-                    [
-                      'Longevity',
-                      'How long the Passport has been building history — reputation takes time.',
-                    ],
-                  ].map(([k, v]) => (
-                    <div key={k} className="grid grid-cols-[84px_1fr] gap-3">
-                      <dt className="font-semibold text-slate-900">{k}</dt>
-                      <dd className="text-slate-500">{v}</dd>
-                    </div>
-                  ))}
-                </dl>
-                <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                  {['Portable across loans', 'Anti-gaming', 'Transparent formula'].map((t) => (
-                    <span
-                      key={t}
-                      className="rounded-full border border-gold-300/60 bg-gold-50 px-2.5 py-1 font-medium text-gold-600"
-                    >
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </Card>
+            ))}
+          </dl>
+          <p className="mt-9 max-w-xl text-sm text-slate-500">
+            Reputation compounds with diminishing returns near the cap, and self-funded round-trips
+            are score-neutral, so it can&apos;t be gamed.
+          </p>
+        </div>
+
+        <div className="mx-auto w-full max-w-[290px] rounded-3xl bg-night-950 p-6 shadow-soft">
+          <ReputationRing passport={SHOWCASE_PASSPORT} size={220} />
         </div>
       </Container>
     </section>
@@ -337,45 +353,64 @@ function Differentiators() {
 
 /* ----------------------------- Audiences ---------------------------- */
 function Audiences() {
-  const cards = [
-    {
-      icon: Building,
-      tag: 'For businesses',
-      title: 'Turn a clean track record into cheaper capital',
-      body: 'Register, complete KYB, get your Passport, and request USDC financing. Every repayment makes the next loan cheaper.',
-      cta: 'Business dashboard',
-      href: '/onboarding?intent=business',
-      variant: 'primary' as const,
-    },
-    {
-      icon: Landmark,
-      tag: 'For investors',
-      title: 'Fund vetted SMEs and earn USDC returns',
-      body: 'Deposit USDC, back opportunities scored by on-chain reputation, and receive returns as businesses repay.',
-      cta: 'Investor dashboard',
-      href: '/onboarding?intent=invest',
-      variant: 'dark' as const,
-    },
-  ];
   return (
-    <section className="py-20 lg:py-24">
-      <Container className="grid gap-6 md:grid-cols-2">
-        {cards.map((c) => (
-          <Card key={c.tag} className="flex flex-col p-8">
-            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-900 text-white">
-              <c.icon width={22} height={22} />
+    <section className="bg-slate-50 py-20 lg:py-28">
+      <Container>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <article className="flex flex-col rounded-3xl bg-night-950 p-8 text-white sm:p-10">
+            <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-300">
+              For businesses
             </span>
-            <span className="mt-5 text-sm font-semibold text-brand-600">{c.tag}</span>
-            <h3 className="mt-1 text-xl font-semibold text-slate-900">{c.title}</h3>
-            <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-500">{c.body}</p>
-            <Link href={c.href} className="mt-6">
-              <Button variant={c.variant}>
-                {c.cta}
+            <h3 className="mt-4 font-serif text-3xl font-medium leading-tight tracking-tight">
+              Turn a clean track record into cheaper capital.
+            </h3>
+            <ul className="mt-7 space-y-3 text-[15px] text-slate-200">
+              {[
+                'Verify once and keep a Passport no one can take from you',
+                'Lock less collateral with every on-time repayment',
+                'Style the identity layer to look like your brand',
+              ].map((t) => (
+                <li key={t} className="flex gap-3">
+                  <Check width={16} height={16} className="mt-1 shrink-0 text-brand-400" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <Link href="/onboarding?intent=business" className="mt-9 self-start">
+              <Button size="lg">
+                Get my Passport
                 <ArrowRight width={18} height={18} />
               </Button>
             </Link>
-          </Card>
-        ))}
+          </article>
+
+          <article className="flex flex-col rounded-3xl border border-slate-200 bg-white p-8 sm:p-10">
+            <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-700">
+              For investors
+            </span>
+            <h3 className="mt-4 font-serif text-3xl font-medium leading-tight tracking-tight text-slate-900">
+              Fund vetted SMEs and earn USDC returns.
+            </h3>
+            <ul className="mt-7 space-y-3 text-[15px] text-slate-700">
+              {[
+                'See each business’s score, band and collateral before you fund',
+                'First-loss collateral is locked ahead of your capital',
+                'Try it end to end with 10,000 test USDC on Testnet',
+              ].map((t) => (
+                <li key={t} className="flex gap-3">
+                  <Check width={16} height={16} className="mt-1 shrink-0 text-brand-600" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <Link href="/onboarding?intent=invest" className="mt-9 self-start">
+              <Button variant="dark" size="lg">
+                Explore opportunities
+                <ArrowRight width={18} height={18} />
+              </Button>
+            </Link>
+          </article>
+        </div>
       </Container>
     </section>
   );
@@ -384,14 +419,14 @@ function Audiences() {
 /* ----------------------------- CTA band ----------------------------- */
 function CtaBand() {
   return (
-    <section className="pb-24">
+    <section className="bg-slate-50 pb-24">
       <Container>
-        <div className="relative overflow-hidden rounded-3xl bg-night-950 px-8 py-14 text-center text-white">
-          <div className="absolute inset-0 bg-grid opacity-60" aria-hidden />
+        <div className="relative overflow-hidden rounded-3xl bg-night-950 px-8 py-14 text-center text-white sm:py-16">
+          <div className="absolute inset-0 bg-grid opacity-50" aria-hidden />
           <div className="absolute inset-0 bg-radial-brand" aria-hidden />
           <div className="relative mx-auto max-w-2xl">
-            <h2 className="font-display text-3xl font-bold sm:text-4xl">
-              Build credit that belongs to the business — not the bank.
+            <h2 className="font-serif text-3xl font-medium leading-tight tracking-tight sm:text-4xl">
+              Build credit that belongs to the business, not the bank.
             </h2>
             <p className="mt-4 text-slate-300">
               Fondealo is a Testnet MVP built for the Stellar Community Fund.
@@ -413,26 +448,5 @@ function CtaBand() {
         </div>
       </Container>
     </section>
-  );
-}
-
-/* ------------------------------ Shared ------------------------------ */
-function SectionHeading({
-  eyebrow,
-  title,
-  subtitle,
-}: {
-  eyebrow: string;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div className="mx-auto max-w-2xl text-center">
-      <span className="text-sm font-semibold uppercase tracking-wide text-brand-600">
-        {eyebrow}
-      </span>
-      <h2 className="mt-3 font-display text-3xl font-bold text-slate-900 sm:text-4xl">{title}</h2>
-      <p className="mt-4 text-slate-500">{subtitle}</p>
-    </div>
   );
 }

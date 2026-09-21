@@ -88,14 +88,14 @@ export function AddFundsPanel() {
               onClick={() => setAmount(v)}
               className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 transition-colors hover:border-brand-300 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/50"
             >
-              {v.toLocaleString()}
+              {v.toLocaleString('en-US')}
             </button>
           ))}
         </div>
       </div>
 
       <Button type="submit" className="w-full" disabled={pending || amount <= 0}>
-        {pending ? 'Adding funds…' : `Add ${amount.toLocaleString()} test USDC`}
+        {pending ? 'Adding funds…' : `Add ${amount.toLocaleString('en-US')} test USDC`}
       </Button>
 
       {state && !state.ok ? <p className="text-xs text-red-600">{state.error}</p> : null}

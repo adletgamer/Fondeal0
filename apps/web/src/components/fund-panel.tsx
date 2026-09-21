@@ -106,12 +106,14 @@ export function FundPanel({
     <Card className="p-6">
       <h2 className="text-lg font-semibold text-slate-900">Fund in USDC</h2>
       <p className="mt-1 text-sm text-slate-500">
-        {remaining.toLocaleString()} USDC remaining.
+        {remaining.toLocaleString('en-US')} USDC remaining.
         {balanceUsdc !== null ? (
           <>
             {' '}
             Your balance:{' '}
-            <strong className="text-slate-700">{balanceUsdc.toLocaleString()} USDC</strong>{' '}
+            <strong className="text-slate-700">
+              {balanceUsdc.toLocaleString('en-US')} USDC
+            </strong>{' '}
             <span className="text-slate-400">(test funds)</span>
           </>
         ) : null}
@@ -167,7 +169,7 @@ export function FundPanel({
           <div className="flex justify-between text-slate-500">
             <span>Projected return over {termDays} days</span>
             <span className="font-semibold text-slate-800">
-              {projectedReturn.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC
+              {projectedReturn.toLocaleString('en-US', { maximumFractionDigits: 2 })} USDC
             </span>
           </div>
         </div>
@@ -186,7 +188,7 @@ export function FundPanel({
           className="w-full"
           disabled={pending || amount <= 0 || !stellarAddress || insufficient}
         >
-          {pending ? 'Funding…' : `Fund ${amount.toLocaleString()} USDC`}
+          {pending ? 'Funding…' : `Fund ${amount.toLocaleString('en-US')} USDC`}
         </Button>
 
         {result && !result.ok ? <p className="text-xs text-red-600">{result.error}</p> : null}

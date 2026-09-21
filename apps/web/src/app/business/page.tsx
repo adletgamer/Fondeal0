@@ -8,6 +8,7 @@ import { PassportV2 } from '@/components/passport-v2';
 import { getBorrowerPassport, getBusinessOpportunities } from '@/lib/data/opportunities';
 import { getSession } from '@/lib/auth/session';
 import { getKybState } from '@/lib/data/kyb';
+import { getPassportTheme } from '@/lib/data/passport-theme';
 import { getWalletSummary } from '@/lib/wallet/ledger';
 import { BalanceCard } from '@/components/balance-card';
 import { Calendar, Coins, Plus, ShieldCheck } from '@/components/icons';
@@ -34,7 +35,10 @@ export default async function BusinessDashboard() {
   const address = session.stellarAddress;
   const kyb = await getKybState(address);
   if (kyb && kyb.status !== 'Accepted') redirect('/business/verify');
-  const wallet = await getWalletSummary(address);
+  const [wallet, theme] = await Promise.all([getWalletSummary(address), getPassportTheme(address)]);
+  const holder = kyb?.legalName
+    ? { name: kyb.legalName, place: [kyb.country, kyb.sector].filter(Boolean).join(' · ') }
+    : undefined;
 
   const [{ source: passportSource, passport }, { source: loansSource, opportunities }] =
     await Promise.all([getBorrowerPassport(address), getBusinessOpportunities(address)]);
@@ -85,6 +89,8 @@ export default async function BusinessDashboard() {
           <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
             <PassportV2
               passport={passport}
+              theme={theme}
+              holder={holder}
               explorerUrl={
                 passportSource === 'chain'
                   ? `https://stellar.expert/explorer/testnet/account/${passport.business}`

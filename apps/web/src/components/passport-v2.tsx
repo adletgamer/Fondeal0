@@ -9,25 +9,29 @@ import {
 } from 'react';
 import {
   KybStatus,
+  PassportStatus,
   SCORE_MAX,
   passportHistoryMonths,
   type Passport,
   type RiskBand,
 } from '@fondealo/types';
+import { DEFAULT_PASSPORT_THEME, themeStyleVars, type PassportTheme } from '@/lib/passport-theme';
 import { ScoreRing } from './score-ring';
 import { Check, ShieldCheck, Sparkle } from './icons';
 
 /**
- * Business Passport V2 — the product's signature object. Not a form: a
- * verifiable on-chain credential, styled after a metal charge card (Amex
- * Centurion / Visa Infinite) crossed with an identity credential (World ID,
- * Apple Wallet).
+ * Business Passport — the product's signature object, built in two layers:
+ *
+ * - **Identity layer** (top): who the business is and how it looks. The owner
+ *   chooses the colours and pattern; the name comes from KYB.
+ * - **Trust layer** (bottom): what Fondealo attests — KYB status, credit score,
+ *   risk band, repayment history, on-chain verification. Fixed styling, never
+ *   themed, so no colour choice can make a weak business look strong.
  *
  * Effects are hand-rolled — pointer-tracked 3D tilt, a mount reveal, a
- * holographic sheen sweep, a score count-up — so the passport adds **zero**
- * runtime dependencies (no Framer Motion / Aceternity / Magic UI). All of it
- * degrades to a clean static card under `prefers-reduced-motion` and on
- * touch devices.
+ * holographic sheen, a score count-up, colour transitions via registered CSS
+ * properties — so the passport adds zero runtime dependencies. All of it
+ * degrades to a clean static card under `prefers-reduced-motion` and on touch.
  */
 
 const BAND_META: Record<RiskBand, { label: string; from: string; to: string }> = {
@@ -44,6 +48,8 @@ export interface PassportV2Props {
   variant?: 'full' | 'showcase';
   /** Business identity line (legal name + place). Omitted when the name isn't known. */
   holder?: { name: string; place: string };
+  /** Identity-layer look chosen by the owner. Defaults to Emerald. */
+  theme?: PassportTheme;
   /** Overrides the default stat trio (Repaid · Streak · History). */
   stats?: { k: string; v: string }[];
   /** Optional "Credit signals" rows shown under the stats (used by the landing demo). */
@@ -57,13 +63,15 @@ export function PassportV2({
   passport,
   variant = 'full',
   holder,
+  theme = DEFAULT_PASSPORT_THEME,
   stats,
   signals,
   explorerUrl,
   className,
 }: PassportV2Props) {
   const band = BAND_META[passport.riskBand];
-  const verified = passport.kybStatus === KybStatus.Accepted;
+  const status = passport.status ?? PassportStatus.Active;
+  const verified = passport.kybStatus === KybStatus.Accepted && status === PassportStatus.Active;
   const statList = stats ?? [
     { k: 'Repaid', v: `${passport.loansRepaid}/${passport.loansTotal}` },
     { k: 'Streak', v: String(passport.onTimeStreak) },
@@ -73,6 +81,7 @@ export function PassportV2({
   const cardRef = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState({ rx: 0, ry: 0, gx: 50, gy: 0 });
   const displayScore = useCountUp(passport.score);
+  const themeKey = `${theme.preset}:${theme.accent ?? ''}:${theme.pattern}`;
 
   function handleMove(e: ReactPointerEvent<HTMLDivElement>) {
     if (e.pointerType === 'touch') return;
@@ -82,8 +91,8 @@ export function PassportV2({
     const px = (e.clientX - rect.left) / rect.width;
     const py = (e.clientY - rect.top) / rect.height;
     setTilt({
-      rx: (0.5 - py) * 10,
-      ry: (px - 0.5) * 12,
+      rx: (0.5 - py) * 8,
+      ry: (px - 0.5) * 10,
       gx: px * 100,
       gy: py * 100,
     });
@@ -93,6 +102,7 @@ export function PassportV2({
   }
 
   const style = {
+    ...themeStyleVars(theme),
     '--rx': `${tilt.rx}deg`,
     '--ry': `${tilt.ry}deg`,
     '--gx': `${tilt.gx}%`,
@@ -122,112 +132,111 @@ export function PassportV2({
         <div className="fdo-passport__sheen" aria-hidden />
 
         <div className="fdo-passport__body">
-          {/* ---- header ---- */}
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-1.5 font-display text-[13px] font-bold uppercase tracking-[0.22em] text-white">
-                <Sparkle width={13} height={13} className="text-brand-300" />
+          {/* ============ IDENTITY LAYER — the owner's look ============ */}
+          <section
+            key={themeKey}
+            aria-label="Business identity"
+            className={`fdo-id fdo-id--${theme.pattern} fdo-id__pulse`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 font-display text-[12px] font-bold uppercase tracking-[0.24em] text-white">
+                <Sparkle width={12} height={12} style={{ color: 'var(--t-a)' }} />
                 Fondealo
               </div>
-              <div className="mt-1 text-[10px] font-medium uppercase tracking-[0.34em] text-white/45">
+              <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.22em] text-white/70">
+                Stellar
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ background: 'var(--t-a)', boxShadow: '0 0 8px var(--t-a)' }}
+                  aria-hidden
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 text-center">
+              <div className="fdo-id__name text-[1.45rem] leading-tight text-white">
+                {holder?.name ?? shortAddr(passport.business)}
+              </div>
+              <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.42em] text-white/60">
                 Business Passport
               </div>
+              {holder?.place ? (
+                <div className="mt-2 text-[11px] text-white/55">{holder.place}</div>
+              ) : null}
             </div>
-            <Contactless />
-          </div>
+          </section>
 
-          {/* ---- holder ---- */}
-          {holder ? (
-            <div className="mt-5 flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/[0.06] font-display text-sm font-bold text-brand-200">
-                {holder.name.slice(0, 1)}
+          {/* ============ TRUST LAYER — fixed, verified by Fondealo ============ */}
+          <section aria-label="Verified credit standing" className="fdo-trust">
+            <div className="flex items-center justify-between">
+              <StatusPill kyb={passport.kybStatus} status={status} verified={verified} />
+              <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/35">
+                Set by Fondealo
               </span>
-              <div>
-                <div className="font-display text-[15px] font-semibold leading-tight text-white">
-                  {holder.name}
+            </div>
+
+            <div className="relative -mb-3 mt-3 grid place-items-center">
+              <ScoreRing score={passport.score} band={passport.riskBand} size={176} label={false} />
+              <div className="pointer-events-none absolute flex flex-col items-center">
+                <span className="font-display text-[2.6rem] font-bold leading-none tabular-nums text-white">
+                  {displayScore}
+                </span>
+                <span className="mt-1 text-[9px] font-medium uppercase tracking-[0.24em] text-white/45">
+                  Credit / {SCORE_MAX}
+                </span>
+                <RiskBadge band={passport.riskBand} label={band.label} />
+              </div>
+            </div>
+
+            <dl className="mt-4 grid grid-cols-3 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] text-center">
+              {statList.map((st, i) => (
+                <Stat key={st.k} k={st.k} v={st.v} border={i === 1} />
+              ))}
+            </dl>
+
+            {signals?.length ? (
+              <div className="mt-4">
+                <div className="text-[9px] font-semibold uppercase tracking-[0.24em] text-white/35">
+                  Credit signals
                 </div>
-                <div className="mt-0.5 text-[11px] text-white/50">{holder.place}</div>
+                <ul className="mt-2 space-y-1.5">
+                  {signals.map((sig) => (
+                    <li key={sig.k} className="flex items-center gap-2 text-[12px]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-brand-400" aria-hidden />
+                      <span className="flex-1 text-white/65">{sig.k}</span>
+                      <span className="font-display font-semibold text-white">{sig.v}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-          ) : null}
-
-          {/* ---- chip + verification ---- */}
-          <div className="mt-5 flex items-center justify-between">
-            <Chip />
-            <span
-              className={[
-                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider backdrop-blur',
-                verified
-                  ? 'border-brand-400/40 bg-brand-400/10 text-brand-200'
-                  : 'border-white/15 bg-white/5 text-white/60',
-              ].join(' ')}
-            >
-              {verified ? <ShieldCheck width={12} height={12} /> : null}
-              KYB {passport.kybStatus}
-            </span>
-          </div>
-
-          {/* ---- score dial ---- */}
-          <div className="relative mt-4 grid place-items-center">
-            <ScoreRing score={passport.score} band={passport.riskBand} size={196} label={false} />
-            <div className="pointer-events-none absolute flex flex-col items-center">
-              <span className="font-display text-[2.9rem] font-bold leading-none tabular-nums text-white">
-                {displayScore}
-              </span>
-              <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.24em] text-white/40">
-                Credit score / {SCORE_MAX}
-              </span>
-              <RiskBadge band={passport.riskBand} label={band.label} />
-            </div>
-          </div>
-
-          {/* ---- stats ---- */}
-          <dl className="mt-4 grid grid-cols-3 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] text-center">
-            {statList.map((st, i) => (
-              <Stat key={st.k} k={st.k} v={st.v} border={i === 1} />
-            ))}
-          </dl>
-
-          {/* ---- credit signals ---- */}
-          {signals?.length ? (
-            <div className="mt-4">
-              <div className="text-[9px] font-semibold uppercase tracking-[0.24em] text-white/35">
-                Credit signals
-              </div>
-              <ul className="mt-2 space-y-1.5">
-                {signals.map((sig) => (
-                  <li key={sig.k} className="flex items-center gap-2 text-[12px]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-brand-400" aria-hidden />
-                    <span className="flex-1 text-white/65">{sig.k}</span>
-                    <span className="font-display font-semibold text-white">{sig.v}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
-          {/* ---- footer ---- */}
-          <div className="mt-4 flex items-center justify-between">
-            <span className="font-mono text-[11px] tracking-wide text-white/55">
-              {shortAddr(passport.business)}
-            </span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-brand-300">
-              <span className="fdo-passport__seal">
-                <Check width={11} height={11} />
-              </span>
-              Stellar verified
-            </span>
-            {explorerUrl ? (
-              <a
-                href={explorerUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[10px] font-semibold uppercase tracking-wider text-white/60 transition-colors hover:text-white"
-              >
-                View on-chain ↗
-              </a>
             ) : null}
-          </div>
+
+            <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-brand-300">
+                <span className="fdo-passport__seal">
+                  <Check width={11} height={11} />
+                </span>
+                Verified on-chain
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="font-mono text-[10.5px] tracking-wide text-white/55">
+                  {passport.passportId !== undefined
+                    ? `#${passport.passportId}`
+                    : shortAddr(passport.business)}
+                </span>
+                {explorerUrl ? (
+                  <a
+                    href={explorerUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] font-semibold uppercase tracking-wider text-white/60 transition-colors hover:text-white"
+                  >
+                    View ↗
+                  </a>
+                ) : null}
+              </span>
+            </div>
+          </section>
         </div>
       </div>
     </div>
@@ -236,11 +245,49 @@ export function PassportV2({
 
 /* ------------------------------- pieces ------------------------------- */
 
+function StatusPill({
+  kyb,
+  status,
+  verified,
+}: {
+  kyb: string;
+  status: PassportStatus;
+  verified: boolean;
+}) {
+  if (status !== PassportStatus.Active) {
+    const revoked = status === PassportStatus.Revoked;
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${
+          revoked
+            ? 'border-red-400/40 bg-red-400/10 text-red-200'
+            : 'border-amber-400/40 bg-amber-400/10 text-amber-200'
+        }`}
+      >
+        {revoked ? 'Revoked' : 'Frozen'}
+      </span>
+    );
+  }
+  return (
+    <span
+      className={[
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider',
+        verified
+          ? 'border-brand-400/40 bg-brand-400/10 text-brand-200'
+          : 'border-white/15 bg-white/5 text-white/60',
+      ].join(' ')}
+    >
+      {verified ? <ShieldCheck width={12} height={12} /> : null}
+      {verified ? 'KYB verified' : `KYB ${kyb}`}
+    </span>
+  );
+}
+
 function RiskBadge({ band, label }: { band: RiskBand; label: string }) {
   return (
-    <span className="fdo-riskbadge mt-3">
+    <span className="fdo-riskbadge mt-2.5">
       <span className="fdo-riskbadge__grade">{band}</span>
-      <span className="fdo-riskbadge__label">Risk band · {label}</span>
+      <span className="fdo-riskbadge__label">{label}</span>
     </span>
   );
 }
@@ -248,71 +295,9 @@ function RiskBadge({ band, label }: { band: RiskBand; label: string }) {
 function Stat({ k, v, border = false }: { k: string; v: string; border?: boolean }) {
   return (
     <div className={`py-2.5 ${border ? 'border-x border-white/10' : ''}`}>
-      <dt className="text-[9px] uppercase tracking-[0.18em] text-white/35">{k}</dt>
+      <dt className="text-[9px] uppercase tracking-[0.18em] text-white/40">{k}</dt>
       <dd className="mt-0.5 font-display text-[13px] font-semibold text-white">{v}</dd>
     </div>
-  );
-}
-
-function Chip() {
-  return (
-    <svg width="40" height="30" viewBox="0 0 40 30" fill="none" aria-hidden>
-      <rect
-        x="0.5"
-        y="0.5"
-        width="39"
-        height="29"
-        rx="5"
-        fill="url(#chip-g)"
-        stroke="rgba(255,255,255,0.25)"
-      />
-      <path
-        d="M13 0v6M27 0v6M13 24v6M27 24v6M0 11h6M0 19h6M34 11h6M34 19h6M13 11h14v8H13z"
-        stroke="rgba(11,17,32,0.55)"
-        strokeWidth="1.4"
-      />
-      <defs>
-        <linearGradient id="chip-g" x1="0" y1="0" x2="40" y2="30">
-          <stop stopColor="#fde68a" />
-          <stop offset="0.5" stopColor="#f59e0b" />
-          <stop offset="1" stopColor="#fbbf24" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
-
-function Contactless() {
-  return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-      className="text-white/45"
-    >
-      <path
-        d="M8 6c3.5 2.4 3.5 9.6 0 12"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-      <path
-        d="M12 3.5c5 3.4 5 13.6 0 17"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        opacity="0.7"
-      />
-      <path
-        d="M16 1c6.5 4.3 6.5 17.7 0 22"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        opacity="0.45"
-      />
-    </svg>
   );
 }
 

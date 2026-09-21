@@ -32,12 +32,14 @@ export function RepayForm({
     <Card className="p-6">
       <h2 className="text-lg font-semibold text-slate-900">Make a payment</h2>
       <p className="mt-1 text-sm text-slate-500">
-        {remaining.toLocaleString()} USDC left to repay.
+        {remaining.toLocaleString('en-US')} USDC left to repay.
         {balanceUsdc !== null ? (
           <>
             {' '}
             Your balance:{' '}
-            <strong className="text-slate-700">{balanceUsdc.toLocaleString()} USDC</strong>{' '}
+            <strong className="text-slate-700">
+              {balanceUsdc.toLocaleString('en-US')} USDC
+            </strong>{' '}
             <span className="text-slate-400">(test funds)</span>
           </>
         ) : null}
@@ -63,7 +65,7 @@ export function RepayForm({
             onClick={() => setAmount(remaining)}
             className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-brand-300 hover:text-brand-700"
           >
-            Pay it off ({remaining.toLocaleString()})
+            Pay it off ({remaining.toLocaleString('en-US')})
           </button>
         </div>
         {insufficient ? (
@@ -75,7 +77,7 @@ export function RepayForm({
           </p>
         ) : null}
         <Button type="submit" className="w-full" disabled={pending || amount <= 0 || insufficient}>
-          {pending ? 'Paying…' : `Pay ${amount.toLocaleString()} USDC`}
+          {pending ? 'Paying…' : `Pay ${amount.toLocaleString('en-US')} USDC`}
         </Button>
         {state && !state.ok ? <p className="text-xs text-red-600">{state.error}</p> : null}
         {state && state.ok ? <p className="text-xs text-brand-600">{state.message}</p> : null}

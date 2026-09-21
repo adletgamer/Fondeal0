@@ -18,7 +18,7 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 function fmt(n: number): string {
-  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  return n.toLocaleString('en-US', { maximumFractionDigits: 2 });
 }
 
 /** USDC balance + recent movements + the "add funds" flow. Testnet money — labelled as such everywhere. */
