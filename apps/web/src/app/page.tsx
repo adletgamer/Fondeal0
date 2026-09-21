@@ -21,8 +21,14 @@ import {
 export default function Home() {
   return (
     <>
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-xl focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+      >
+        Skip to content
+      </a>
       <Navbar />
-      <main>
+      <main id="main" tabIndex={-1} className="outline-none">
         <Hero />
         <Composability />
         <HowItWorks />
@@ -86,9 +92,31 @@ function Hero() {
           <PassportShowcase />
         </div>
       </Container>
+      <Container className="relative pb-10">
+        <ul className="grid gap-4 border-t border-white/10 pt-6 sm:grid-cols-2 lg:grid-cols-4">
+          {PROOF.map(({ icon: Icon, title, body }) => (
+            <li key={title} className="flex items-start gap-3">
+              <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/[0.06] text-brand-300">
+                <Icon width={16} height={16} />
+              </span>
+              <span>
+                <span className="block text-sm font-semibold text-white">{title}</span>
+                <span className="block text-xs text-slate-400">{body}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Container>
     </section>
   );
 }
+
+const PROOF = [
+  { icon: Layers, title: '3 Soroban contracts', body: 'Passport · Score · Escrow' },
+  { icon: Lock, title: 'Non-custodial', body: 'Your wallet, your keys' },
+  { icon: ShieldCheck, title: 'Privacy by design', body: 'PII off-chain, only a hash on-chain' },
+  { icon: Coins, title: 'Built on Stellar', body: 'Protocol 27 · USDC settlement' },
+];
 
 const SHOWCASE_PASSPORT: Passport = {
   business: 'GBODEGA4LIMAX7YQ2K9WESTELLARDEMOADDR000000000000000000000',
@@ -137,9 +165,9 @@ function Composability() {
     { name: 'USDC', role: 'Settlement', icon: Coins },
   ];
   return (
-    <section id="compose" className="border-b border-slate-200 bg-white py-12">
+    <section id="compose" className="scroll-mt-20 border-b border-slate-200 bg-white py-12">
       <Container>
-        <p className="text-center text-sm font-medium uppercase tracking-wide text-slate-400">
+        <p className="text-center text-sm font-medium uppercase tracking-wide text-slate-500">
           We don&apos;t rebuild lending — we compose the Stellar money-legos and own the credit
           layer
         </p>
@@ -184,7 +212,7 @@ function HowItWorks() {
     },
   ];
   return (
-    <section id="how" className="py-20 lg:py-24">
+    <section id="how" className="scroll-mt-20 py-20 lg:py-24">
       <Container>
         <SectionHeading
           eyebrow="How it works"
@@ -213,7 +241,7 @@ function HowItWorks() {
 /* -------------------------- Differentiators ------------------------- */
 function Differentiators() {
   return (
-    <section id="passport" className="bg-white py-20 lg:py-24">
+    <section id="passport" className="scroll-mt-20 bg-white py-20 lg:py-24">
       <Container>
         <SectionHeading
           eyebrow="What makes Fondealo different"

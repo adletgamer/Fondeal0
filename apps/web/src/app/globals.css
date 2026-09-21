@@ -253,6 +253,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
   .fdo-passport,
   .fdo-passport--showcase,
   .fdo-passport__rim,

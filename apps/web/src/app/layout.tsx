@@ -16,9 +16,9 @@ const spaceGrotesk = Space_Grotesk({
   display: 'swap',
 });
 
-const title = 'Fondealo — On-chain credit for LatAm SMEs, on Stellar';
+const title = 'Fondealo — Portable credit infrastructure for Latin American businesses';
 const description =
-  'A reusable Business Passport and a portable, on-chain credit reputation that grows with every repayment. Credit infrastructure for Latin American SMEs, built on Stellar, Soroban and USDC.';
+  'A reusable Business Passport and a portable, on-chain credit reputation that grows with every repayment. Credit infrastructure for Latin American businesses, built on Stellar, Soroban and USDC.';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://fondealo.vercel.app'),
