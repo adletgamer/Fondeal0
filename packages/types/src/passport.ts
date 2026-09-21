@@ -55,6 +55,18 @@ export function previewOnTimeGain(current: number, streak: number): number {
   return Math.floor(((SCORE_BASE_GAIN + streakBonus) * headroom) / SCORE_MAX);
 }
 
+/**
+ * Lifecycle of a Passport. Ownership never moves (the Passport is a
+ * non-transferable credential); only this status does.
+ */
+export const PassportStatus = {
+  Active: 'Active',
+  Frozen: 'Frozen',
+  Revoked: 'Revoked',
+} as const;
+export type PassportStatus = (typeof PassportStatus)[keyof typeof PassportStatus];
+export const passportStatusSchema = z.nativeEnum(PassportStatus);
+
 /** The on-chain Business Passport, decoded to JS. */
 export const passportSchema = z.object({
   /** Stellar address that owns the Passport (the business identity key). */
@@ -70,6 +82,12 @@ export const passportSchema = z.object({
   updatedAt: z.number().int().nonnegative(),
   /** Hex-encoded 32-byte commitment to the off-chain KYB bundle. */
   dataHash: z.string(),
+  /** Contract-unique id assigned at issuance (absent for off-chain projections). */
+  passportId: z.number().int().nonnegative().optional(),
+  /** Lifecycle status; treated as `Active` when absent. */
+  status: passportStatusSchema.optional(),
+  /** Pointer to off-chain identity metadata (name, theme). Never credit data. */
+  metadataUri: z.string().optional(),
 });
 export type Passport = z.infer<typeof passportSchema>;
 

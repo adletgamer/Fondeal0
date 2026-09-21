@@ -16,12 +16,24 @@ import {
   TransactionBuilder,
   type xdr,
 } from '@stellar/stellar-sdk';
-import { bandForScore, KybStatus, type Passport, type RiskBand } from '@fondealo/types';
+import {
+  bandForScore,
+  KybStatus,
+  PassportStatus,
+  type Passport,
+  type RiskBand,
+} from '@fondealo/types';
 import { getNetworkConfig } from './config';
 
 // A well-known, non-existent-but-valid account used only as the simulation
 // source. Simulation never touches this account's state.
 const SIMULATION_SOURCE = 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF5';
+
+const STATUS_BY_INDEX: readonly PassportStatus[] = [
+  PassportStatus.Active,
+  PassportStatus.Frozen,
+  PassportStatus.Revoked,
+];
 
 const KYB_BY_INDEX: readonly KybStatus[] = [
   KybStatus.None,
@@ -103,7 +115,18 @@ export function normalizePassport(business: string, raw: Record<string, unknown>
     issuedAt: Number(raw['issued_at'] ?? 0),
     updatedAt: Number(raw['updated_at'] ?? 0),
     dataHash: String(raw['data_hash'] ?? ''),
+    passportId: raw['passport_id'] === undefined ? undefined : Number(raw['passport_id']),
+    status: decodeStatus(raw['status']),
+    metadataUri: raw['metadata_uri'] === undefined ? undefined : String(raw['metadata_uri']),
   };
+}
+
+function decodeStatus(value: unknown): PassportStatus {
+  if (typeof value === 'string' && value in PassportStatus) return value as PassportStatus;
+  if (typeof value === 'number' && STATUS_BY_INDEX[value]) {
+    return STATUS_BY_INDEX[value] as PassportStatus;
+  }
+  return PassportStatus.Active;
 }
 
 function decodeKyb(value: unknown): KybStatus {
