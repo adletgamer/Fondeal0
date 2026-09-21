@@ -55,18 +55,24 @@ enum UserRole {
 
 /// A registered business. `stellarAddress` is the on-chain identity key.
 model Business {
-  id            String    @id @default(cuid())
+  id             String   @id @default(cuid())
   stellarAddress String   @unique
-  legalName     String
-  country       String
-  email         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  legalName      String
+  country        String
+  email          String?
+  /// KYB profile captured at registration (docs/strategy/verifier-network.md).
+  sector         String?
+  taxId          String?
+  foundedYear    Int?
+  revenueBand    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   kybSubmissions KybSubmission[]
   opportunities  Opportunity[]
   passport       PassportProjection?
 
+  @@unique([country, taxId])
   @@index([country])
 }
 
@@ -90,6 +96,9 @@ model KybSubmission {
   businessId  String
   business    Business  @relation(fields: [businessId], references: [id])
   status      KybStatus @default(Processing)
+  /// Which verifier issued the decision (`sandbox` until real KYB vendors are wired).
+  provider    String    @default("sandbox")
+  providerRef String?
   /// PII payload — encrypted at rest in production.
   fields      Json
   /// 32-byte commitment (hex) mirrored on-chain as `data_hash`.
@@ -103,35 +112,35 @@ model KybSubmission {
 
 /// Mirror of the on-chain Passport for fast reads/dashboards. Never authoritative.
 model PassportProjection {
-  business      Business  @relation(fields: [businessId], references: [id])
-  businessId    String    @id
-  kybStatus     KybStatus
-  score         Int
-  riskBand      RiskBand
-  loansTotal    Int       @default(0)
-  loansRepaid   Int       @default(0)
-  onTimeStreak  Int       @default(0)
-  issuedAt      DateTime
-  updatedAt     DateTime
-  dataHash      String
+  business     Business  @relation(fields: [businessId], references: [id])
+  businessId   String    @id
+  kybStatus    KybStatus
+  score        Int
+  riskBand     RiskBand
+  loansTotal   Int       @default(0)
+  loansRepaid  Int       @default(0)
+  onTimeStreak Int       @default(0)
+  issuedAt     DateTime
+  updatedAt    DateTime
+  dataHash     String
 }
 
 model Opportunity {
-  id           String            @id @default(cuid())
-  businessId   String
-  business     Business          @relation(fields: [businessId], references: [id])
-  title        String
-  description  String            @default("")
+  id          String            @id @default(cuid())
+  businessId  String
+  business    Business          @relation(fields: [businessId], references: [id])
+  title       String
+  description String            @default("")
   /// USDC stroops as string to preserve precision.
-  amount       String
-  funded       String            @default("0")
-  termDays     Int
-  aprBps       Int
-  riskBand     RiskBand
-  status       OpportunityStatus @default(Draft)
+  amount      String
+  funded      String            @default("0")
+  termDays    Int
+  aprBps      Int
+  riskBand    RiskBand
+  status      OpportunityStatus @default(Draft)
   /// On-chain escrow opportunity id (u64) once created on-chain.
-  onchainId    String?
-  createdAt    DateTime          @default(now())
+  onchainId   String?
+  createdAt   DateTime          @default(now())
 
   fundings   Funding[]
   repayments Repayment[]
@@ -168,13 +177,43 @@ model Repayment {
 
 /// Append-only log of on-chain reputation events, indexed from contract events.
 model ScoreEvent {
-  id            String   @id @default(cuid())
-  business      String
-  scoreBefore   Int
-  scoreAfter    Int
-  reason        String
-  txHash        String?
-  createdAt     DateTime @default(now())
+  id          String   @id @default(cuid())
+  business    String
+  scoreBefore Int
+  scoreAfter  Int
+  reason      String
+  txHash      String?
+  createdAt   DateTime @default(now())
 
   @@index([business])
+}
+
+enum LedgerKind {
+  Grant
+  Deposit
+  Fund
+  Repay
+  Payout
+  Collateral
+  CollateralReturn
+  Withdraw
+}
+
+/// Append-only USDC ledger backing the Testnet/mock balances: a wallet's
+/// balance is the SUM of its entries. Real on-chain USDC replaces this once
+/// funding providers (SEP-24 anchors) are integrated.
+model LedgerEntry {
+  id             String     @id @default(cuid())
+  stellarAddress String
+  kind           LedgerKind
+  /// Signed USDC stroops (1 USDC = 10_000_000): credits > 0, debits < 0.
+  amountStroops  BigInt
+  provider       String?
+  reference      String?
+  /// Makes one-shot entries (e.g. the signup grant) safe to retry.
+  idempotencyKey String?
+  createdAt      DateTime   @default(now())
+
+  @@unique([stellarAddress, idempotencyKey])
+  @@index([stellarAddress])
 }

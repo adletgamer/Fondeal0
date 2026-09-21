@@ -37,6 +37,23 @@ pnpm --filter @fondealo/database db:migrate    # prisma migrate dev (create a ne
 `schema.prisma` sets `binaryTargets = ["native", "rhel-openssl-3.0.x"]`: the
 second target is Vercel's Amazon Linux runtime.
 
+## Applying migrations (do this BEFORE deploying code that needs them)
+
+Migrations are applied with Prisma from a machine that can reach the database (some
+sandboxed shells block Postgres ports):
+
+```bash
+pnpm --filter @fondealo/database db:status   # what is pending
+pnpm --filter @fondealo/database db:deploy   # apply pending migrations
+```
+
+Prisma selects every column of a model, so deploying code whose schema adds columns
+(e.g. `Business.taxId`) **before** the migration is applied breaks existing queries.
+Order: migrate first, then `npx vercel deploy --prod`.
+
+Latest: `20260921000000_kyb_and_ledger` — additive only: KYB profile columns on `Business`,
+verifier columns on `KybSubmission`, and the `LedgerEntry` table.
+
 ## Health check
 
 `GET /api/health` runs `SELECT 1` through Prisma and returns `{ ok, db, ms }`

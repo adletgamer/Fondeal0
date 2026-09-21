@@ -6,6 +6,8 @@ import { DataSourceBadge } from '@/components/data-source-badge';
 import { RiskDisclosure } from '@/components/risk-disclosure';
 import { getInvestorPositions } from '@/lib/data/opportunities';
 import { getSession } from '@/lib/auth/session';
+import { getWalletSummary } from '@/lib/wallet/ledger';
+import { BalanceCard } from '@/components/balance-card';
 import { Coins, Landmark, ShieldCheck, TrendingUp } from '@/components/icons';
 
 const TABS = [
@@ -19,7 +21,10 @@ const DEPLOYED_STATUSES = new Set(['Open', 'Funded', 'Active']);
 export default async function InvestDashboard() {
   const session = await getSession();
   if (!session?.stellarAddress) redirect('/onboarding');
-  const { source, positions } = await getInvestorPositions(session.stellarAddress);
+  const [{ source, positions }, wallet] = await Promise.all([
+    getInvestorPositions(session.stellarAddress),
+    getWalletSummary(session.stellarAddress),
+  ]);
 
   const deployed = positions
     .filter((p) => DEPLOYED_STATUSES.has(p.status))
@@ -46,7 +51,13 @@ export default async function InvestDashboard() {
       label: 'At risk (defaulted)',
       value: `${atRisk.toLocaleString()} USDC`,
     },
-    { icon: TrendingUp, label: 'Available USDC', value: '—' },
+    {
+      icon: TrendingUp,
+      label: 'Available USDC',
+      value: wallet
+        ? wallet.balanceUsdc.toLocaleString(undefined, { maximumFractionDigits: 2 })
+        : '—',
+    },
   ];
 
   return (
@@ -68,6 +79,8 @@ export default async function InvestDashboard() {
             <WalletStatusBar />
           </div>
 
+          <BalanceCard summary={wallet} className="mb-6" />
+
           <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {kpis.map((k) => (
               <Card key={k.label} className="flex items-center gap-4 p-5">
@@ -84,7 +97,10 @@ export default async function InvestDashboard() {
 
           <div className="mb-8 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">Recent positions</h2>
-            <a href="/invest/positions" className="text-sm font-medium text-brand-600 hover:underline">
+            <a
+              href="/invest/positions"
+              className="text-sm font-medium text-brand-600 hover:underline"
+            >
               View all
             </a>
           </div>

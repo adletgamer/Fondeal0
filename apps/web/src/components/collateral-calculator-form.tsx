@@ -18,11 +18,11 @@ function installmentsFor(termDays: number): number {
 }
 
 export function CollateralCalculatorForm({
-  businessAddress,
   riskBand,
+  balanceUsdc,
 }: {
-  businessAddress: string;
   riskBand: RiskBand;
+  balanceUsdc: number | null;
 }) {
   const [state, formAction, pending] = useActionState(createOpportunityOnChainAware, initialState);
   const [amount, setAmount] = useState(5000);
@@ -51,17 +51,18 @@ export function CollateralCalculatorForm({
         </p>
 
         <form action={formAction} className="mt-4 space-y-3">
-          <input type="hidden" name="businessAddress" value={businessAddress} />
-          <input type="hidden" name="riskBand" value={riskBand} />
           <Field
-            label="Legal / trade name"
-            name="legalName"
-            placeholder="Bodega San Martín"
+            label="Opportunity title"
+            name="title"
+            placeholder="Inventory financing — Lima"
             required
           />
-          <Field label="Country" name="country" placeholder="Perú" required />
-          <Field label="Opportunity title" name="title" placeholder="Inventory financing — Lima" required />
-          <TextField label="Description" name="description" placeholder="What is the financing for?" rows={2} />
+          <TextField
+            label="Description"
+            name="description"
+            placeholder="What is the financing for?"
+            rows={2}
+          />
 
           <div className="grid gap-3 sm:grid-cols-3">
             <Field
@@ -97,7 +98,17 @@ export function CollateralCalculatorForm({
             />
           </div>
 
-          <Button type="submit" disabled={pending || amount <= 0}>
+          {balanceUsdc !== null && balanceUsdc < collateral ? (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              You have {balanceUsdc.toLocaleString()} USDC available but this request locks{' '}
+              {collateral.toLocaleString()} USDC. Add test funds from the dashboard first.
+            </p>
+          ) : null}
+
+          <Button
+            type="submit"
+            disabled={pending || amount <= 0 || (balanceUsdc !== null && balanceUsdc < collateral)}
+          >
             {pending ? 'Locking collateral…' : `Lock ${collateral.toLocaleString()} USDC & create`}
           </Button>
 

@@ -7,6 +7,8 @@ import { DataSourceBadge } from '@/components/data-source-badge';
 import { RiskDisclosure } from '@/components/risk-disclosure';
 import { getBorrowerPassport, getOpportunityDetail } from '@/lib/data/opportunities';
 import { Calendar, ShieldCheck } from '@/components/icons';
+import { getSession } from '@/lib/auth/session';
+import { getWalletSummary } from '@/lib/wallet/ledger';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +26,8 @@ export default async function OpportunityDetailPage({
   if (!opportunity) notFound();
 
   const { passport } = await getBorrowerPassport(opportunity.business);
+  const session = await getSession();
+  const wallet = session?.stellarAddress ? await getWalletSummary(session.stellarAddress) : null;
 
   const collateral = requiredCollateral(opportunity.amount, opportunity.riskBand);
   const protectedPct = maxProtectedPct(opportunity.riskBand);
@@ -172,6 +176,7 @@ export default async function OpportunityDetailPage({
                 aprBps={opportunity.aprBps}
                 termDays={opportunity.termDays}
                 isOpen={opportunity.status === 'Open'}
+                balanceUsdc={wallet?.balanceUsdc ?? null}
               />
             </div>
           </div>

@@ -8,12 +8,14 @@ import { PassportV2 } from '@/components/passport-v2';
 import { ScoreBreakdown } from '@/components/score-breakdown';
 import { getBorrowerPassport } from '@/lib/data/opportunities';
 import { getSession } from '@/lib/auth/session';
+import { getKybState } from '@/lib/data/kyb';
 import { FileCheck, Repeat, TrendingUp } from '@/components/icons';
 
 const TABS = [
   { href: '/business', label: 'Dashboard' },
   { href: '/business/new', label: 'New request' },
   { href: '/business/passport', label: 'Passport' },
+  { href: '/business/verify', label: 'Verification' },
 ];
 
 export const dynamic = 'force-dynamic';
@@ -21,6 +23,8 @@ export const dynamic = 'force-dynamic';
 export default async function BusinessPassportPage() {
   const session = await getSession();
   if (!session?.stellarAddress) redirect('/onboarding');
+  const kyb = await getKybState(session.stellarAddress);
+  if (kyb && kyb.status !== 'Accepted') redirect('/business/verify');
   const address = session.stellarAddress;
   const { source, passport } = await getBorrowerPassport(address);
 

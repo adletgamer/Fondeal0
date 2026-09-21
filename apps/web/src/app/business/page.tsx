@@ -7,12 +7,16 @@ import { DataSourceBadge } from '@/components/data-source-badge';
 import { PassportV2 } from '@/components/passport-v2';
 import { getBorrowerPassport, getBusinessOpportunities } from '@/lib/data/opportunities';
 import { getSession } from '@/lib/auth/session';
+import { getKybState } from '@/lib/data/kyb';
+import { getWalletSummary } from '@/lib/wallet/ledger';
+import { BalanceCard } from '@/components/balance-card';
 import { Calendar, Coins, Plus, ShieldCheck } from '@/components/icons';
 
 const TABS = [
   { href: '/business', label: 'Dashboard' },
   { href: '/business/new', label: 'New request' },
   { href: '/business/passport', label: 'Passport' },
+  { href: '/business/verify', label: 'Verification' },
 ];
 
 const BAND_ORDER = Object.values(RiskBand);
@@ -28,6 +32,9 @@ export default async function BusinessDashboard() {
   const session = await getSession();
   if (!session?.stellarAddress) redirect('/onboarding');
   const address = session.stellarAddress;
+  const kyb = await getKybState(address);
+  if (kyb && kyb.status !== 'Accepted') redirect('/business/verify');
+  const wallet = await getWalletSummary(address);
 
   const [{ source: passportSource, passport }, { source: loansSource, opportunities }] =
     await Promise.all([getBorrowerPassport(address), getBusinessOpportunities(address)]);
@@ -72,6 +79,8 @@ export default async function BusinessDashboard() {
           <div className="mb-6">
             <WalletStatusBar />
           </div>
+
+          <BalanceCard summary={wallet} className="mb-6" />
 
           <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
             <PassportV2

@@ -5,6 +5,7 @@ import { RepayForm } from '@/components/repay-form';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { getOpportunityDetail, getRepaidSoFar } from '@/lib/data/opportunities';
 import { getSession } from '@/lib/auth/session';
+import { getWalletSummary } from '@/lib/wallet/ledger';
 import { Calendar } from '@/components/icons';
 
 export const dynamic = 'force-dynamic';
@@ -38,6 +39,7 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ id:
   const repaidSoFar =
     opportunity.status === 'Repaid' ? totalDue : await getRepaidSoFar(opportunity.id);
   const remaining = Math.max(0, totalDue - repaidSoFar);
+  const wallet = await getWalletSummary(session.stellarAddress);
 
   return (
     <>
@@ -119,7 +121,11 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ id:
 
             <div className="grid content-start gap-6">
               {opportunity.status === 'Funded' || opportunity.status === 'Active' ? (
-                <RepayForm opportunityId={opportunity.id} remaining={remaining} />
+                <RepayForm
+                  opportunityId={opportunity.id}
+                  remaining={remaining}
+                  balanceUsdc={wallet?.balanceUsdc ?? null}
+                />
               ) : opportunity.status === 'Repaid' ? (
                 <Card className="p-6">
                   <h2 className="text-lg font-semibold text-emerald-700">Fully repaid</h2>

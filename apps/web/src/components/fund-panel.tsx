@@ -2,7 +2,12 @@
 
 import { useMemo, useState, type FormEvent } from 'react';
 import { Button, Card, Field } from '@fondealo/ui';
-import { EscrowClient, getNetworkConfig, submitSignedTransaction, transactionHashHex } from '@fondealo/sdk';
+import {
+  EscrowClient,
+  getNetworkConfig,
+  submitSignedTransaction,
+  transactionHashHex,
+} from '@fondealo/sdk';
 import { useSignRawHash } from '@privy-io/react-auth/extended-chains';
 import { useStellarWallet } from '@/hooks/use-stellar-wallet';
 import { fundOpportunityOnChainAware, type ActionResult } from '@/lib/actions/opportunities';
@@ -22,12 +27,14 @@ export function FundPanel({
   aprBps,
   termDays,
   isOpen,
+  balanceUsdc,
 }: {
   opportunityId: string;
   remaining: number;
   aprBps: number;
   termDays: number;
   isOpen: boolean;
+  balanceUsdc: number | null;
 }) {
   const { stellarAddress } = useStellarWallet();
   const { signRawHash } = useSignRawHash();
@@ -75,13 +82,14 @@ export function FundPanel({
 
     const formData = new FormData();
     formData.set('opportunityId', opportunityId);
-    formData.set('investorAddress', stellarAddress);
     formData.set('amount', String(amount));
     const dbResult = await fundOpportunityOnChainAware(null, formData);
 
     setPending(false);
     setResult(dbResult.ok ? { ok: true, message: onChainMessage ?? dbResult.message } : dbResult);
   }
+
+  const insufficient = balanceUsdc !== null && amount > balanceUsdc;
 
   if (!isOpen) {
     return (
@@ -97,7 +105,17 @@ export function FundPanel({
   return (
     <Card className="p-6">
       <h2 className="text-lg font-semibold text-slate-900">Fund in USDC</h2>
-      <p className="mt-1 text-sm text-slate-500">{remaining.toLocaleString()} USDC remaining.</p>
+      <p className="mt-1 text-sm text-slate-500">
+        {remaining.toLocaleString()} USDC remaining.
+        {balanceUsdc !== null ? (
+          <>
+            {' '}
+            Your balance:{' '}
+            <strong className="text-slate-700">{balanceUsdc.toLocaleString()} USDC</strong>{' '}
+            <span className="text-slate-400">(test funds)</span>
+          </>
+        ) : null}
+      </p>
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-3">
         {stellarAddress ? (
@@ -154,7 +172,20 @@ export function FundPanel({
           </div>
         </div>
 
-        <Button type="submit" className="w-full" disabled={pending || amount <= 0 || !stellarAddress}>
+        {insufficient ? (
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Not enough balance for this amount.{' '}
+            <a href="/invest#balance" className="font-medium underline">
+              Add test funds
+            </a>
+          </p>
+        ) : null}
+
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={pending || amount <= 0 || !stellarAddress || insufficient}
+        >
           {pending ? 'Funding…' : `Fund ${amount.toLocaleString()} USDC`}
         </Button>
 

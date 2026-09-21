@@ -6,9 +6,18 @@ import { repayOpportunity, type ActionResult } from '@/lib/actions/opportunities
 
 const initialState: ActionResult | null = null;
 
-export function RepayForm({ opportunityId, remaining }: { opportunityId: string; remaining: number }) {
+export function RepayForm({
+  opportunityId,
+  remaining,
+  balanceUsdc,
+}: {
+  opportunityId: string;
+  remaining: number;
+  balanceUsdc: number | null;
+}) {
   const [state, formAction, pending] = useActionState(repayOpportunity, initialState);
   const [amount, setAmount] = useState(remaining);
+  const insufficient = balanceUsdc !== null && amount > balanceUsdc;
 
   if (remaining <= 0) {
     return (
@@ -22,7 +31,17 @@ export function RepayForm({ opportunityId, remaining }: { opportunityId: string;
   return (
     <Card className="p-6">
       <h2 className="text-lg font-semibold text-slate-900">Make a payment</h2>
-      <p className="mt-1 text-sm text-slate-500">{remaining.toLocaleString()} USDC left to repay.</p>
+      <p className="mt-1 text-sm text-slate-500">
+        {remaining.toLocaleString()} USDC left to repay.
+        {balanceUsdc !== null ? (
+          <>
+            {' '}
+            Your balance:{' '}
+            <strong className="text-slate-700">{balanceUsdc.toLocaleString()} USDC</strong>{' '}
+            <span className="text-slate-400">(test funds)</span>
+          </>
+        ) : null}
+      </p>
 
       <form action={formAction} className="mt-4 space-y-3">
         <input type="hidden" name="opportunityId" value={opportunityId} />
@@ -47,7 +66,15 @@ export function RepayForm({ opportunityId, remaining }: { opportunityId: string;
             Pay it off ({remaining.toLocaleString()})
           </button>
         </div>
-        <Button type="submit" className="w-full" disabled={pending || amount <= 0}>
+        {insufficient ? (
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Not enough balance for this payment.{' '}
+            <a href="/business#balance" className="font-medium underline">
+              Add test funds
+            </a>
+          </p>
+        ) : null}
+        <Button type="submit" className="w-full" disabled={pending || amount <= 0 || insufficient}>
           {pending ? 'Paying…' : `Pay ${amount.toLocaleString()} USDC`}
         </Button>
         {state && !state.ok ? <p className="text-xs text-red-600">{state.error}</p> : null}

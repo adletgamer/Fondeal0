@@ -1,127 +1,222 @@
 'use server';
 
 import { prisma } from '@fondealo/database';
-import { RiskBand } from '@fondealo/types';
+import { requiredCollateral, splitProRata, type RiskBand } from '@fondealo/types';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { describeError, getSession, type Session } from '@/lib/auth/session';
+import {
+  InsufficientFundsError,
+  credit,
+  debit,
+  usdcToStroops,
+  withSerializableRetry,
+} from '@/lib/wallet/ledger';
 
 /**
  * Phase 6 (Funding Flow) backend. Real Prisma-backed reads/writes for the
  * off-chain projection — see docs/architecture.md for why Postgres is a
  * projection and Soroban stays authoritative for trust-bearing state.
  *
- * `businessAddress`/`investorAddress` here are the caller's own verified
- * Stellar address (from `getSession()` in the page, passed through a hidden
- * form field) — never an arbitrary address a client could substitute to act
- * as someone else.
+ * Every action derives "who is calling" from the verified session
+ * (`getSession()`), never from a form field: a client-supplied address would
+ * let anyone spend another wallet's balance or act as another business. Money
+ * moves through the append-only ledger (lib/wallet/ledger.ts) inside
+ * serializable transactions, so a balance check and the debit are atomic.
  */
-
-const stellarAddress = z
-  .string()
-  .trim()
-  .regex(/^G[A-Z2-7]{55}$/, 'Enter a valid Stellar public address (starts with G, 56 characters)');
 
 export type ActionResult = { ok: true; message: string } | { ok: false; error: string };
 
-const DB_UNREACHABLE =
-  'No pudimos conectar con la base de datos. Configura DATABASE_URL para probar el flujo completo — el resto del sitio sigue funcionando con datos de demo.';
+const DB_UNREACHABLE = 'We could not reach the database. Try again in a moment.';
+const SESSION_EXPIRED = 'Your session expired. Refresh the page and log in again.';
 
 function firstIssue(error: z.ZodError): string {
   return error.issues[0]?.message ?? 'Invalid input';
 }
 
+async function requireRole(
+  role: 'Business' | 'Investor',
+): Promise<{ session: Session & { stellarAddress: string } } | { error: string }> {
+  const session = await getSession();
+  if (!session?.stellarAddress) return { error: SESSION_EXPIRED };
+  if (session.role !== role) return { error: `Only ${role.toLowerCase()} accounts can do this.` };
+  return { session: session as Session & { stellarAddress: string } };
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/** Result of a transactional step: either a user-facing error or the success payload. */
+type Outcome<T> = { error: string } | ({ error?: undefined } & T);
+
+/* ------------------------------ createOpportunity ------------------------------ */
+
 const createOpportunitySchema = z.object({
-  businessAddress: stellarAddress,
-  legalName: z.string().trim().min(2, 'Legal name is required').max(120),
-  country: z.string().trim().min(2, 'Country is required').max(60),
   title: z.string().trim().min(3, 'Give the opportunity a short title').max(120),
   description: z.string().trim().max(500).default(''),
-  amount: z.coerce.number().positive('Amount must be greater than 0').max(1_000_000),
+  amount: z.coerce
+    .number()
+    .int('Use a whole number of USDC')
+    .positive('Amount must be greater than 0')
+    .max(1_000_000),
   termDays: z.coerce.number().int().positive().max(720),
   aprBps: z.coerce.number().int().min(0).max(6000),
-  riskBand: z.nativeEnum(RiskBand),
 });
 
-/** Create (or reuse) a Business by Stellar address, then open a funding opportunity. */
+/**
+ * Opens a funding opportunity for the caller's verified business and locks the
+ * collateral its Passport band requires. The band comes from the Passport
+ * projection, not the form — a tampered request can't lower its own collateral.
+ */
 export async function createOpportunity(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
+  const auth = await requireRole('Business');
+  if ('error' in auth) return { ok: false, error: auth.error };
+  const address = auth.session.stellarAddress;
+
   const parsed = createOpportunitySchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
   const data = parsed.data;
 
   try {
-    const business = await prisma.business.upsert({
-      where: { stellarAddress: data.businessAddress },
-      update: { legalName: data.legalName, country: data.country },
-      create: {
-        stellarAddress: data.businessAddress,
-        legalName: data.legalName,
-        country: data.country,
+    const business = await prisma.business.findUnique({
+      where: { stellarAddress: address },
+      include: {
+        passport: true,
+        kybSubmissions: { where: { status: 'Accepted' }, take: 1, select: { id: true } },
       },
     });
+    if (!business || business.kybSubmissions.length === 0 || !business.passport) {
+      return { ok: false, error: 'Verify your business before requesting financing.' };
+    }
+    const band: RiskBand = business.passport.riskBand;
+    const collateral = Number(requiredCollateral(String(data.amount), band));
 
-    await prisma.opportunity.create({
-      data: {
-        businessId: business.id,
-        title: data.title,
-        description: data.description,
-        amount: String(data.amount),
-        termDays: data.termDays,
-        aprBps: data.aprBps,
-        riskBand: data.riskBand,
-        status: 'Open',
-      },
+    await withSerializableRetry(async (tx) => {
+      if (collateral > 0) {
+        await debit(tx, {
+          address,
+          kind: 'Collateral',
+          amountStroops: usdcToStroops(collateral),
+          reference: `Collateral — ${data.title}`,
+        });
+      }
+      await tx.opportunity.create({
+        data: {
+          businessId: business.id,
+          title: data.title,
+          description: data.description,
+          amount: String(data.amount),
+          termDays: data.termDays,
+          aprBps: data.aprBps,
+          riskBand: band,
+          status: 'Open',
+        },
+      });
     });
 
-    revalidatePath('/invest');
-    revalidatePath('/business');
-    return { ok: true, message: 'Opportunity created — it is now open for funding.' };
-  } catch {
+    revalidatePath('/invest', 'layout');
+    revalidatePath('/business', 'layout');
+    return {
+      ok: true,
+      message: `Opportunity created — ${collateral.toLocaleString()} USDC collateral locked, now open for funding.`,
+    };
+  } catch (err) {
+    if (err instanceof InsufficientFundsError) {
+      return {
+        ok: false,
+        error: `You need enough balance to lock the collateral. ${err.message} Add test funds and try again.`,
+      };
+    }
+    console.error('[createOpportunity] failed:', describeError(err));
     return { ok: false, error: DB_UNREACHABLE };
   }
 }
 
+/* ------------------------------ fundOpportunity ------------------------------ */
+
 const fundOpportunitySchema = z.object({
   opportunityId: z.string().min(1),
-  investorAddress: stellarAddress,
   amount: z.coerce.number().positive('Amount must be greater than 0'),
 });
 
-/** Record a funding contribution; flips the opportunity to Funded once fully covered. */
+/** Debits the investor's balance and records the funding; on full coverage the business receives the principal. */
 export async function fundOpportunity(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
+  const auth = await requireRole('Investor');
+  if ('error' in auth) return { ok: false, error: auth.error };
+  const investor = auth.session.stellarAddress;
+
   const parsed = fundOpportunitySchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
-  const { opportunityId, investorAddress, amount } = parsed.data;
+  const { opportunityId } = parsed.data;
+  const amount = round2(parsed.data.amount);
+  if (amount <= 0) return { ok: false, error: 'Amount must be greater than 0' };
 
   try {
-    const opportunity = await prisma.opportunity.findUnique({ where: { id: opportunityId } });
-    if (!opportunity) return { ok: false, error: 'Opportunity not found.' };
-    if (opportunity.status !== 'Open') {
-      return { ok: false, error: 'This opportunity is no longer open for funding.' };
-    }
+    const outcome = await withSerializableRetry<Outcome<{ isFull: boolean }>>(async (tx) => {
+      const opportunity = await tx.opportunity.findUnique({
+        where: { id: opportunityId },
+        include: { business: { select: { stellarAddress: true } } },
+      });
+      if (!opportunity) return { error: 'Opportunity not found.' };
+      if (opportunity.status !== 'Open') {
+        return { error: 'This opportunity is no longer open for funding.' };
+      }
+      if (opportunity.business.stellarAddress === investor) {
+        return { error: 'You cannot fund your own business.' };
+      }
 
-    const target = Number(opportunity.amount);
-    const newFunded = Math.min(Number(opportunity.funded) + amount, target);
-    const isFull = newFunded >= target;
+      const target = Number(opportunity.amount);
+      const remaining = round2(target - Number(opportunity.funded));
+      if (amount > remaining + 0.001) {
+        return { error: `Only ${remaining.toLocaleString()} USDC is still open.` };
+      }
+      const newFunded = round2(Number(opportunity.funded) + amount);
+      const isFull = newFunded >= target - 0.001;
 
-    await prisma.$transaction([
-      prisma.funding.create({
-        data: { opportunityId, investor: investorAddress, amount: String(amount) },
-      }),
-      prisma.opportunity.update({
+      await debit(tx, {
+        address: investor,
+        kind: 'Fund',
+        amountStroops: usdcToStroops(amount),
+        reference: `Funded — ${opportunity.title}`,
+      });
+      await tx.funding.create({
+        data: { opportunityId, investor, amount: String(amount) },
+      });
+      await tx.opportunity.update({
         where: { id: opportunityId },
         data: { funded: String(newFunded), status: isFull ? 'Funded' : 'Open' },
-      }),
-    ]);
+      });
+      if (isFull) {
+        await credit(tx, {
+          address: opportunity.business.stellarAddress,
+          kind: 'Payout',
+          amountStroops: usdcToStroops(target),
+          reference: `Loan proceeds — ${opportunity.title}`,
+        });
+      }
+      return { isFull };
+    });
 
-    revalidatePath('/invest');
-    return { ok: true, message: isFull ? 'Fully funded! 🎉' : 'Funding recorded — thank you.' };
-  } catch {
+    if (outcome.error !== undefined) return { ok: false, error: outcome.error };
+
+    revalidatePath('/invest', 'layout');
+    revalidatePath('/business', 'layout');
+    return {
+      ok: true,
+      message: outcome.isFull
+        ? 'Fully funded — the business received the loan.'
+        : 'Funding recorded — thank you.',
+    };
+  } catch (err) {
+    if (err instanceof InsufficientFundsError) {
+      return { ok: false, error: `${err.message} Add test funds to keep going.` };
+    }
+    console.error('[fundOpportunity] failed:', describeError(err));
     return { ok: false, error: DB_UNREACHABLE };
   }
 }
@@ -152,68 +247,126 @@ export async function fundOpportunityOnChainAware(
   return fundOpportunity(prev, formData);
 }
 
+/* ------------------------------ repayOpportunity ------------------------------ */
+
 const repayOpportunitySchema = z.object({
   opportunityId: z.string().min(1),
   amount: z.coerce.number().positive('Amount must be greater than 0'),
 });
 
 /**
- * Business repayment. Off-chain equivalent of `loan_escrow.repay`: may be
- * called multiple times; the call that brings cumulative `repaid` to the
- * full amount due (principal + simple interest, same formula as
- * `buildRepaymentSchedule`) marks the loan Repaid.
+ * Business repayment. Off-chain equivalent of `loan_escrow.repay`: debits the
+ * business, pays the funders pro rata, and the call that brings cumulative
+ * `repaid` to the full amount due (principal + simple interest, same formula
+ * as `buildRepaymentSchedule`) marks the loan Repaid and returns the collateral.
  */
 export async function repayOpportunity(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
+  const auth = await requireRole('Business');
+  if ('error' in auth) return { ok: false, error: auth.error };
+  const address = auth.session.stellarAddress;
+
   const parsed = repayOpportunitySchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
-  const { opportunityId, amount } = parsed.data;
+  const { opportunityId } = parsed.data;
+  const amount = round2(parsed.data.amount);
+  if (amount <= 0) return { ok: false, error: 'Amount must be greater than 0' };
 
   try {
-    const opportunity = await prisma.opportunity.findUnique({ where: { id: opportunityId } });
-    if (!opportunity) return { ok: false, error: 'Loan not found.' };
-    if (opportunity.status !== 'Funded' && opportunity.status !== 'Active') {
-      return { ok: false, error: 'This loan is not active.' };
-    }
+    const outcome = await withSerializableRetry<Outcome<{ isFinal: boolean }>>(async (tx) => {
+      const opportunity = await tx.opportunity.findUnique({
+        where: { id: opportunityId },
+        include: { business: { select: { stellarAddress: true } } },
+      });
+      if (!opportunity || opportunity.business.stellarAddress !== address) {
+        return { error: 'Loan not found.' };
+      }
+      if (opportunity.status !== 'Funded' && opportunity.status !== 'Active') {
+        return { error: 'This loan is not active.' };
+      }
 
-    const principal = Number(opportunity.amount);
-    const totalDue =
-      principal + (principal * opportunity.aprBps * opportunity.termDays) / (10_000 * 365);
-    // `amount` is stored as a string (stroops precision), so sum in JS —
-    // Prisma's `_sum` aggregate only works on numeric column types.
-    const priorRepayments = await prisma.repayment.findMany({
-      where: { opportunityId },
-      select: { amount: true },
-    });
-    const alreadyRepaid = priorRepayments.reduce((sum, r) => sum + Number(r.amount), 0);
-    const newRepaid = alreadyRepaid + amount;
-    if (newRepaid > totalDue + 0.01) {
-      return {
-        ok: false,
-        error: `Amount exceeds what's left due (${(totalDue - alreadyRepaid).toFixed(2)} USDC).`,
-      };
-    }
-    const isFinal = newRepaid >= totalDue - 0.01;
+      const principal = Number(opportunity.amount);
+      const totalDue =
+        principal + (principal * opportunity.aprBps * opportunity.termDays) / (10_000 * 365);
+      // `amount` is stored as a string (stroops precision), so sum in JS —
+      // Prisma's `_sum` aggregate only works on numeric column types.
+      const priorRepayments = await tx.repayment.findMany({
+        where: { opportunityId },
+        select: { amount: true },
+      });
+      const alreadyRepaid = priorRepayments.reduce((sum, r) => sum + Number(r.amount), 0);
+      const newRepaid = alreadyRepaid + amount;
+      if (newRepaid > totalDue + 0.01) {
+        return {
+          error: `Amount exceeds what's left due (${round2(totalDue - alreadyRepaid).toFixed(2)} USDC).`,
+        };
+      }
+      const isFinal = newRepaid >= totalDue - 0.01;
 
-    await prisma.$transaction([
-      prisma.repayment.create({
+      await debit(tx, {
+        address,
+        kind: 'Repay',
+        amountStroops: usdcToStroops(amount),
+        reference: `Repayment — ${opportunity.title}`,
+      });
+      await tx.repayment.create({
         data: { opportunityId, amount: String(amount), onTime: true, isFinal },
-      }),
-      prisma.opportunity.update({
+      });
+      await tx.opportunity.update({
         where: { id: opportunityId },
         data: { status: isFinal ? 'Repaid' : 'Active' },
-      }),
-    ]);
+      });
+
+      // Pay the funders pro rata; the shares always sum to exactly the payment.
+      const fundings = await tx.funding.findMany({ where: { opportunityId } });
+      const shares = splitProRata(
+        usdcToStroops(amount),
+        fundings.map((f) => usdcToStroops(Number(f.amount))),
+      );
+      for (const [i, f] of fundings.entries()) {
+        const share = shares[i] ?? BigInt(0);
+        if (share > BigInt(0)) {
+          await credit(tx, {
+            address: f.investor,
+            kind: 'Payout',
+            amountStroops: share,
+            reference: `Repayment received — ${opportunity.title}`,
+          });
+        }
+      }
+
+      if (isFinal) {
+        const collateral = Number(
+          requiredCollateral(String(Math.round(principal)), opportunity.riskBand),
+        );
+        if (collateral > 0) {
+          await credit(tx, {
+            address,
+            kind: 'CollateralReturn',
+            amountStroops: usdcToStroops(collateral),
+            reference: `Collateral returned — ${opportunity.title}`,
+          });
+        }
+      }
+      return { isFinal };
+    });
+
+    if (outcome.error !== undefined) return { ok: false, error: outcome.error };
 
     revalidatePath(`/business/loans/${opportunityId}`);
-    revalidatePath('/business');
+    revalidatePath('/business', 'layout');
+    revalidatePath('/invest', 'layout');
     return {
       ok: true,
-      message: isFinal ? 'Loan fully repaid — collateral returned.' : 'Payment recorded.',
+      message: outcome.isFinal ? 'Loan fully repaid — collateral returned.' : 'Payment recorded.',
     };
-  } catch {
+  } catch (err) {
+    if (err instanceof InsufficientFundsError) {
+      return { ok: false, error: `${err.message} Add test funds to make this payment.` };
+    }
+    console.error('[repayOpportunity] failed:', describeError(err));
     return { ok: false, error: DB_UNREACHABLE };
   }
 }
