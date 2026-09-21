@@ -3,8 +3,8 @@ import { Badge, Button, Card, Container } from '@fondealo/ui';
 import { KybStatus, RiskBand, type Passport } from '@fondealo/types';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
-import { ScoreGauge } from '@/components/score-gauge';
 import { PassportV2 } from '@/components/passport-v2';
+import { ReputationRing } from '@/components/reputation-ring';
 import {
   ArrowRight,
   Building,
@@ -48,7 +48,8 @@ function Hero() {
             Stellar · Soroban · USDC
           </Badge>
           <h1 className="font-display text-4xl font-bold leading-[1.05] sm:text-5xl lg:text-6xl">
-            On-chain credit that <span className="text-gradient">travels with the business</span>.
+            <span className="text-gradient">Portable credit infrastructure</span> for Latin American
+            businesses.
           </h1>
           <p className="mt-6 max-w-xl text-lg text-slate-300">
             Fondealo gives every Latin American SME a reusable{' '}
@@ -98,7 +99,7 @@ const SHOWCASE_PASSPORT: Passport = {
   loansRepaid: 8,
   onTimeStreak: 8,
   issuedAt: 1_735_689_600,
-  updatedAt: 1_766_000_000,
+  updatedAt: 1_772_323_200,
   dataHash: '0x…',
 };
 
@@ -107,7 +108,17 @@ function PassportShowcase() {
   return (
     <div className="relative w-full max-w-sm">
       <div className="absolute -inset-6 rounded-[2.5rem] bg-brand-500/20 blur-3xl" aria-hidden />
-      <PassportV2 passport={SHOWCASE_PASSPORT} variant="showcase" className="relative" />
+      <PassportV2
+        passport={SHOWCASE_PASSPORT}
+        variant="showcase"
+        holder={{ name: 'Café Andino SAC', place: 'Peru · Retail' }}
+        stats={[
+          { k: 'Repaid', v: '8 / 8' },
+          { k: 'On-time', v: '94%' },
+          { k: 'History', v: '14 mo' },
+        ]}
+        className="relative"
+      />
     </div>
   );
 }
@@ -236,15 +247,16 @@ function Differentiators() {
 
           <Card className="overflow-hidden">
             <div className="grid gap-6 p-8 sm:grid-cols-[auto_1fr] sm:items-center">
-              <div className="justify-self-center">
-                <ScoreGauge score={640} band={RiskBand.C} size={150} />
+              <div className="w-full max-w-[290px] justify-self-center rounded-2xl bg-night-950 p-5">
+                <ReputationRing passport={SHOWCASE_PASSPORT} size={190} />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-slate-900">Credit Reputation Score</h3>
+                <h3 className="text-xl font-semibold text-slate-900">Credit Reputation Ring</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                  Deterministic and on-chain. Each successful repayment compounds it — with
-                  diminishing returns near the cap. Self-funded round-trips are score-neutral, so
-                  reputation can&apos;t be gamed.
+                  One deterministic on-chain score, read through four layers: Identity, Repayment,
+                  Activity and Longevity. Each successful repayment compounds it — with diminishing
+                  returns near the cap. Self-funded round-trips are score-neutral, so reputation
+                  can&apos;t be gamed.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2 text-xs">
                   {['Portable across loans', 'Anti-gaming', 'Transparent formula'].map((t) => (

@@ -72,3 +72,53 @@ export const passportSchema = z.object({
   dataHash: z.string(),
 });
 export type Passport = z.infer<typeof passportSchema>;
+
+/* ---------------------------- Reputation layers ---------------------------- */
+
+/** Loans at which the Activity layer is considered full. */
+export const REPUTATION_ACTIVITY_TARGET_LOANS = 10;
+/** Months of Passport history at which the Longevity layer is considered full. */
+export const REPUTATION_LONGEVITY_TARGET_MONTHS = 24;
+const SECONDS_PER_MONTH = 2_629_800; // 30.4375 days
+
+export const REPUTATION_LAYER_IDS = ['identity', 'repayment', 'activity', 'longevity'] as const;
+export type ReputationLayerId = (typeof REPUTATION_LAYER_IDS)[number];
+
+export interface ReputationLayer {
+  id: ReputationLayerId;
+  /** 0–100 fill of this layer. */
+  value: number;
+}
+
+/** Whole months between issuance and the last on-chain update (deterministic — no wall clock). */
+export function passportHistoryMonths(p: Pick<Passport, 'issuedAt' | 'updatedAt'>): number {
+  return Math.max(0, Math.round((p.updatedAt - p.issuedAt) / SECONDS_PER_MONTH));
+}
+
+const clampPct = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
+
+/**
+ * Presentation layers for the Credit Reputation Ring. These are *views* over
+ * real Passport fields, not extra on-chain score components: the on-chain
+ * score (`Passport.score`) stays a single deterministic number.
+ *
+ * - identity:  KYB Accepted = 100, Processing = 50, otherwise 0
+ * - repayment: share of loans repaid
+ * - activity:  loans taken, full at REPUTATION_ACTIVITY_TARGET_LOANS
+ * - longevity: months of history, full at REPUTATION_LONGEVITY_TARGET_MONTHS
+ */
+export function reputationLayers(p: Passport): ReputationLayer[] {
+  const identity = p.kybStatus === 'Accepted' ? 100 : p.kybStatus === 'Processing' ? 50 : 0;
+  return [
+    { id: 'identity', value: identity },
+    {
+      id: 'repayment',
+      value: p.loansTotal > 0 ? clampPct((p.loansRepaid / p.loansTotal) * 100) : 0,
+    },
+    { id: 'activity', value: clampPct((p.loansTotal / REPUTATION_ACTIVITY_TARGET_LOANS) * 100) },
+    {
+      id: 'longevity',
+      value: clampPct((passportHistoryMonths(p) / REPUTATION_LONGEVITY_TARGET_MONTHS) * 100),
+    },
+  ];
+}

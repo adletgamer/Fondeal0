@@ -44,7 +44,14 @@ export default async function BusinessPassportPage() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-            <PassportV2 passport={passport} />
+            <PassportV2
+              passport={passport}
+              explorerUrl={
+                source === 'chain'
+                  ? `https://stellar.expert/explorer/testnet/account/${passport.business}`
+                  : undefined
+              }
+            />
 
             <div className="grid content-start gap-6">
               <ScoreBreakdown passport={passport} />

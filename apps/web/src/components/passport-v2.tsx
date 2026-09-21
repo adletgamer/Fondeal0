@@ -4,13 +4,18 @@ import {
   useEffect,
   useRef,
   useState,
-  type ComponentType,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
-import { KybStatus, SCORE_MAX, type Passport, type RiskBand } from '@fondealo/types';
-import { ScoreRing } from './score-ring';
-import { Check, Repeat, ShieldCheck, Sparkle } from './icons';
+import {
+  KybStatus,
+  SCORE_MAX,
+  passportHistoryMonths,
+  type Passport,
+  type RiskBand,
+} from '@fondealo/types';
+import { ReputationRing } from './reputation-ring';
+import { Check, ShieldCheck, Sparkle } from './icons';
 
 /**
  * Business Passport V2 — the product's signature object. Not a form: a
@@ -37,16 +42,30 @@ export interface PassportV2Props {
   passport: Passport;
   /** `showcase` floats and never shows the log-out affordances; `full` is the dashboard credential. */
   variant?: 'full' | 'showcase';
+  /** Business identity line (legal name + place). Omitted when the name isn't known. */
+  holder?: { name: string; place: string };
+  /** Overrides the default stat trio (Repaid · Streak · History). */
+  stats?: { k: string; v: string }[];
+  /** When set, "View on-chain" links to this explorer page. */
+  explorerUrl?: string;
   className?: string;
 }
 
-export function PassportV2({ passport, variant = 'full', className }: PassportV2Props) {
+export function PassportV2({
+  passport,
+  variant = 'full',
+  holder,
+  stats,
+  explorerUrl,
+  className,
+}: PassportV2Props) {
   const band = BAND_META[passport.riskBand];
   const verified = passport.kybStatus === KybStatus.Accepted;
-  const issued = new Date(passport.issuedAt * 1000).toLocaleDateString('en-US', {
-    month: 'short',
-    year: 'numeric',
-  });
+  const statList = stats ?? [
+    { k: 'Repaid', v: `${passport.loansRepaid}/${passport.loansTotal}` },
+    { k: 'Streak', v: String(passport.onTimeStreak) },
+    { k: 'History', v: `${passportHistoryMonths(passport)} mo` },
+  ];
 
   const cardRef = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState({ rx: 0, ry: 0, gx: 50, gy: 0 });
@@ -114,6 +133,21 @@ export function PassportV2({ passport, variant = 'full', className }: PassportV2
             <Contactless />
           </div>
 
+          {/* ---- holder ---- */}
+          {holder ? (
+            <div className="mt-5 flex items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/[0.06] font-display text-sm font-bold text-brand-200">
+                {holder.name.slice(0, 1)}
+              </span>
+              <div>
+                <div className="font-display text-[15px] font-semibold leading-tight text-white">
+                  {holder.name}
+                </div>
+                <div className="mt-0.5 text-[11px] text-white/50">{holder.place}</div>
+              </div>
+            </div>
+          ) : null}
+
           {/* ---- chip + verification ---- */}
           <div className="mt-5 flex items-center justify-between">
             <Chip />
@@ -130,32 +164,30 @@ export function PassportV2({ passport, variant = 'full', className }: PassportV2
             </span>
           </div>
 
-          {/* ---- score dial ---- */}
-          <div className="relative mt-4 grid place-items-center">
-            <ScoreRing score={passport.score} band={passport.riskBand} size={196} label={false} />
-            <div className="pointer-events-none absolute flex flex-col items-center">
-              <span className="font-display text-[2.9rem] font-bold leading-none tabular-nums text-white">
-                {displayScore}
-              </span>
-              <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.24em] text-white/40">
-                Credit score / {SCORE_MAX}
-              </span>
-              <RiskBadge band={passport.riskBand} label={band.label} />
-            </div>
-          </div>
-
-          {/* ---- trust indicators ---- */}
-          <div className="mt-5 grid grid-cols-3 gap-2">
-            <Trust icon={ShieldCheck} label="KYB verified" on={verified} />
-            <Trust icon={Sparkle} label="On-chain" on />
-            <Trust icon={Repeat} label="Portable" on />
+          {/* ---- credit reputation ring ---- */}
+          <div className="mt-4">
+            <ReputationRing
+              passport={passport}
+              size={196}
+              center={
+                <>
+                  <span className="font-display text-[2.9rem] font-bold leading-none tabular-nums text-white">
+                    {displayScore}
+                  </span>
+                  <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.24em] text-white/40">
+                    Credit score / {SCORE_MAX}
+                  </span>
+                  <RiskBadge band={passport.riskBand} label={band.label} />
+                </>
+              }
+            />
           </div>
 
           {/* ---- stats ---- */}
           <dl className="mt-4 grid grid-cols-3 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] text-center">
-            <Stat k="Repaid" v={`${passport.loansRepaid}/${passport.loansTotal}`} />
-            <Stat k="Streak" v={String(passport.onTimeStreak)} border />
-            <Stat k="Since" v={issued} />
+            {statList.map((st, i) => (
+              <Stat key={st.k} k={st.k} v={st.v} border={i === 1} />
+            ))}
           </dl>
 
           {/* ---- footer ---- */}
@@ -167,8 +199,18 @@ export function PassportV2({ passport, variant = 'full', className }: PassportV2
               <span className="fdo-passport__seal">
                 <Check width={11} height={11} />
               </span>
-              Verified on Stellar
+              Stellar verified
             </span>
+            {explorerUrl ? (
+              <a
+                href={explorerUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] font-semibold uppercase tracking-wider text-white/60 transition-colors hover:text-white"
+              >
+                View on-chain ↗
+              </a>
+            ) : null}
           </div>
         </div>
       </div>
@@ -184,30 +226,6 @@ function RiskBadge({ band, label }: { band: RiskBand; label: string }) {
       <span className="fdo-riskbadge__grade">{band}</span>
       <span className="fdo-riskbadge__label">Risk band · {label}</span>
     </span>
-  );
-}
-
-function Trust({
-  icon: Icon,
-  label,
-  on,
-}: {
-  icon: ComponentType<{ width?: number; height?: number; className?: string }>;
-  label: string;
-  on: boolean;
-}) {
-  return (
-    <div
-      className={[
-        'flex flex-col items-center gap-1 rounded-xl border px-1.5 py-2 text-center text-[10px] font-medium',
-        on
-          ? 'border-brand-400/25 bg-brand-400/[0.07] text-white/80'
-          : 'border-white/10 bg-white/[0.02] text-white/35',
-      ].join(' ')}
-    >
-      <Icon width={14} height={14} className={on ? 'text-brand-300' : 'text-white/30'} />
-      {label}
-    </div>
   );
 }
 
