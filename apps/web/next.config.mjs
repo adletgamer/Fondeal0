@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin';
 import { fileURLToPath } from 'node:url';
 
 // Monorepo: the single source of truth for secrets is the repo-root .env.
@@ -13,6 +14,12 @@ const nextConfig = {
   reactStrictMode: true,
   // Compile workspace packages from source (they ship .ts/.tsx, not built dist).
   transpilePackages: ['@fondealo/ui', '@fondealo/sdk', '@fondealo/types', '@fondealo/database'],
+  // pnpm + monorepo: Next's file tracing doesn't copy Prisma's native query
+  // engine into the server bundle, so every DB call failed on Vercel.
+  webpack: (config, { isServer }) => {
+    if (isServer) config.plugins = [...config.plugins, new PrismaPlugin()];
+    return config;
+  },
 };
 
 export default nextConfig;

@@ -6,7 +6,9 @@
 // descriptions, UX metadata). Only `data_hash` commitments bridge the two.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Vercel runs on Amazon Linux (rhel-openssl-3.0.x); local dev is Windows/macOS.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
