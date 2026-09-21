@@ -17,6 +17,7 @@ The **repo-root `.env`** (gitignored) is the single source of truth locally.
 | --- | --- | --- |
 | `DATABASE_URL` | server | Pooled Neon connection (`-pooler` host) used by Prisma at runtime. |
 | `DATABASE_URL_UNPOOLED` | server | Direct Neon connection (no `-pooler`) used as `directUrl` by Prisma Migrate. |
+| `NEON_AUTH_JWKS_URL` | server | Public JWKS of Neon Auth / the Neon Data API (`…/neondb/auth/.well-known/jwks.json`). Not a secret; not read by the app today (login uses Privy) — kept for verifying Neon-issued JWTs if the Data API is adopted. |
 | `NEXT_PUBLIC_PRIVY_APP_ID` | public | Privy app id. |
 | `PRIVY_APP_SECRET` | server | Verifies Privy identity tokens. Never `NEXT_PUBLIC_`. |
 | `NEXT_PUBLIC_STELLAR_NETWORK`, `_SOROBAN_RPC_URL`, `_HORIZON_URL`, `_NETWORK_PASSPHRASE` | public | Stellar/Soroban endpoints (used by `@fondealo/sdk`, not by login). |
@@ -46,6 +47,15 @@ sandboxed shells block Postgres ports):
 pnpm --filter @fondealo/database db:status   # what is pending
 pnpm --filter @fondealo/database db:deploy   # apply pending migrations
 ```
+
+**If the shell cannot reach port 5432** (`P1001` even though credentials are fine), Neon also
+accepts SQL over HTTPS (port 443). The `20260921000000_kyb_and_ledger` migration was applied
+that way: the committed `migration.sql` was sent in one transaction to
+`https://<pooler-host>/sql` (header `Neon-Connection-String`), then a row was inserted into
+`_prisma_migrations` with `checksum = sha256(migration.sql with LF line endings)` — the same
+value `prisma migrate deploy` would store, so `db:status` stays consistent. Verify afterwards
+by querying `_prisma_migrations` and `information_schema`. Only do this for reviewed,
+additive migrations.
 
 Prisma selects every column of a model, so deploying code whose schema adds columns
 (e.g. `Business.taxId`) **before** the migration is applied breaks existing queries.
