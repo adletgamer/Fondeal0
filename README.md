@@ -91,7 +91,7 @@ Next.js **15** · React **19** · TypeScript **5.7** · PostgreSQL + Prisma **6*
 ```bash
 # prerequisites: Node 22, pnpm 10, Rust (stable) + wasm target, and stellar-cli for deploys
 pnpm install                    # install JS workspaces
-cp .env.example apps/web/.env.local
+cp .env.example .env         # repo-root .env is the single source of secrets (see docs/deployment-and-database.md)
 
 # --- contracts ---
 pnpm contracts:test             # cargo test (native)
@@ -99,6 +99,7 @@ pnpm contracts:build            # build wasm (needs wasm32-unknown-unknown targe
 
 # --- web / packages ---
 pnpm --filter @fondealo/database db:generate   # generate Prisma client
+pnpm --filter @fondealo/database db:deploy     # apply migrations to the database in .env
 pnpm dev                        # run the web app
 pnpm lint && pnpm typecheck     # what CI runs
 ```
