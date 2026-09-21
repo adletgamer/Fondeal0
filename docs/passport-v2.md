@@ -14,18 +14,20 @@
 
 ## What shipped
 
-`components/passport-v2.tsx` + `components/reputation-ring.tsx` + `~200` lines of scoped CSS in
+`components/passport-v2.tsx` + `components/score-ring.tsx` + `~200` lines of scoped CSS in
 `app/globals.css` (`.fdo-passport*`).
 
 - **Glassmorphism** — `backdrop-blur` inner panel over a layered carbon gradient.
 - **Animated gradient** — a registered `@property --rim-a` conic gradient rim that slowly rotates (emerald → gold), plus a cursor-tracked radial highlight.
 - **Verification effects** — a holographic sheen that sweeps on hover, an EMV-style chip, a contactless glyph, a "Verified on Stellar" seal.
-- **Credit Reputation Ring** — `ReputationRing`: four concentric 270° arcs (Identity, Repayment, Activity, Longevity) with a staggered CSS draw-in and a count-up on the score. The legend ("Credit signals") is interactive: hovering or focusing a row spotlights its ring and shows that layer's value in the centre. See below.
+- **Dynamic score visualisation** — `ScoreRing`: a 270° gradient arc with an SVG glow filter, tick ring, and a CSS draw-in; a `requestAnimationFrame` count-up on the number. Optional "Credit signals" rows (`signals` prop) sit under the stats, as in the landing demo.
 - **Risk badge** — a metallic pill, colour-mapped per band (A→E), with a plain-language grade (`Prime`, `Strong`, `Building`, `Watch`, `High risk`).
 - **Reputation timeline** — the existing "Reputation journey" card on `/business/passport` is kept and feeds off the same passport data (`loansRepaid`, `onTimeStreak`).
 - **Interactive states** — pointer-tracked 3D tilt + parallax highlight; hover elevation + emerald glow; all disabled for `pointerType === 'touch'` and under `prefers-reduced-motion`.
 
-## Credit Reputation Ring — layers
+## Credit Reputation Ring (landing section, not the passport)
+
+The multi-layer ring lives in the landing page's dedicated "Credit Reputation Ring" section (`components/reputation-ring.tsx`) to explain how reputation is read; the Passport card itself keeps the single-score `ScoreRing`. The four-layer ring is interactive: hovering or focusing a legend row spotlights its ring and shows that layer's value in the centre.
 
 The on-chain score stays **one deterministic number** (`Passport.score`, see `docs/score-spec.md`). The ring is a *view* over real Passport fields via `reputationLayers()` in `@fondealo/types` (unit-tested), so nothing on it is fabricated:
 

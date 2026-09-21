@@ -117,6 +117,11 @@ function PassportShowcase() {
           { k: 'On-time', v: '94%' },
           { k: 'History', v: '14 mo' },
         ]}
+        signals={[
+          { k: 'Payments', v: '+32' },
+          { k: 'KYB', v: 'Verified' },
+          { k: 'Repayment', v: '+18' },
+        ]}
         className="relative"
       />
     </div>
@@ -258,6 +263,31 @@ function Differentiators() {
                   returns near the cap. Self-funded round-trips are score-neutral, so reputation
                   can&apos;t be gamed.
                 </p>
+                <dl className="mt-4 space-y-2.5 text-sm">
+                  {[
+                    [
+                      'Identity',
+                      'KYB verified by a provider. PII stays off-chain; only a hash commitment goes on-chain.',
+                    ],
+                    [
+                      'Repayment',
+                      'Share of loans repaid. On-time, investor-funded repayments are what raise the score.',
+                    ],
+                    [
+                      'Activity',
+                      'How many loans the business has actually taken through Fondealo.',
+                    ],
+                    [
+                      'Longevity',
+                      'How long the Passport has been building history — reputation takes time.',
+                    ],
+                  ].map(([k, v]) => (
+                    <div key={k} className="grid grid-cols-[84px_1fr] gap-3">
+                      <dt className="font-semibold text-slate-900">{k}</dt>
+                      <dd className="text-slate-500">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
                 <div className="mt-4 flex flex-wrap gap-2 text-xs">
                   {['Portable across loans', 'Anti-gaming', 'Transparent formula'].map((t) => (
                     <span

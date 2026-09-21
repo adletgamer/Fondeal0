@@ -14,7 +14,7 @@ import {
   type Passport,
   type RiskBand,
 } from '@fondealo/types';
-import { ReputationRing } from './reputation-ring';
+import { ScoreRing } from './score-ring';
 import { Check, ShieldCheck, Sparkle } from './icons';
 
 /**
@@ -46,6 +46,8 @@ export interface PassportV2Props {
   holder?: { name: string; place: string };
   /** Overrides the default stat trio (Repaid · Streak · History). */
   stats?: { k: string; v: string }[];
+  /** Optional "Credit signals" rows shown under the stats (used by the landing demo). */
+  signals?: { k: string; v: string }[];
   /** When set, "View on-chain" links to this explorer page. */
   explorerUrl?: string;
   className?: string;
@@ -56,6 +58,7 @@ export function PassportV2({
   variant = 'full',
   holder,
   stats,
+  signals,
   explorerUrl,
   className,
 }: PassportV2Props) {
@@ -164,23 +167,18 @@ export function PassportV2({
             </span>
           </div>
 
-          {/* ---- credit reputation ring ---- */}
-          <div className="mt-4">
-            <ReputationRing
-              passport={passport}
-              size={196}
-              center={
-                <>
-                  <span className="font-display text-[2.9rem] font-bold leading-none tabular-nums text-white">
-                    {displayScore}
-                  </span>
-                  <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.24em] text-white/40">
-                    Credit score / {SCORE_MAX}
-                  </span>
-                  <RiskBadge band={passport.riskBand} label={band.label} />
-                </>
-              }
-            />
+          {/* ---- score dial ---- */}
+          <div className="relative mt-4 grid place-items-center">
+            <ScoreRing score={passport.score} band={passport.riskBand} size={196} label={false} />
+            <div className="pointer-events-none absolute flex flex-col items-center">
+              <span className="font-display text-[2.9rem] font-bold leading-none tabular-nums text-white">
+                {displayScore}
+              </span>
+              <span className="mt-1 text-[10px] font-medium uppercase tracking-[0.24em] text-white/40">
+                Credit score / {SCORE_MAX}
+              </span>
+              <RiskBadge band={passport.riskBand} label={band.label} />
+            </div>
           </div>
 
           {/* ---- stats ---- */}
@@ -189,6 +187,24 @@ export function PassportV2({
               <Stat key={st.k} k={st.k} v={st.v} border={i === 1} />
             ))}
           </dl>
+
+          {/* ---- credit signals ---- */}
+          {signals?.length ? (
+            <div className="mt-4">
+              <div className="text-[9px] font-semibold uppercase tracking-[0.24em] text-white/35">
+                Credit signals
+              </div>
+              <ul className="mt-2 space-y-1.5">
+                {signals.map((sig) => (
+                  <li key={sig.k} className="flex items-center gap-2 text-[12px]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-brand-400" aria-hidden />
+                    <span className="flex-1 text-white/65">{sig.k}</span>
+                    <span className="font-display font-semibold text-white">{sig.v}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           {/* ---- footer ---- */}
           <div className="mt-4 flex items-center justify-between">
