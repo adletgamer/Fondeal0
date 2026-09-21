@@ -14,14 +14,18 @@
     "test": "echo \"no unit tests yet\" && exit 0",
     "build": "prisma generate && tsc",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:migrate": "dotenv -e ../../.env -- prisma migrate dev",
+    "db:studio": "dotenv -e ../../.env -- prisma studio",
+    "db:validate": "dotenv -e ../../.env -- prisma validate",
+    "db:status": "dotenv -e ../../.env -- prisma migrate status",
+    "db:deploy": "dotenv -e ../../.env -- prisma migrate deploy"
   },
   "dependencies": {
     "@prisma/client": "^6.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
+    "dotenv-cli": "^11.0.0",
     "prisma": "^6.2.0",
     "typescript": "^5.7.3"
   }
