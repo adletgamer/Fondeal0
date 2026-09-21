@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { prisma } from '@fondealo/database';
-import { getSession } from '@/lib/auth/session';
+import { describeError, getSession } from '@/lib/auth/session';
 
 const SECTION_FOR_ROLE = { Business: '/business', Investor: '/invest' } as const;
 
@@ -58,7 +58,8 @@ export async function chooseRole(role: 'Business' | 'Investor'): Promise<ChooseR
       data: { role },
     });
     updatedCount = result.count;
-  } catch {
+  } catch (err) {
+    console.error('[chooseRole] could not persist role:', describeError(err));
     return { error: "Couldn't save your role — the database may be unreachable. Try again." };
   }
 

@@ -179,7 +179,8 @@ export async function repayOpportunity(
     }
 
     const principal = Number(opportunity.amount);
-    const totalDue = principal + (principal * opportunity.aprBps * opportunity.termDays) / (10_000 * 365);
+    const totalDue =
+      principal + (principal * opportunity.aprBps * opportunity.termDays) / (10_000 * 365);
     // `amount` is stored as a string (stroops precision), so sum in JS —
     // Prisma's `_sum` aggregate only works on numeric column types.
     const priorRepayments = await prisma.repayment.findMany({
@@ -189,7 +190,10 @@ export async function repayOpportunity(
     const alreadyRepaid = priorRepayments.reduce((sum, r) => sum + Number(r.amount), 0);
     const newRepaid = alreadyRepaid + amount;
     if (newRepaid > totalDue + 0.01) {
-      return { ok: false, error: `Amount exceeds what's left due (${(totalDue - alreadyRepaid).toFixed(2)} USDC).` };
+      return {
+        ok: false,
+        error: `Amount exceeds what's left due (${(totalDue - alreadyRepaid).toFixed(2)} USDC).`,
+      };
     }
     const isFinal = newRepaid >= totalDue - 0.01;
 
@@ -213,4 +217,3 @@ export async function repayOpportunity(
     return { ok: false, error: DB_UNREACHABLE };
   }
 }
-

@@ -1,6 +1,12 @@
 import { prisma } from '@fondealo/database';
 import { EscrowClient, PassportClient } from '@fondealo/sdk';
-import { COLLATERAL_CONFIG_V1, KybStatus, RiskBand, type Opportunity, type Passport } from '@fondealo/types';
+import {
+  COLLATERAL_CONFIG_V1,
+  KybStatus,
+  RiskBand,
+  type Opportunity,
+  type Passport,
+} from '@fondealo/types';
 
 /**
  * Three-tier read layer for the investor/business screens: try the deployed

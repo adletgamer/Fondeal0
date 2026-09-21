@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { usePrivy, useIdentityToken } from '@privy-io/react-auth';
+import { usePrivy } from '@privy-io/react-auth';
 import { syncSession, clearSession } from '@/lib/actions/session';
 
 /**
@@ -10,28 +10,27 @@ import { syncSession, clearSession } from '@/lib/actions/session';
  * apps/web/src/lib/auth/session.ts) in step with Privy's client-side auth
  * state. Mounted once, app-wide, inside <PrivyProviders>.
  *
- * `identityToken` from useIdentityToken() changes on login, whenever a linked
- * account changes (e.g. the Stellar wallet finishes being created), and again
- * each time Privy silently refreshes the token (~hourly) while the tab is
- * open. Every change is pushed to the server via syncSession() so
- * getSession() never reads a cookie older than the user's actual state — and
- * a failed push is retried with backoff so a dropped request doesn't strand
- * the session until the next refresh an hour later.
+ * It syncs Privy's **access token** (always issued, unlike the identity token
+ * which needs a dashboard toggle): once as soon as the user is authenticated,
+ * then every few minutes — `getAccessToken()` silently refreshes the token when
+ * it is close to expiry, so a changed value is pushed to the server before the
+ * cookie goes stale. A failed push is retried with backoff.
  *
  * Recovery: when the page was server-rendered from a stale or missing cookie
- * (token expired while the tab was idle; first paint after a hard reload
- * right after login), the first sync of this mount that actually *moves* the
- * cookie is followed by `router.refresh()`, so the server components re-run
- * against the fresh cookie instead of leaving the user stranded on a
- * logged-out view or bounced to /onboarding.
+ * (token expired while the tab was idle; first paint right after login), the
+ * first sync of this mount that actually *moves* the cookie is followed by
+ * `router.refresh()`, so the server components re-run against the fresh cookie
+ * instead of leaving the user stranded on a logged-out view.
  */
 const MAX_SYNC_RETRIES = 4;
 const RETRY_BASE_MS = 1000;
+const REFRESH_INTERVAL_MS = 4 * 60 * 1000;
 
 export function SessionSync() {
   const router = useRouter();
-  const { authenticated, ready } = usePrivy();
-  const { identityToken } = useIdentityToken();
+  const { authenticated, ready, getAccessToken } = usePrivy();
+  const getAccessTokenRef = useRef(getAccessToken);
+  getAccessTokenRef.current = getAccessToken;
   const lastSynced = useRef<string | null>(null);
   const recoveredThisMount = useRef(false);
 
@@ -47,44 +46,54 @@ export function SessionSync() {
       return;
     }
 
-    if (!identityToken || identityToken === lastSynced.current) return;
-
     let cancelled = false;
-    const token = identityToken;
-    const isFirstSyncOfMount = lastSynced.current === null;
+    const timers = new Set<number>();
+
+    const retryLater = (attempt: number) => {
+      if (attempt >= MAX_SYNC_RETRIES) return;
+      const id = window.setTimeout(
+        () => {
+          timers.delete(id);
+          if (!cancelled) void push(attempt + 1);
+        },
+        RETRY_BASE_MS * 2 ** attempt,
+      );
+      timers.add(id);
+    };
 
     const push = async (attempt: number): Promise<void> => {
+      const token = await getAccessTokenRef.current().catch(() => null);
+      if (cancelled) return;
+      if (!token) return retryLater(attempt);
+      if (token === lastSynced.current) return;
+
+      const isFirstSyncOfMount = lastSynced.current === null;
       const { ok, changed } = await syncSession(token).catch(() => ({
         ok: false,
         changed: false,
       }));
       if (cancelled) return;
-      if (ok) {
-        lastSynced.current = token;
-        // Only re-run the server render when the cookie genuinely moved and
-        // this is the first sync since the page loaded — i.e. a login or an
-        // expiry recovery, not an hourly token rotation on a page that's
-        // already authenticated.
-        if (changed && isFirstSyncOfMount && !recoveredThisMount.current) {
-          recoveredThisMount.current = true;
-          router.refresh();
-        }
-        return;
-      }
-      if (attempt < MAX_SYNC_RETRIES) {
-        const wait = RETRY_BASE_MS * 2 ** attempt;
-        window.setTimeout(() => {
-          if (!cancelled) void push(attempt + 1);
-        }, wait);
+      if (!ok) return retryLater(attempt);
+
+      lastSynced.current = token;
+      // Only re-run the server render when the cookie genuinely moved and this
+      // is the first sync since the page loaded — i.e. a login or an expiry
+      // recovery, not a routine token rotation on an already-authenticated page.
+      if (changed && isFirstSyncOfMount && !recoveredThisMount.current) {
+        recoveredThisMount.current = true;
+        router.refresh();
       }
     };
 
     void push(0);
+    const interval = window.setInterval(() => void push(0), REFRESH_INTERVAL_MS);
 
     return () => {
       cancelled = true;
+      window.clearInterval(interval);
+      timers.forEach((id) => window.clearTimeout(id));
     };
-  }, [ready, authenticated, identityToken, router]);
+  }, [ready, authenticated, router]);
 
   return null;
 }

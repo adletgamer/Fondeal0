@@ -11,10 +11,20 @@ export { SESSION_COOKIE_NAME };
  * Server-verified identity. Never trust a client-supplied address (query
  * param, form field) for "whose dashboard is this" — that was an IDOR
  * waiting to happen (anyone could open `/business?address=someone-else`).
- * This is the one legitimate source of truth: Privy's signed session cookie,
- * verified locally (no network round-trip — `getUser({idToken})` checks the
- * JWT signature before parsing it), cross-referenced with our own
- * `UserWallet` row for the role chosen during onboarding.
+ * The one legitimate source of truth is the Privy **access token** held in our
+ * own httpOnly cookie, verified against Privy's signing key on every read and
+ * cross-referenced with our `UserWallet` row for the role chosen at onboarding.
+ *
+ * Why the access token and not the identity token: the identity token only
+ * exists when "Identity tokens" is switched on in the Privy dashboard, and with
+ * it off `useIdentityToken()` is `null` forever — no cookie was ever set and
+ * every user saw "Your session expired". The access token is always issued.
+ * The Stellar address is not in it, so it is fetched once per user with
+ * `getUserById` (first login only) and then read from our own database.
+ *
+ * `<SessionSync>` reads the access token client-side and hands it to
+ * `syncSession()` (apps/web/src/lib/actions/session.ts), which verifies it and
+ * sets the cookie.
  */
 export interface Session {
   privyUserId: string;
@@ -22,24 +32,17 @@ export interface Session {
   role: UserRole | null;
 }
 
-/**
- * Our own cookie (name defined in ./session-cookie), not Privy's. Privy's
- * automatic `privy-id-token` cookie turned out to be unreliable here —
- * whether it's set at all depends on dashboard-side domain verification that
- * differs between dev and prod app tiers (see
- * docs/guide/react/configuration/cookies), and in practice it never showed
- * up on fondealo.vercel.app. Instead, `<SessionSync>` reads the identity
- * token client-side via `useIdentityToken()` — documented by Privy
- * specifically for "passing the identity token in your requests" — and hands
- * it to `syncSession()` (apps/web/src/lib/actions/session.ts), which verifies
- * it and sets this cookie itself. That makes session persistence entirely
- * our own responsibility instead of a guess about Privy's cookie behavior.
- */
 export function privyClient(): PrivyClient | null {
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
   const appSecret = process.env.PRIVY_APP_SECRET;
   if (!appId || !appSecret) return null;
   return new PrivyClient(appId, appSecret);
+}
+
+export function describeError(err: unknown): string {
+  const e = err as { code?: string; message?: string } | null;
+  const msg = e?.message ?? String(err);
+  return `${e?.code ? `[${e.code}] ` : ''}${msg}`.slice(0, 300);
 }
 
 function extractStellarAddress(user: { linkedAccounts: unknown[] }): string | null {
@@ -50,10 +53,9 @@ function extractStellarAddress(user: { linkedAccounts: unknown[] }): string | nu
 }
 
 /**
- * Verifies the Privy session cookie and returns the caller's identity, or
- * `null` if there is no valid session. Persists/refreshes a `UserWallet` row
- * so the role chosen at onboarding survives, and so later requests don't
- * need to re-derive the Stellar address from the (size-limited) ID token.
+ * Verifies the session cookie and returns the caller's identity, or `null` if
+ * there is no valid session. Persists a `UserWallet` row so the role chosen at
+ * onboarding survives.
  *
  * Wrapped in React's `cache()` so a layout's role check and its page's own
  * call to this (both on the same request) verify the token and hit the
@@ -61,37 +63,42 @@ function extractStellarAddress(user: { linkedAccounts: unknown[] }): string | nu
  */
 export const getSession = cache(async (): Promise<Session | null> => {
   const client = privyClient();
-  if (!client) return null;
-
-  const jar = await cookies();
-  const idToken = jar.get(SESSION_COOKIE_NAME)?.value;
-  if (!idToken) return null;
-
-  let user;
-  try {
-    user = await client.getUser({ idToken });
-  } catch {
-    return null; // missing, expired, or tampered-with token
+  if (!client) {
+    console.error('[session] NEXT_PUBLIC_PRIVY_APP_ID / PRIVY_APP_SECRET are not set');
+    return null;
   }
 
-  const tokenAddress = extractStellarAddress(user);
+  const jar = await cookies();
+  const accessToken = jar.get(SESSION_COOKIE_NAME)?.value;
+  if (!accessToken) return null;
+
+  let privyUserId: string;
+  try {
+    privyUserId = (await client.verifyAuthToken(accessToken)).userId;
+  } catch (err) {
+    // Expired or tampered-with token — expected now and then; the client re-syncs.
+    console.error('[session] token verification failed:', describeError(err));
+    return null;
+  }
 
   try {
-    return await resolveWallet(user.id, tokenAddress);
+    return await resolveWallet(client, privyUserId);
   } catch (err) {
     // A unique-constraint conflict here almost always means a concurrent
     // first-login request (two tabs, or SessionSync racing a navigation)
     // created the row a moment ago — re-read once before giving up.
     if (isUniqueConflict(err)) {
       try {
-        return await resolveWallet(user.id, tokenAddress);
-      } catch {
-        /* fall through */
+        return await resolveWallet(client, privyUserId);
+      } catch (retryErr) {
+        console.error('[session] resolveWallet retry failed:', describeError(retryErr));
       }
+    } else {
+      console.error('[session] resolveWallet failed:', describeError(err));
     }
-    // Database unreachable — fail closed on role (no cross-role access by
-    // accident) but still report identity from the verified token alone.
-    return { privyUserId: user.id, stellarAddress: tokenAddress, role: null };
+    // Database or Privy API unreachable — fail closed on role (no cross-role
+    // access by accident) but still report the verified identity.
+    return { privyUserId, stellarAddress: null, role: null };
   }
 });
 
@@ -104,41 +111,36 @@ function isUniqueConflict(err: unknown): boolean {
 
 /**
  * Reads (or lazily creates) the `UserWallet` row for a verified Privy user.
- * `upsert` instead of find-then-create/update so two concurrent first-login
- * requests can't both take the `create` branch; the caller retries once on
- * the unique-constraint race that can still slip through.
+ * Returning users are served from the database alone (no Privy API call).
+ * `upsert` instead of find-then-create so two concurrent first-login requests
+ * can't both take the `create` branch; the caller retries once on the
+ * unique-constraint race that can still slip through.
  */
-async function resolveWallet(privyUserId: string, tokenAddress: string | null): Promise<Session> {
+async function resolveWallet(client: PrivyClient, privyUserId: string): Promise<Session> {
   const existing = await prisma.userWallet.findUnique({ where: { privyUserId } });
 
-  if (!existing && !tokenAddress) {
+  if (existing) {
+    const loginStale =
+      !existing.lastLoginAt || Date.now() - existing.lastLoginAt.getTime() > LAST_LOGIN_THROTTLE_MS;
+    if (loginStale) {
+      await prisma.userWallet.update({ where: { privyUserId }, data: { lastLoginAt: new Date() } });
+    }
+    return { privyUserId, stellarAddress: existing.stellarAddress, role: existing.role };
+  }
+
+  const user = await client.getUserById(privyUserId);
+  const stellarAddress = extractStellarAddress(user);
+  if (!stellarAddress) {
     // Logged in, but the embedded Stellar wallet hasn't finished being
     // created yet (client-side useStellarWallet handles that) — nothing to
     // persist until it exists.
     return { privyUserId, stellarAddress: null, role: null };
   }
 
-  const addressChanged = Boolean(
-    tokenAddress && existing && tokenAddress !== existing.stellarAddress,
-  );
-  const loginStale =
-    !existing?.lastLoginAt || Date.now() - existing.lastLoginAt.getTime() > LAST_LOGIN_THROTTLE_MS;
-
-  if (existing && !addressChanged && !loginStale) {
-    return {
-      privyUserId,
-      stellarAddress: existing.stellarAddress,
-      role: existing.role,
-    };
-  }
-
   const wallet = await prisma.userWallet.upsert({
     where: { privyUserId },
-    create: { privyUserId, stellarAddress: tokenAddress as string, lastLoginAt: new Date() },
-    update: {
-      lastLoginAt: new Date(),
-      ...(addressChanged ? { stellarAddress: tokenAddress as string } : {}),
-    },
+    create: { privyUserId, stellarAddress, lastLoginAt: new Date() },
+    update: { lastLoginAt: new Date() },
   });
   return { privyUserId, stellarAddress: wallet.stellarAddress, role: wallet.role };
 }
