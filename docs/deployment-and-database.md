@@ -61,6 +61,8 @@ Prisma selects every column of a model, so deploying code whose schema adds colu
 (e.g. `Business.taxId`) **before** the migration is applied breaks existing queries.
 Order: migrate first, then `npx vercel deploy --prod`.
 
+Also applied: `20260921120000_passport_theme` (three nullable theme columns on `Business`).
+
 Latest: `20260921000000_kyb_and_ledger` — additive only: KYB profile columns on `Business`,
 verifier columns on `KybSubmission`, and the `LedgerEntry` table.
 

@@ -58,3 +58,31 @@ The card also shows a business identity line (`holder`), an optional stat overri
 - `/invest/opportunity/[id]` — the borrower's passport, shown to investors for risk assessment.
 
 `components/passport-card.tsx` (the old flat version), `components/address-lookup-banner.tsx`, `components/score-ring.tsx` and `components/score-gauge.tsx` were removed.
+
+## Two layers and owner customization (v3)
+
+The Passport card is split so personalization never touches credit semantics:
+
+| Layer | Who controls it | What it shows |
+| --- | --- | --- |
+| **Identity** (top) | The business — colour theme, pattern | `FONDEALO · STELLAR`, business name, "Business Passport", place |
+| **Trust** (bottom) | Fondealo + the on-chain record — fixed styling | KYB status, credit score ring + risk band, repaid / on-time / history, "Verified on-chain" |
+
+- **Themes:** Emerald, Electric cyan, Aurora, Violet, Midnight gold, or a custom accent
+  (`lib/passport-theme.ts`). A custom accent is turned into a palette with clamped lightness so
+  the identity panel always stays dark enough for white text. Patterns: lines, dots, clean.
+- **Persistence:** off-chain, in `Business.passportTheme / passportAccent / passportPattern`
+  (migration `20260921120000_passport_theme`). Saved via the `savePassportTheme` server action,
+  which requires a verified Business session and validates every value; it cannot touch any credit
+  field. Investors viewing an opportunity see the borrower's saved look.
+- **Editing UI:** `/business/passport` → `PassportStudio` (live preview, colour transitions via
+  registered CSS properties, custom colour picker). The landing hero and the "Yours to style.
+  Ours to verify." section let visitors try the swatches.
+- **On-chain:** the contract only stores an optional `metadata_uri` pointer; see
+  [ADR-0009](adr/0009-non-transferable-business-passport.md).
+
+### Hydration note
+
+Client components format numbers with an explicit `en-US` locale. Using the runtime default
+(`toLocaleString()`) rendered `5000` on the server and `5,000` in the browser, which is a React
+hydration error — and would break for any visitor whose browser locale differs from the server's.
