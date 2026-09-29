@@ -1,11 +1,17 @@
 import type { HTMLAttributes } from 'react';
 import { cn } from './cn';
 
-export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+export interface CardProps extends HTMLAttributes<HTMLDivElement> {
+  /** The one selected or actively-funding item in a view: brand border + glow. */
+  live?: boolean;
+}
+
+export function Card({ className, live, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        'rounded-2xl border border-slate-200 bg-white shadow-soft transition-shadow',
+        'rounded-2xl border border-line bg-surface-100 shadow-soft transition-shadow',
+        live && 'border-brand-line shadow-glow',
         className,
       )}
       {...props}
@@ -18,11 +24,16 @@ export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElemen
 }
 
 export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={cn('text-lg font-semibold text-slate-900', className)} {...props} />;
+  return (
+    <h3
+      className={cn('font-display text-lg font-semibold tracking-tight text-ink', className)}
+      {...props}
+    />
+  );
 }
 
 export function CardDescription({ className, ...props }: HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn('text-sm text-slate-500', className)} {...props} />;
+  return <p className={cn('text-sm text-ink-muted', className)} {...props} />;
 }
 
 export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {

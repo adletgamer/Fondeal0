@@ -125,6 +125,15 @@ export default function DesignSystemPage() {
                 <span className="font-mono text-xl">25,000.00 USDC</span>
               </CardContent>
             </Card>
+            <Card live>
+              <CardHeader>
+                <CardTitle>Textiles Quispe</CardTitle>
+                <CardDescription>Inventory financing · band B · funding now.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <span className="font-mono text-xl">12,500.00 USDC</span>
+              </CardContent>
+            </Card>
           </div>
         </Section>
       </Container>
