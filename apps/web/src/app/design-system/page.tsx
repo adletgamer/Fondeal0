@@ -98,8 +98,15 @@ export default function DesignSystemPage() {
 
         <Section id="badge" title="Badge">
           <div className="flex flex-wrap items-center gap-3">
+            <Badge variant="brand" dot="live">
+              Stellar Testnet
+            </Badge>
             <Badge variant="brand">KYB verified</Badge>
             <Badge variant="gold">9.4% APY</Badge>
+            <Badge variant="info" dot="static">
+              Pending
+            </Badge>
+            <Badge variant="danger">Overdue</Badge>
             <Badge variant="neutral">Soroban</Badge>
           </div>
           <Island>
