@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { Button, Card, Field } from '@fondealo/ui';
+import { Button, Card, Field, TxStatus } from '@fondealo/ui';
 import { repayOpportunity, type ActionResult } from '@/lib/actions/opportunities';
 
 const initialState: ActionResult | null = null;
@@ -76,11 +76,24 @@ export function RepayForm({
             </a>
           </p>
         ) : null}
-        <Button type="submit" className="w-full" disabled={pending || amount <= 0 || insufficient}>
+        <Button
+          type="submit"
+          variant="gold"
+          className="w-full"
+          disabled={pending || amount <= 0 || insufficient}
+        >
           {pending ? 'Paying…' : `Pay ${amount.toLocaleString('en-US')} USDC`}
         </Button>
-        {state && !state.ok ? <p className="text-xs text-red-600">{state.error}</p> : null}
-        {state && state.ok ? <p className="text-xs text-brand-600">{state.message}</p> : null}
+        {pending ? (
+          <TxStatus state="pending" label="Submitting payment" />
+        ) : state ? (
+          <TxStatus
+            state={state.ok ? 'confirmed' : 'failed'}
+            // Repayments are recorded off-chain for now: never claim a ledger confirmation.
+            label={state.ok ? 'Recorded' : undefined}
+            meta={state.ok ? state.message : state.error}
+          />
+        ) : null}
       </form>
     </Card>
   );

@@ -14,6 +14,7 @@ import {
   Field,
   RiskBadge,
   SelectField,
+  TxStatus,
 } from '@fondealo/ui';
 import { Navbar } from '@/components/navbar';
 
@@ -176,6 +177,26 @@ export default function DesignSystemPage() {
             <AddressChip address="GBX4QK7Z2MNP5RSTUVW3XYZ4ABCDEFGH6JKLMN7QZK" />
             <AddressChip address="GD2LQK7Z2MNP5RSTUVW3XYZ4ABCDEFGH6JKLMNM3PA" tag="Testnet" />
             <AddressChip address="CCREQK7Z2MNP5RSTUVW3XYZ4ABCDEFGH6JKLMNDIT5" tag="credit_score" />
+          </div>
+        </Section>
+
+        <Section id="tx" title="TxStatus">
+          <div className="max-w-xl space-y-3">
+            <TxStatus
+              state="pending"
+              meta="tx 9f3a…c21e · waiting for ledger"
+              action={<a href="#tx">Explorer ↗</a>}
+            />
+            <TxStatus
+              state="confirmed"
+              meta="tx 4b8e…07aa · ledger 51,208,114"
+              action={<a href="#tx">Explorer ↗</a>}
+            />
+            <TxStatus
+              state="failed"
+              meta="tx_insufficient_balance"
+              action={<a href="#tx">Retry</a>}
+            />
           </div>
         </Section>
       </Container>

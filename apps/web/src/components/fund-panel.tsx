@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, type FormEvent } from 'react';
-import { Button, Card, Field } from '@fondealo/ui';
+import { Button, Card, Field, TxStatus } from '@fondealo/ui';
 import {
   EscrowClient,
   getNetworkConfig,
@@ -185,14 +185,25 @@ export function FundPanel({
 
         <Button
           type="submit"
+          variant="gold"
           className="w-full"
           disabled={pending || amount <= 0 || !stellarAddress || insufficient}
         >
           {pending ? 'Funding…' : `Fund ${amount.toLocaleString('en-US')} USDC`}
         </Button>
 
-        {result && !result.ok ? <p className="text-xs text-red-600">{result.error}</p> : null}
-        {result && result.ok ? <p className="text-xs text-brand-600">{result.message}</p> : null}
+        {pending ? (
+          <TxStatus state="pending" label="Signing & submitting" meta="Approve in your wallet" />
+        ) : result ? (
+          <TxStatus
+            state={result.ok ? 'confirmed' : 'failed'}
+            // "Confirmed" only for a submitted Soroban tx; a demo-mode DB write is "Recorded".
+            label={
+              result.ok && !result.message.startsWith('Funded on-chain') ? 'Recorded' : undefined
+            }
+            meta={result.ok ? result.message : result.error}
+          />
+        ) : null}
       </form>
     </Card>
   );
