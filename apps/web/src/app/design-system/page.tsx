@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { notFound } from 'next/navigation';
 import {
+  AddressChip,
   Badge,
   Button,
   Card,
@@ -168,6 +169,14 @@ export default function DesignSystemPage() {
             <RiskBadge band="A" />
             <RiskBadge band="E" />
           </Island>
+        </Section>
+
+        <Section id="address" title="AddressChip">
+          <div className="flex flex-wrap items-center gap-3">
+            <AddressChip address="GBX4QK7Z2MNP5RSTUVW3XYZ4ABCDEFGH6JKLMN7QZK" />
+            <AddressChip address="GD2LQK7Z2MNP5RSTUVW3XYZ4ABCDEFGH6JKLMNM3PA" tag="Testnet" />
+            <AddressChip address="CCREQK7Z2MNP5RSTUVW3XYZ4ABCDEFGH6JKLMNDIT5" tag="credit_score" />
+          </div>
         </Section>
       </Container>
     </>
