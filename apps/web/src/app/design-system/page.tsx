@@ -11,6 +11,7 @@ import {
   CardTitle,
   Container,
   Field,
+  RiskBadge,
   SelectField,
 } from '@fondealo/ui';
 import { Navbar } from '@/components/navbar';
@@ -154,6 +155,19 @@ export default function DesignSystemPage() {
               <option value="retail">Retail</option>
             </SelectField>
           </div>
+        </Section>
+
+        <Section id="risk" title="RiskBadge">
+          <div className="flex flex-wrap items-center gap-3">
+            {(['A', 'B', 'C', 'D', 'E'] as const).map((b) => (
+              <RiskBadge key={b} band={b} />
+            ))}
+            <RiskBadge band="C" compact />
+          </div>
+          <Island>
+            <RiskBadge band="A" />
+            <RiskBadge band="E" />
+          </Island>
         </Section>
       </Container>
     </>

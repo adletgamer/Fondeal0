@@ -1,17 +1,7 @@
 import Link from 'next/link';
-import { Card } from '@fondealo/ui';
+import { Card, RiskBadge } from '@fondealo/ui';
 import { maxProtectedPct, requiredCollateral, type Opportunity } from '@fondealo/types';
 import { Building, ShieldCheck } from './icons';
-
-// Semantic signal, not decoration: border + text in one solid tone on a
-// neutral (white) surface — no tinted fill.
-const BAND_COLOR: Record<string, string> = {
-  A: 'text-brand-700 border-brand-300',
-  B: 'text-brand-700 border-brand-300',
-  C: 'text-gold-600 border-gold-400',
-  D: 'text-orange-600 border-orange-300',
-  E: 'text-red-600 border-red-300',
-};
 
 /** The marketplace's central unit: editorial hierarchy, funding progress, and
  * the collateral coverage that backs the §2 risk/return model. */
@@ -24,11 +14,7 @@ export function OpportunityCard({ opportunity }: { opportunity: Opportunity }) {
     <Link href={`/invest/opportunity/${opportunity.id}`} className="block h-full">
       <Card className="flex h-full flex-col p-6 transition-shadow hover:shadow-md">
         <div className="mb-3 flex items-center justify-between">
-          <span
-            className={`rounded-full border bg-white px-2.5 py-1 text-xs font-semibold ${BAND_COLOR[opportunity.riskBand] ?? ''}`}
-          >
-            Risk {opportunity.riskBand}
-          </span>
+          <RiskBadge band={opportunity.riskBand} />
           <span className="text-xs font-medium text-slate-400">{opportunity.status}</span>
         </div>
 
