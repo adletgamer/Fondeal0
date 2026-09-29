@@ -137,7 +137,7 @@ export function FundPanel({
           step="1"
           value={amount || ''}
           onChange={(e) => setAmount(Number(e.target.value) || 0)}
-          hint="USDC"
+          unit="USDC"
           required
         />
 

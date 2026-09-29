@@ -56,7 +56,7 @@ export function RepayForm({
           max={remaining}
           value={amount || ''}
           onChange={(e) => setAmount(Number(e.target.value) || 0)}
-          hint="USDC"
+          unit="USDC"
           required
         />
         <div className="flex gap-2">

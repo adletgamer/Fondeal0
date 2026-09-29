@@ -10,6 +10,8 @@ import {
   CardHeader,
   CardTitle,
   Container,
+  Field,
+  SelectField,
 } from '@fondealo/ui';
 import { Navbar } from '@/components/navbar';
 
@@ -134,6 +136,23 @@ export default function DesignSystemPage() {
                 <span className="font-mono text-xl">12,500.00 USDC</span>
               </CardContent>
             </Card>
+          </div>
+        </Section>
+
+        <Section id="field" title="Field">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Field label="Business name" placeholder="Café Andino SAC" hint="As registered." />
+            <Field label="Amount to fund" unit="USDC" defaultValue="2500" type="number" />
+            <Field
+              label="Stellar address"
+              mono
+              defaultValue="GBX4Q"
+              error="Not a valid G… address."
+            />
+            <SelectField label="Sector" defaultValue="agri">
+              <option value="agri">Agriculture</option>
+              <option value="retail">Retail</option>
+            </SelectField>
           </div>
         </Section>
       </Container>
