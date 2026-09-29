@@ -2,14 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme tokens (Night / Day) live in packages/ui/src/styles.css, imported by
+   the root layout. */
 @layer base {
-  :root {
-    --background: 248 250 252; /* slate-50 */
-    --foreground: 15 23 42; /* slate-900 */
-  }
-
   * {
-    border-color: theme('colors.slate.200');
+    border-color: rgb(var(--slate-200));
   }
 
   html {
@@ -17,8 +14,8 @@
   }
 
   body {
-    color: rgb(var(--foreground));
-    background: rgb(var(--background));
+    color: rgb(var(--ink));
+    background: rgb(var(--surface-0));
     font-feature-settings: 'cv11', 'ss01';
     text-rendering: optimizeLegibility;
   }

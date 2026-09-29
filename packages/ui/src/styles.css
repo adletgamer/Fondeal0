@@ -1,5 +1,219 @@
-/* Shared design tokens for the Fondealo UI. Imported by the web app. */
-:root {
-  --fondealo-brand: 5 150 105; /* emerald-600 */
-  --fondealo-ink: 15 23 42; /* slate-900 */
+/*
+ * Fondealo design tokens — two themes, Night (default) and Day.
+ * Values are space-separated RGB channels so Tailwind can apply opacity:
+ * `rgb(var(--ink) / <alpha-value>)`. Generated from the Fondealo design
+ * system; edit the palette there and keep this file in sync.
+ */
+
+/* Day. Also the palette inside "dark islands" (below) in both themes. */
+:root,
+[data-theme='light'],
+[data-theme='dark'] :is(.bg-night-950, .bg-night-900, .bg-night-800, .bg-night-700, .fdo-island) {
+  --slate-50: 248 250 252;
+  --slate-100: 241 245 249;
+  --slate-200: 226 232 240;
+  --slate-300: 203 213 225;
+  --slate-400: 148 163 184;
+  --slate-500: 100 116 139;
+  --slate-600: 71 85 105;
+  --slate-700: 51 65 85;
+  --slate-800: 30 41 59;
+  --slate-900: 15 23 42;
+  --slate-950: 2 6 23;
+  --brand-50: 236 253 245;
+  --brand-100: 209 250 229;
+  --brand-200: 167 243 208;
+  --brand-300: 110 231 183;
+  --brand-400: 52 211 153;
+  --brand-500: 16 185 129;
+  --brand-600: 5 150 105;
+  --brand-700: 4 120 87;
+  --brand-800: 6 95 70;
+  --brand-900: 6 78 59;
+  --brand-950: 2 44 34;
+  --gold-50: 255 251 235;
+  --gold-100: 254 243 199;
+  --gold-200: 253 230 138;
+  --gold-300: 252 211 77;
+  --gold-400: 251 191 36;
+  --gold-500: 245 158 11;
+  --gold-600: 217 119 6;
+  --gold-700: 180 83 9;
+  --gold-800: 146 64 14;
+  --gold-900: 120 53 15;
+  --gold-950: 69 26 3;
+  --red-50: 254 242 242;
+  --red-100: 254 226 226;
+  --red-200: 254 202 202;
+  --red-300: 252 165 165;
+  --red-400: 248 113 113;
+  --red-500: 239 68 68;
+  --red-600: 220 38 38;
+  --red-700: 185 28 28;
+  --red-800: 153 27 27;
+  --red-900: 127 29 29;
+  --red-950: 69 10 10;
+  --orange-50: 255 247 237;
+  --orange-100: 255 237 213;
+  --orange-200: 254 215 170;
+  --orange-300: 253 186 116;
+  --orange-400: 251 146 60;
+  --orange-500: 249 115 22;
+  --orange-600: 234 88 12;
+  --orange-700: 194 65 12;
+  --orange-800: 154 52 18;
+  --orange-900: 124 45 18;
+  --orange-950: 67 20 7;
+}
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+  --surface-0: 248 250 252;
+  --surface-100: 255 255 255;
+  --surface-200: 241 245 249;
+  --surface-300: 226 232 240;
+  --line: 226 232 240;
+  --line-strong: 122 134 153;
+  --ink: 15 23 42;
+  --ink-muted: 71 85 105;
+  --ink-faint: 100 116 139;
+  --brand-fill: 16 185 129;
+  --brand-hover: 52 211 153;
+  --on-brand: 2 44 34;
+  --brand-text: 4 120 87;
+  --brand-soft: 236 253 245;
+  --brand-line: 167 243 208;
+  --gold-fill: 245 158 11;
+  --on-gold: 7 11 22;
+  --gold-text: 180 83 9;
+  --gold-soft: 255 251 235;
+  --holo: 120 255 214;
+  --info-text: 3 105 161;
+  --info-soft: 240 249 255;
+  --danger-text: 185 28 28;
+  --danger-soft: 254 242 242;
+  --focus-ring: 4 120 87;
+  --bg-white: 255 255 255;
+}
+
+/* Night: the primary theme. */
+[data-theme='dark'] {
+  color-scheme: dark;
+  --slate-50: 7 11 22;
+  --slate-100: 15 23 40;
+  --slate-200: 28 37 64;
+  --slate-300: 58 70 99;
+  --slate-400: 131 145 171;
+  --slate-500: 148 163 184;
+  --slate-600: 169 182 201;
+  --slate-700: 203 213 225;
+  --slate-800: 226 232 240;
+  --slate-900: 241 245 249;
+  --slate-950: 248 250 252;
+  --brand-50: 11 42 36;
+  --brand-100: 14 58 48;
+  --brand-200: 6 95 70;
+  --brand-300: 4 120 87;
+  --brand-400: 5 150 105;
+  --brand-500: 16 185 129;
+  --brand-600: 52 211 153;
+  --brand-700: 52 211 153;
+  --brand-800: 110 231 183;
+  --brand-900: 167 243 208;
+  --brand-950: 209 250 229;
+  --gold-50: 42 34 16;
+  --gold-100: 58 46 18;
+  --gold-200: 120 53 15;
+  --gold-300: 146 64 14;
+  --gold-400: 251 191 36;
+  --gold-500: 245 158 11;
+  --gold-600: 252 211 77;
+  --gold-700: 252 211 77;
+  --gold-800: 253 230 138;
+  --gold-900: 254 243 199;
+  --gold-950: 255 251 235;
+  --red-50: 42 17 21;
+  --red-100: 59 21 25;
+  --red-200: 127 29 29;
+  --red-300: 153 27 27;
+  --red-400: 248 113 113;
+  --red-500: 239 68 68;
+  --red-600: 248 113 113;
+  --red-700: 252 165 165;
+  --red-800: 254 202 202;
+  --red-900: 254 226 226;
+  --red-950: 254 242 242;
+  --orange-50: 42 26 14;
+  --orange-100: 59 34 16;
+  --orange-200: 124 45 18;
+  --orange-300: 154 52 18;
+  --orange-400: 251 146 60;
+  --orange-500: 249 115 22;
+  --orange-600: 251 146 60;
+  --orange-700: 253 186 116;
+  --orange-800: 254 215 170;
+  --orange-900: 255 237 213;
+  --orange-950: 255 247 237;
+  --surface-0: 7 11 22;
+  --surface-100: 11 17 32;
+  --surface-200: 15 23 40;
+  --surface-300: 20 29 51;
+  --line: 28 37 64;
+  --line-strong: 94 107 136;
+  --ink: 241 245 249;
+  --ink-muted: 148 163 184;
+  --ink-faint: 131 145 171;
+  --brand-fill: 52 211 153;
+  --brand-hover: 110 231 183;
+  --on-brand: 2 44 34;
+  --brand-text: 52 211 153;
+  --brand-soft: 11 42 36;
+  --brand-line: 6 95 70;
+  --gold-fill: 251 191 36;
+  --on-gold: 7 11 22;
+  --gold-text: 252 211 77;
+  --gold-soft: 42 34 16;
+  --holo: 120 255 214;
+  --info-text: 125 211 252;
+  --info-soft: 12 34 51;
+  --danger-text: 248 113 113;
+  --danger-soft: 42 17 21;
+  --focus-ring: 52 211 153;
+  --bg-white: 11 17 32;
+}
+
+/*
+ * Dark islands (hero bands, the passport, night cards) are dark in both
+ * themes: they keep the Day palette they were authored against (above) and
+ * take the Night semantic tokens, so shared components read correctly on them.
+ */
+:is(.bg-night-950, .bg-night-900, .bg-night-800, .bg-night-700, .fdo-island) {
+  color-scheme: dark;
+  --surface-0: 7 11 22;
+  --surface-100: 11 17 32;
+  --surface-200: 15 23 40;
+  --surface-300: 20 29 51;
+  --line: 28 37 64;
+  --line-strong: 94 107 136;
+  --ink: 241 245 249;
+  --ink-muted: 148 163 184;
+  --ink-faint: 131 145 171;
+  --brand-fill: 52 211 153;
+  --brand-hover: 110 231 183;
+  --on-brand: 2 44 34;
+  --brand-text: 52 211 153;
+  --brand-soft: 11 42 36;
+  --brand-line: 6 95 70;
+  --gold-fill: 251 191 36;
+  --on-gold: 7 11 22;
+  --gold-text: 252 211 77;
+  --gold-soft: 42 34 16;
+  --holo: 120 255 214;
+  --info-text: 125 211 252;
+  --info-soft: 12 34 51;
+  --danger-text: 248 113 113;
+  --danger-soft: 42 17 21;
+  --focus-ring: 52 211 153;
+  --bg-white: 255 255 255;
 }
