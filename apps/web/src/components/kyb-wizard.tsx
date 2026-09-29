@@ -161,9 +161,9 @@ export function KybWizard({
               className={[
                 'grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold',
                 i < step
-                  ? 'bg-brand-600 text-white'
+                  ? 'bg-brand-fill text-on-brand'
                   : i === step
-                    ? 'bg-slate-900 text-white'
+                    ? 'bg-ink text-surface-0'
                     : 'bg-slate-200 text-slate-500',
               ].join(' ')}
             >

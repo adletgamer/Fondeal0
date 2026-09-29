@@ -200,7 +200,7 @@ export function PassportStudio({
         </form>
 
         <div className="mt-6 flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-900 text-white">
+          <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-ink text-surface-0">
             <Lock width={14} height={14} />
           </span>
           <p className="text-sm text-slate-600">

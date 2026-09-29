@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Container } from '@fondealo/ui';
 import { Logo } from './icons';
 import { PrivyAuthButton } from './privy-auth-button';
+import { ThemeToggle } from './theme-toggle';
 
 const NAV_LINKS = [
   ['/#how', 'How it works'],
@@ -33,6 +34,7 @@ export function Navbar() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <details className="group relative md:hidden">
             <summary
               aria-label="Open menu"

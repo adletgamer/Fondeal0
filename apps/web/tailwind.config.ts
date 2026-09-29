@@ -1,7 +1,14 @@
 import type { Config } from 'tailwindcss';
 
+/** A colour backed by a design token (`packages/ui/src/styles.css`). */
+const token = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
+const STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as const;
+/** A full scale whose steps switch with the theme (Day ↔ Night). */
+const scale = (family: string) =>
+  Object.fromEntries(STEPS.map((s) => [s, token(`${family}-${s}`)]));
+
 const config: Config = {
-  darkMode: ['class'],
+  darkMode: ['selector', '[data-theme="dark"]'],
   content: [
     './src/**/*.{ts,tsx}',
     // Include workspace UI package so its Tailwind classes are generated.
@@ -15,28 +22,51 @@ const config: Config = {
     },
     extend: {
       colors: {
+        // Theme-aware scales: Day keeps Tailwind's values, Night re-maps each
+        // step so existing `slate-*`/`brand-*` classes read correctly on dark.
+        slate: scale('slate'),
+        red: scale('red'),
+        orange: scale('orange'),
+        amber: scale('gold'),
+        emerald: scale('brand'),
         brand: {
-          50: '#ecfdf5',
-          100: '#d1fae5',
-          200: '#a7f3d0',
-          300: '#6ee7b7',
-          400: '#34d399',
-          500: '#10b981',
-          600: '#059669',
-          700: '#047857',
-          800: '#065f46',
-          900: '#064e3b',
-          950: '#022c22',
-          DEFAULT: '#059669',
+          ...scale('brand'),
+          DEFAULT: token('brand-600'),
+          fill: token('brand-fill'),
+          hover: token('brand-hover'),
+          text: token('brand-text'),
+          soft: token('brand-soft'),
+          line: token('brand-line'),
         },
         gold: {
-          50: '#fffbeb',
-          100: '#fef3c7',
-          300: '#fcd34d',
-          400: '#fbbf24',
-          500: '#f59e0b',
-          600: '#d97706',
-          DEFAULT: '#f59e0b',
+          ...scale('gold'),
+          DEFAULT: token('gold-500'),
+          fill: token('gold-fill'),
+          text: token('gold-text'),
+          soft: token('gold-soft'),
+        },
+        // Semantic tokens from the Fondealo design system.
+        surface: {
+          0: token('surface-0'),
+          100: token('surface-100'),
+          200: token('surface-200'),
+          300: token('surface-300'),
+        },
+        line: { DEFAULT: token('line'), strong: token('line-strong') },
+        ink: { DEFAULT: token('ink'), muted: token('ink-muted'), faint: token('ink-faint') },
+        'on-brand': token('on-brand'),
+        'on-gold': token('on-gold'),
+        'on-band': '#070b16',
+        holo: token('holo'),
+        info: { text: token('info-text'), soft: token('info-soft') },
+        danger: { text: token('danger-text'), soft: token('danger-soft') },
+        'focus-ring': token('focus-ring'),
+        band: {
+          a: '#6ee7b7',
+          b: '#34d399',
+          c: '#fcd34d',
+          d: '#fdba74',
+          e: '#fca5a5',
         },
         night: {
           700: '#141d33',
@@ -46,8 +76,14 @@ const config: Config = {
           DEFAULT: '#0b1120',
         },
       },
+      // `bg-white` is a surface (flips to night-900 in Night); `text-white`
+      // and `border-white/*` stay literal white for dark islands.
+      backgroundColor: {
+        white: token('bg-white'),
+      },
       fontFamily: {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
         display: ['var(--font-display)', 'var(--font-sans)', 'sans-serif'],
         serif: ['var(--font-serif)', 'Georgia', 'serif'],
       },

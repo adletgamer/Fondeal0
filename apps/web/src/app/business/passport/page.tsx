@@ -91,7 +91,7 @@ export default async function BusinessPassportPage() {
                           <span
                             className={`grid h-8 w-8 place-items-center rounded-lg text-sm font-bold ${
                               isCurrent
-                                ? 'bg-brand-600 text-white'
+                                ? 'bg-brand-fill text-on-brand'
                                 : 'border border-slate-200 bg-white text-slate-500'
                             }`}
                           >

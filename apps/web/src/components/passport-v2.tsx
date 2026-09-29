@@ -114,7 +114,8 @@ export function PassportV2({
   return (
     <div
       className={[
-        'fdo-passport',
+        // A dark island: keeps its Day palette in the Night theme too.
+        'fdo-passport fdo-island',
         variant === 'showcase' ? 'fdo-passport--showcase' : '',
         className ?? '',
       ]
