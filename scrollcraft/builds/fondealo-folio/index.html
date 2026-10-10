@@ -1,0 +1,1542 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fondealo · credit identity a business owns and carries</title>
+<meta name="description" content="Fondealo turns a Latin American business's own verified activity and repayment record into a Business Passport: one credit identity it owns and carries from lender to lender, on Stellar.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230A1020'/><path d='M9 23V9h13' stroke='%2334d399' stroke-width='2.4' fill='none'/><path d='M9 16h9' stroke='%2334d399' stroke-width='2.4' fill='none'/></svg>">
+<link rel="stylesheet" href="scrollcraft.css">
+<style>
+/* ===========================================================================
+   FONDEALO · chaptered editorial
+   World: technical drawing (ink linework, dimension lines, orthographic
+   plates) on two grounds, hard cut between them. No photography, no video.
+   Faces and palette are the app's own (apps/web/src/app/layout.tsx, globals.css).
+   =========================================================================== */
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("assets/fonts/space-grotesk-latin.woff2") format("woff2");
+  font-weight: 400 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("assets/fonts/instrument-sans-latin.woff2") format("woff2");
+  font-weight: 400 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("assets/fonts/instrument-sans-latin-italic.woff2") format("woff2");
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+
+:root {
+  /* ink ground: the night of the existing identity */
+  --sc-canvas:     #0A1020;
+  --sc-surface:    #10192C;
+  --sc-ink:        #E9EEF5;
+  --sc-ink-soft:   #9FB0C6;
+  --sc-accent:     #34D399;
+  --sc-accent-ink: #061018;
+
+  --sc-font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --sc-font-text:    "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --sc-shadow-color: 215 60% 3%;
+
+  /* the drawing: one line weight system for the whole page */
+  --rule:        color-mix(in oklab, var(--sc-ink) 16%, transparent);
+  --rule-strong: color-mix(in oklab, var(--sc-ink) 34%, transparent);
+  --rule-faint:  color-mix(in oklab, var(--sc-ink) 8%, transparent);
+
+  --folio-w: 16.5rem;
+  --paper:   #F2EFE8;
+}
+
+/* The paper chapters. Restating the tokens is not enough: `color` is inherited
+   as a computed value, so it has to be restated on the same subtree or the
+   body's ink stays on every line inside. */
+.ground--paper {
+  --sc-canvas:     var(--paper);
+  --sc-surface:    #E8E4DA;
+  --sc-ink:        #121A14;
+  --sc-ink-soft:   #4C5A50;
+  --sc-accent:     #047857;
+  --sc-accent-ink: #F6F4EF;
+  --sc-shadow-color: 80 20% 20%;
+  /* The line weights have to be restated here, not only the ink. A custom
+     property holding var(--sc-ink) is substituted where it is DECLARED, so a
+     --rule defined on :root keeps the ink ground's near-white and every
+     hairline on paper renders invisible. Same trap as `color`, one level down. */
+  --rule:        color-mix(in oklab, var(--sc-ink) 20%, transparent);
+  --rule-strong: color-mix(in oklab, var(--sc-ink) 42%, transparent);
+  --rule-faint:  color-mix(in oklab, var(--sc-ink) 11%, transparent);
+  color: var(--sc-ink);
+  background: var(--sc-canvas);
+}
+.ground--ink {
+  --sc-canvas:     #0A1020;
+  --sc-surface:    #10192C;
+  --sc-ink:        #E9EEF5;
+  --sc-ink-soft:   #9FB0C6;
+  --sc-accent:     #34D399;
+  --sc-accent-ink: #061018;
+  --rule:        color-mix(in oklab, var(--sc-ink) 16%, transparent);
+  --rule-strong: color-mix(in oklab, var(--sc-ink) 34%, transparent);
+  --rule-faint:  color-mix(in oklab, var(--sc-ink) 8%, transparent);
+  color: var(--sc-ink);
+  background: var(--sc-canvas);
+}
+/* Light text on dark wants a touch more leading, tracking and weight. */
+.ground--ink { --sc-leading-body: 1.66; letter-spacing: 0.004em; }
+
+body { background: #0A1020; }
+
+/* --------------------------------------------------------------- layout -- */
+.page { position: relative; }
+@media (min-width: 62rem) {
+  .page { padding-left: var(--folio-w); }
+}
+.chapter { position: relative; isolation: isolate; }
+.measure { max-width: 34rem; }
+.measure--wide { max-width: 44rem; }
+
+.spread {
+  width: 100%; max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: var(--sc-gutter);
+}
+
+/* ---------------------------------------------------------------- folio --
+   The chrome. Chapter index, the collation stub (the signature move), and the
+   one CTA label. No fixed marketing bar anywhere on this page. */
+.folio {
+  position: fixed; z-index: var(--sc-z-chrome);
+  top: 0; left: 0; bottom: 0;
+  width: var(--folio-w);
+  padding: var(--sc-6) var(--sc-5) var(--sc-5);
+  display: none;
+  flex-direction: column;
+  gap: var(--sc-5);
+  border-right: 1px solid var(--rule);
+  background: color-mix(in oklab, var(--sc-canvas) 88%, transparent);
+  backdrop-filter: blur(6px);
+  font-size: var(--sc-t-xs);
+  transition: color 420ms var(--sc-ease-out), background-color 420ms var(--sc-ease-out), border-color 420ms var(--sc-ease-out);
+}
+@media (min-width: 62rem) { .folio { display: flex; } }
+
+.folio__mark {
+  font-family: var(--sc-font-display);
+  font-size: 1.0625rem; font-weight: 700;
+  letter-spacing: var(--sc-track-snug);
+  line-height: 1;
+  display: flex; align-items: baseline; gap: 0.5ch;
+}
+.folio__mark span { color: var(--sc-accent); }
+.folio__sub {
+  margin: var(--sc-2) 0 0;
+  color: var(--sc-ink-soft);
+  font-size: var(--sc-t-xs); line-height: 1.45;
+  max-width: 15ch;
+}
+
+.folio__index { list-style: none; margin: 0; padding: 0; }
+.folio__index li + li { margin-top: 1px; }
+.folio__index a {
+  display: grid; grid-template-columns: 2.25rem 1fr;
+  gap: var(--sc-2);
+  padding: 0.4rem 0;
+  color: var(--sc-ink-soft);
+  text-decoration: none;
+  border-top: 1px solid var(--rule-faint);
+  line-height: 1.3;
+}
+.folio__index li:last-child a { border-bottom: 1px solid var(--rule-faint); }
+.folio__index a:hover { color: var(--sc-ink); }
+.folio__num {
+  font-family: var(--sc-font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--sc-track-wide);
+  color: color-mix(in oklab, var(--sc-ink) 42%, transparent);
+}
+.folio__index [aria-current="true"] { color: var(--sc-ink); }
+.folio__index [aria-current="true"] .folio__num { color: var(--sc-accent); }
+
+/* the collation stub: what the reader has passed, filed */
+.stub { margin-top: auto; }
+.stub__head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: var(--sc-2);
+  padding-bottom: var(--sc-2);
+  border-bottom: 1px solid var(--rule);
+  font-size: var(--sc-t-xs);
+  letter-spacing: var(--sc-track-wide);
+  text-transform: uppercase;
+  color: var(--sc-ink-soft);
+}
+.stub__count { font-variant-numeric: tabular-nums; color: var(--sc-ink); }
+.stub__list { list-style: none; margin: var(--sc-2) 0 0; padding: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .stub__list { transition: opacity 420ms var(--sc-ease-out); }
+  .stub__line { transition: color 260ms var(--sc-ease-out); }
+}
+.stub__line {
+  display: grid; grid-template-columns: 1.5rem 1fr auto;
+  align-items: center; gap: var(--sc-2);
+  padding: 0.3rem 0;
+  color: color-mix(in oklab, var(--sc-ink) 26%, transparent);
+  line-height: 1.25;
+  will-change: transform, opacity;
+}
+.stub__line .mark { justify-self: start; }
+.stub__i {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--sc-font-display);
+  color: color-mix(in oklab, var(--sc-ink) 32%, transparent);
+}
+.stub__line.is-filed { color: var(--sc-ink); }
+.stub__line.is-filed .stub__i { color: var(--sc-accent); }
+.stub__line.is-flying { position: relative; z-index: 2; }
+.stub__line.is-bound { opacity: 0; }
+
+.folio__bound {
+  margin-top: var(--sc-4);
+  padding-top: var(--sc-3);
+  border-top: 1px solid var(--rule);
+  display: flex; align-items: center; gap: var(--sc-3);
+  opacity: 0;
+  transition: opacity 520ms var(--sc-ease-out);
+}
+.folio__bound.is-on { opacity: 1; }
+.folio__bound p { margin: 0; color: var(--sc-ink-soft); line-height: 1.3; }
+.folio__bound strong { display: block; color: var(--sc-ink); font-weight: 600; }
+
+.folio__cta {
+  margin-top: var(--sc-4);
+  align-self: start;
+  color: var(--sc-ink);
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-decoration-color: var(--sc-accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+}
+.folio__cta:hover { text-decoration-thickness: 2px; }
+
+/* the phone's folio: a strip, not a shrunken margin */
+.folio-bar {
+  position: fixed; z-index: var(--sc-z-chrome);
+  left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; gap: var(--sc-3);
+  padding: 0.6rem var(--sc-4) calc(0.6rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--rule);
+  background: color-mix(in oklab, var(--sc-canvas) 94%, transparent);
+  backdrop-filter: blur(8px);
+  font-size: var(--sc-t-xs);
+  transition: color 420ms var(--sc-ease-out), background-color 420ms var(--sc-ease-out);
+}
+@media (min-width: 62rem) { .folio-bar { display: none; } }
+.folio-bar__where {
+  display: flex; align-items: baseline; gap: 0.6ch;
+  min-width: 0;
+}
+.folio-bar__where b {
+  font-family: var(--sc-font-display); font-weight: 700;
+  letter-spacing: var(--sc-track-wide);
+  color: var(--sc-accent);
+}
+.folio-bar__where span {
+  color: var(--sc-ink-soft);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.folio-bar__tally { margin-left: auto; display: flex; gap: 0.3rem; }
+.folio-bar__cta {
+  color: var(--sc-ink); font-weight: 600; white-space: nowrap;
+  text-decoration-line: underline; text-decoration-color: var(--sc-accent);
+  text-underline-offset: 0.26em;
+}
+
+/* ----------------------------------------------------------- the marks --
+   State is carried by fill weight, not by a second hue: filled, half, hollow.
+   It survives greyscale, print and a colourblind reader. */
+.mark {
+  display: inline-block; width: 9px; height: 9px;
+  border: 1px solid currentColor;
+  flex: none;
+}
+.mark--live  { background: var(--sc-accent); border-color: var(--sc-accent); }
+.mark--part  { background: linear-gradient(135deg, currentColor 0 50%, transparent 50% 100%); }
+.mark--open  { background: none; }
+.mark--round { border-radius: 50%; }
+
+/* ---------------------------------------------------- chapter intertitle --
+   A full stop between chapters. Not an eyebrow: the folio IS the system. */
+.intertitle {
+  padding-block: clamp(4rem, 11vh, 9rem) clamp(2rem, 5vh, 4rem);
+}
+.intertitle__rule { display: flex; align-items: baseline; gap: var(--sc-4); }
+.intertitle__num {
+  font-family: var(--sc-font-display);
+  font-size: var(--sc-t-lg); font-weight: 700;
+  letter-spacing: var(--sc-track-wide);
+  color: var(--sc-accent);
+  line-height: 1;
+}
+.intertitle h2 {
+  font-family: var(--sc-font-display);
+  font-size: var(--sc-t-xl);
+  font-weight: 500;
+  letter-spacing: var(--sc-track-snug);
+  line-height: var(--sc-leading-tight);
+  margin: 0;
+  text-wrap: balance;
+}
+.intertitle hr {
+  border: 0; height: 1px; background: var(--rule-strong);
+  margin: var(--sc-4) 0 0;
+}
+
+/* ============================================================= CHAPTER I ==
+   Title page. Five ink planes, no photograph and no video: the depth is drawn.
+   Copy rides at 1x; only the planes move. */
+.title-page {
+  position: relative;
+  min-height: 100svh;
+  display: flex; align-items: center;
+  overflow: clip;
+  padding-block: clamp(5rem, 14vh, 10rem) clamp(7rem, 18vh, 12rem);
+}
+.plane { position: absolute; inset: 0; pointer-events: none; }
+.plane > svg { position: absolute; max-width: none; }
+
+/* 1 · far: the engraved grid */
+.plane--grid {
+  background-image:
+    linear-gradient(to right, var(--rule-faint) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--rule-faint) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(120% 90% at 62% 44%, #000 20%, transparent 76%);
+  opacity: 0.9;
+}
+/* 2 · mid: the scattered field of unjoined signals */
+.plane--field > svg { top: 50%; left: 50%; translate: -50% -50%; width: min(118rem, 160vw); }
+.plane--field { opacity: 0.6; }
+/* 3 · subject: the document, edge on, unopened */
+.plane--spine > svg { right: -7rem; bottom: -6vh; height: min(104vh, 60rem); width: auto; }
+.plane--spine { z-index: 3; }
+/* 4 · front: the register marks and the dimension line */
+.plane--rule { z-index: 4; }
+.plane--rule > svg { left: 0; bottom: 0; width: 100%; height: auto; }
+/* 5 · atmosphere, in front of everything. It stays clear of the copy: a front
+   plane that drifts over the headline greys it, which is depth bought with
+   legibility and not worth it. */
+.plane--mist {
+  z-index: 5;
+  background:
+    radial-gradient(58% 38% at 82% 88%, color-mix(in oklab, #1C3A5E 44%, transparent) 0%, transparent 72%),
+    radial-gradient(44% 30% at 92% 6%, color-mix(in oklab, #0A1020 62%, transparent) 0%, transparent 70%);
+  opacity: 0.85;
+}
+
+.title-page__copy { position: relative; z-index: 2; }
+.title-page h1 {
+  font-family: var(--sc-font-display);
+  font-size: var(--sc-t-4xl);
+  font-weight: 500;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  margin: 0;
+  max-width: 19ch;
+  text-wrap: balance;
+}
+.title-page h1 em { font-style: normal; color: var(--sc-accent); }
+.title-page__lede {
+  margin: var(--sc-5) 0 0;
+  font-size: var(--sc-t-lg);
+  line-height: 1.5;
+  max-width: 38ch;
+  color: var(--sc-ink);
+  text-wrap: pretty;
+}
+.title-page__es {
+  margin: var(--sc-3) 0 0;
+  font-size: var(--sc-t-sm);
+  font-style: italic;
+  color: var(--sc-ink-soft);
+  max-width: 40ch;
+}
+/* a register mark sitting in front of the type, the way it does on a plate */
+.title-page__reg {
+  position: absolute; z-index: 6;
+  left: calc(var(--sc-gutter) - 10px); top: -18px;
+  width: 26px; height: 26px;
+  color: var(--sc-accent);
+  pointer-events: none;
+}
+@media (max-width: 61.99rem) { .title-page__reg { display: none; } }
+
+/* ============================================================ CHAPTER II ==
+   The spread. Dense, asymmetric, every item true and none of them joined. */
+.scatter {
+  position: relative;
+  margin-top: var(--sc-7);
+  display: grid;
+  gap: var(--sc-4);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 48rem) {
+  .scatter { grid-template-columns: repeat(12, 1fr); row-gap: var(--sc-7); }
+  /* Six true things, lying where they fell. Nothing shares a baseline, no two
+     rules are the same length, and each sits a fraction off square: the act is
+     about a record that never got collated, so it cannot be laid out on a grid
+     the reader can read down. */
+  .frag:nth-child(1) { grid-column: 1 / span 5;  margin-top: var(--sc-5); }
+  .frag:nth-child(2) { grid-column: 8 / span 4;  margin-top: var(--sc-9); }
+  .frag:nth-child(3) { grid-column: 2 / span 4;  margin-top: calc(var(--sc-6) * -1); }
+  .frag:nth-child(4) { grid-column: 7 / span 5;  margin-top: var(--sc-4); }
+  .frag:nth-child(5) { grid-column: 1 / span 4;  margin-top: var(--sc-7); }
+  .frag:nth-child(6) { grid-column: 6 / span 6;  margin-top: calc(var(--sc-7) * -1); }
+  .frag:nth-child(1) { width: 92%; }
+  .frag:nth-child(2) { width: 100%; }
+  .frag:nth-child(3) { width: 84%; }
+  .frag:nth-child(4) { width: 96%; }
+  .frag:nth-child(5) { width: 78%; }
+  .frag:nth-child(6) { width: 70%; }
+}
+.frag {
+  border-top: 1px solid var(--rule-strong);
+  padding-top: var(--sc-3);
+}
+@media (min-width: 48rem) and (prefers-reduced-motion: no-preference) {
+  .frag:nth-child(odd)  { rotate: -0.4deg; }
+  .frag:nth-child(even) { rotate: 0.35deg; }
+  .frag:nth-child(4)    { rotate: -0.7deg; }
+}
+.frag__head {
+  display: flex; align-items: center; gap: var(--sc-2);
+  font-family: var(--sc-font-display);
+  font-size: var(--sc-t-base); font-weight: 500;
+  letter-spacing: var(--sc-track-snug);
+}
+.frag p {
+  margin: var(--sc-2) 0 0;
+  color: var(--sc-ink-soft);
+  font-size: var(--sc-t-sm);
+  max-width: 30ch;
+}
+.frag svg { margin-top: var(--sc-3); color: var(--rule-strong); width: 100%; height: auto; }
+.scatter__note {
+  grid-column: 1 / -1;
+  margin: var(--sc-6) 0 0;
+  padding-top: var(--sc-4);
+  border-top: 1px solid var(--rule);
+  font-family: var(--sc-font-display);
+  font-size: var(--sc-t-xl);
+  font-weight: 500;
+  letter-spacing: var(--sc-track-snug);
+  line-height: 1.15;
+  max-width: 30ch;
+  text-wrap: balance;
+}
+
+/* =========================================================== CHAPTER III ==
+   The specimen plate, in its own column, with a caption. Media never bleeds
+   under type in this grammar. */
+.plate-spread {
+  display: grid; gap: var(--sc-6);
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+@media (min-width: 60rem) {
+  .plate-spread { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--sc-7); }
+}
+.plate-figure { margin: 0; }
+.plate-figure svg { width: 100%; height: auto; }
+.plate-figure figcaption {
+  margin-top: var(--sc-3);
+  padding-top: var(--sc-2);
+  border-top: 1px solid var(--rule);
+  font-size: var(--sc-t-xs);
+  color: var(--sc-ink-soft);
+  display: flex; flex-wrap: wrap; gap: var(--sc-1) var(--sc-4);
+}
+.plate-figure figcaption b { color: var(--sc-ink); font-weight: 600; }
+
+.facts { list-style: none; margin: var(--sc-5) 0 0; padding: 0; }
+.facts li {
+  display: grid; grid-template-columns: 1.25rem 1fr; gap: var(--sc-3);
+  padding: var(--sc-3) 0;
+  border-top: 1px solid var(--rule);
+  font-size: var(--sc-t-sm);
+}
+.facts li:last-child { border-bottom: 1px solid var(--rule); }
+.facts b { font-family: var(--sc-font-display); font-weight: 600; }
+.facts span { color: var(--sc-ink-soft); display: block; margin-top: 2px; }
+.facts code, .ledger code, .colophon code {
+  font-family: var(--sc-font-mono);
+  font-size: 0.92em;
+  color: var(--sc-ink);
+}
+.countline {
+  margin: var(--sc-6) 0 0;
+  font-family: var(--sc-font-display);
+  font-size: var(--sc-t-2xl);
+  font-weight: 500;
+  letter-spacing: var(--sc-track-tight);
+  line-height: 1.04;
+}
+.countline em { font-style: normal; color: var(--sc-accent); }
+.countline + p { margin-top: var(--sc-3); color: var(--sc-ink-soft); max-width: 36ch; font-size: var(--sc-t-sm); }
+
+/* ============================================================ CHAPTER IV ==
+   The peak. The margin empties into the plate and the document binds. */
+.bind-stage {
+  background: var(--sc-canvas);
+  display: grid;
+  place-items: center;
+  padding: var(--sc-6) var(--sc-gutter);
+}
+/* .page already carries the folio offset; adding it again here pushes the
+   whole stage a margin-width to the right. */
+.bind {
+  position: relative;
+  width: 100%; max-width: 54rem;
+  display: grid; gap: var(--sc-5);
+}
+.bind__plate { position: relative; margin: 0; }
+.bind__plate svg { width: 100%; height: auto; }
+.plate-portrait { display: none; }
+@media (max-width: 47.99rem) {
+  .plate-portrait { display: block; }
+  .plate-landscape { display: none; }
+}
+.bind__copy { display: grid; }
+/* The three statements cross over each other in one box; the honesty note gets
+   its own row underneath, so the two can never overlap at any scroll position. */
+.bind__lines { position: relative; min-height: 7.5rem; }
+.bind__lines > * {
+  position: absolute; inset: 0;
+  margin: 0;
+  font-family: var(--sc-font-display);
+  font-size: var(--sc-t-xl);
+  font-weight: 500;
+  letter-spacing: var(--sc-track-snug);
+  line-height: 1.16;
+  max-width: 30ch;
+  text-wrap: balance;
+}
+.bind__note {
+  margin: var(--sc-5) 0 0;
+  font-size: var(--sc-t-sm);
+  line-height: 1.5;
+  max-width: 54ch;
+  color: var(--sc-ink-soft);
+  display: grid; grid-template-columns: 1.25rem 1fr; gap: var(--sc-3);
+  align-items: start;
+}
+.bind__note .mark { margin-top: 0.4em; }
+/* plate rows start unbound and resolve as the lines arrive */
+.row-field { opacity: 0.22; }
+.row-field.is-bound { opacity: 1; }
+.row-derived { opacity: 0.16; }
+.row-derived.is-bound { opacity: 1; }
+.seal { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.seal.is-on { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .row-field, .row-derived { transition: opacity 320ms var(--sc-ease-out); }
+  .seal { transition: opacity 420ms var(--sc-ease-out), scale 420ms var(--sc-ease-out); scale: 0.95; }
+  .seal.is-on { scale: 1; }
+}
+
+/* ============================================================= CHAPTER V ==
+   Two sides and the ledger. Administrative content, compressed: flow with a
+   short stagger, not a pinned act. */
+.sides {
+  display: grid; gap: var(--sc-6);
+  grid-template-columns: 1fr;
+  margin-top: var(--sc-6);
+}
+@media (min-width: 54rem) { .sides { grid-template-columns: 1fr 1fr; gap: var(--sc-7); } }
+.side h3 {
+  font-family: var(--sc-font-display);
+  font-size: var(--sc-t-lg); font-weight: 500;
+  letter-spacing: var(--sc-track-snug);
+  margin: 0 0 var(--sc-3);
+}
+.side p { margin: 0 0 var(--sc-3); color: var(--sc-ink-soft); font-size: var(--sc-t-sm); max-width: 38ch; }
+.side figure { margin: var(--sc-4) 0 0; }
+.side figure svg { width: 100%; height: auto; color: var(--rule-strong); }
+.side figcaption {
+  margin-top: var(--sc-2); padding-top: var(--sc-2);
+  border-top: 1px solid var(--rule);
+  font-size: var(--sc-t-xs); color: var(--sc-ink-soft);
+}
+
+.ledger { margin-top: var(--sc-8); }
+.ledger table { width: 100%; border-collapse: collapse; font-size: var(--sc-t-sm); }
+.ledger caption {
+  text-align: left;
+  font-family: var(--sc-font-display);
+  font-size: var(--sc-t-lg); font-weight: 500;
+  letter-spacing: var(--sc-track-snug);
+  margin-bottom: var(--sc-4);
+}
+.ledger th, .ledger td {
+  text-align: left;
+  padding: var(--sc-3) var(--sc-4) var(--sc-3) 0;
+  border-top: 1px solid var(--rule);
+  vertical-align: baseline;
+}
+.ledger thead th {
+  font-family: var(--sc-font-display);
+  font-size: var(--sc-t-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--sc-track-wide);
+  color: var(--sc-ink-soft);
+  border-top-color: var(--rule-strong);
+}
+.ledger tbody th { font-weight: 500; }
+.ledger td:last-child, .ledger th:last-child { padding-right: 0; }
+.ledger .state { display: flex; align-items: center; gap: var(--sc-2); white-space: nowrap; }
+.ledger__legend {
+  margin: var(--sc-4) 0 0;
+  display: flex; flex-wrap: wrap; gap: var(--sc-2) var(--sc-5);
+  font-size: var(--sc-t-xs); color: var(--sc-ink-soft);
+}
+.ledger__legend span { display: flex; align-items: center; gap: var(--sc-2); }
+.ledger__source {
+  margin: var(--sc-4) 0 0;
+  font-size: var(--sc-t-xs);
+  color: var(--sc-ink-soft);
+  opacity: 0;
+  transform: translateY(4px);
+}
+.ledger__source.is-on { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .ledger__source { transition: opacity 420ms var(--sc-ease-out), transform 420ms var(--sc-ease-out); }
+}
+@media (max-width: 42rem) {
+  .ledger thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .ledger tr { display: block; border-top: 1px solid var(--rule); padding: var(--sc-3) 0; }
+  .ledger th, .ledger td { display: block; border: 0; padding: 0; }
+  .ledger tbody th { font-family: var(--sc-font-display); font-size: var(--sc-t-base); }
+  .ledger td { color: var(--sc-ink-soft); margin-top: 2px; }
+  .ledger .state { margin-top: var(--sc-2); color: var(--sc-ink); }
+}
+
+/* ============================================================ CHAPTER VI ==
+   The colophon. Smallest type on the site, the ask set as running text. */
+.colophon-stage {
+  background: var(--sc-canvas);
+  display: grid; align-items: center;
+  padding: var(--sc-7) var(--sc-gutter);
+}
+.colophon { width: 100%; max-width: 60rem; margin-inline: auto; }
+.colophon__plate {
+  display: grid; gap: var(--sc-6);
+  grid-template-columns: 1fr;
+  border-top: 2px solid var(--sc-ink);
+  padding-top: var(--sc-4);
+}
+@media (min-width: 54rem) { .colophon__plate { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--sc-8); } }
+.colophon__statement {
+  margin: 0;
+  font-size: var(--sc-t-base);
+  line-height: 1.62;
+  max-width: 56ch;
+  text-wrap: pretty;
+}
+.colophon__statement a {
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-decoration-color: var(--sc-accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.26em;
+}
+.colophon__statement a:hover { text-decoration-thickness: 3px; }
+.colophon__statement a:active { translate: 0 1px; }
+.colophon dl {
+  margin: 0; font-size: var(--sc-t-xs);
+  display: grid; grid-template-columns: auto 1fr; gap: var(--sc-2) var(--sc-4);
+}
+.colophon dt { color: var(--sc-ink-soft); }
+.colophon dd { margin: 0; }
+.colophon__seal {
+  margin-top: var(--sc-6);
+  display: flex; align-items: center; gap: var(--sc-3);
+  font-size: var(--sc-t-xs); color: var(--sc-ink-soft);
+}
+.colophon__seal svg { color: var(--sc-accent); flex: none; }
+
+/* ------------------------------------------------------------- reveal in -- */
+[data-sc-in] > * { opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  [data-sc-in] > * { transform: translateY(14px); transition: opacity 620ms var(--sc-ease-out), transform 620ms var(--sc-ease-out); }
+}
+[data-sc-in].sc-in > *, [data-sc-in] > *.sc-in { opacity: 1; transform: none; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+.skip {
+  position: absolute; left: var(--sc-4); top: var(--sc-4); z-index: 99;
+  padding: 0.6rem 1rem;
+  background: var(--sc-accent); color: var(--sc-accent-ink);
+  font-weight: 600; text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip:focus { transform: none; }
+
+/* -------------------------------------------------------- phone direction -- */
+@media (max-width: 43.74rem) {
+  .title-page h1 { font-size: var(--sc-t-2xl); max-width: 16ch; }
+  .title-page { padding-bottom: clamp(9rem, 26vh, 14rem); align-items: flex-start; padding-top: clamp(4rem, 12vh, 7rem); }
+  .title-page__lede { font-size: var(--sc-t-base); }
+  /* the document sits low and smaller, never over the headline */
+  .plane--spine > svg { height: 44vh; right: -3rem; bottom: 4vh; }
+  .plane--field > svg { width: 220vw; }
+  .bind { max-width: none; gap: var(--sc-3); }
+  .bind__lines { min-height: 6.5rem; }
+  .bind__lines > * { font-size: var(--sc-t-base); line-height: 1.3; }
+  .bind__note { margin-top: var(--sc-3); font-size: var(--sc-t-xs); }
+  .bind-stage { padding-block: var(--sc-4) 3.5rem; }
+  .intertitle__rule { flex-direction: column; gap: var(--sc-2); }
+  .page { padding-bottom: 4.5rem; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#ch1">Skip to the start</a>
+<div class="sc-grain" aria-hidden="true"></div>
+
+<!-- ============================ THE FOLIO (chrome) ======================= -->
+<aside class="folio" aria-label="Folio">
+  <div>
+    <p class="folio__mark">Fondealo<span aria-hidden="true">·</span></p>
+    <p class="folio__sub">Credit identity for Latin American businesses, on Stellar.</p>
+  </div>
+
+  <nav aria-label="Chapters">
+    <ol class="folio__index" id="folio-index">
+      <li><a href="#ch1"><span class="folio__num">I</span><span>The invisible opportunity</span></a></li>
+      <li><a href="#ch2"><span class="folio__num">II</span><span>Where the record goes</span></a></li>
+      <li><a href="#ch3"><span class="folio__num">III</span><span>The Business Passport</span></a></li>
+      <li><a href="#ch4"><span class="folio__num">IV</span><span>Reputation that evolves</span></a></li>
+      <li><a href="#ch5"><span class="folio__num">V</span><span>Opportunities and the ecosystem</span></a></li>
+      <li><a href="#ch6"><span class="folio__num">VI</span><span>The future of business credit</span></a></li>
+    </ol>
+  </nav>
+
+  <div class="stub">
+    <p class="stub__head"><span>Filed</span> <span class="stub__count"><span id="stub-n">0</span>/7</span></p>
+    <ol class="stub__list" id="folio-stub" aria-live="off"></ol>
+    <div class="folio__bound" id="folio-bound">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true" style="color: var(--sc-accent)">
+        <rect x="2.5" y="1.5" width="21" height="23" rx="2"/>
+        <path d="M7 1.5v23M10 8h9M10 12h9M10 16h6"/>
+        <circle cx="18" cy="20" r="2.4"/>
+      </svg>
+      <p><strong>Folio complete</strong>Seven signals, one document.</p>
+    </div>
+    <a class="folio__cta" href="https://fondealo.vercel.app/onboarding?intent=business">Start a Passport</a>
+  </div>
+</aside>
+
+<!-- the phone's folio -->
+<div class="folio-bar" aria-label="Folio">
+  <p class="folio-bar__where"><b id="bar-num">I</b> <span id="bar-title">The invisible opportunity</span></p>
+  <span class="folio-bar__tally" id="bar-tally" aria-hidden="true"></span>
+  <a class="folio-bar__cta" href="https://fondealo.vercel.app/onboarding?intent=business">Start a Passport</a>
+</div>
+
+<main class="page">
+
+<!-- ============================== CHAPTER I ============================== -->
+<section class="chapter ground--ink" id="ch1" data-chapter="1" data-sc-act="flow" aria-labelledby="h1">
+  <div class="title-page">
+    <div class="plane plane--grid" data-sc-parallax="-1.4" aria-hidden="true"></div>
+
+    <div class="plane plane--field" data-sc-parallax="-0.6" aria-hidden="true">
+      <!-- the field of unjoined signals: true things, scattered -->
+      <svg viewBox="0 0 1600 900" fill="none" stroke="currentColor" style="color: var(--rule-strong)">
+        <g stroke-width="1">
+          <g><path d="M120 150h150"/><path d="M120 162h92"/><rect x="104" y="144" width="7" height="7" fill="currentColor" stroke="none"/></g>
+          <g><path d="M420 96h116"/><path d="M420 108h64"/><rect x="404" y="90" width="7" height="7"/></g>
+          <g><path d="M760 190h132"/><path d="M760 202h78"/><rect x="744" y="184" width="7" height="7" fill="currentColor" stroke="none"/></g>
+          <g><path d="M1180 120h140"/><path d="M1180 132h86"/><rect x="1164" y="114" width="7" height="7"/></g>
+          <g><path d="M250 420h128"/><path d="M250 432h70"/><rect x="234" y="414" width="7" height="7"/></g>
+          <g><path d="M1310 360h120"/><path d="M1310 372h74"/><rect x="1294" y="354" width="7" height="7" fill="currentColor" stroke="none"/></g>
+          <g><path d="M90 640h144"/><path d="M90 652h88"/><rect x="74" y="634" width="7" height="7"/></g>
+          <g><path d="M470 700h120"/><path d="M470 712h62"/><rect x="454" y="694" width="7" height="7" fill="currentColor" stroke="none"/></g>
+          <g><path d="M880 760h136"/><path d="M880 772h80"/><rect x="864" y="754" width="7" height="7"/></g>
+          <g><path d="M1240 690h128"/><path d="M1240 702h72"/><rect x="1224" y="684" width="7" height="7"/></g>
+          <g><path d="M640 520h112"/><path d="M640 532h58"/><rect x="624" y="514" width="7" height="7"/></g>
+          <g><path d="M1020 440h130"/><path d="M1020 452h76"/><rect x="1004" y="434" width="7" height="7" fill="currentColor" stroke="none"/></g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- the subject: the document, closed, seen along its spine -->
+    <div class="plane plane--spine" data-sc-parallax="-0.25" aria-hidden="true">
+      <svg viewBox="0 0 320 760" fill="none" stroke="currentColor" preserveAspectRatio="xMidYMax meet">
+        <!-- the covers are opaque, so type that passes behind them is genuinely
+             occluded rather than hazed. A semi-transparent subject over a
+             headline reads as a mistake, not as depth. -->
+        <g stroke="none">
+          <path d="M86 86 L86 700 L240 740 L240 126 Z" fill="#111A2C"/>
+          <path d="M86 86 L86 700 L40 672 L40 58 Z" fill="#0C1526"/>
+        </g>
+        <g style="color: var(--sc-ink)" opacity="0.55" stroke-width="1.25" fill="none">
+          <path d="M86 86 L86 700 L240 740 L240 126 Z"/>
+          <path d="M86 86 L86 700 L40 672 L40 58 Z"/>
+          <!-- page edges -->
+          <path d="M92 118 L232 154M92 142 L232 178M92 166 L232 202" opacity="0.5"/>
+          <!-- the spine fold -->
+          <path d="M86 86 L86 700" stroke-width="1.6"/>
+        </g>
+        <!-- the bind thread -->
+        <path d="M86 300 L86 520" stroke="var(--sc-accent)" stroke-width="2.4"/>
+        <g style="color: var(--sc-ink)" opacity="0.42" stroke-width="1.1">
+          <path d="M120 420h78M120 444h52"/>
+          <circle cx="196" cy="560" r="20"/>
+          <path d="M120 600h86M120 620h60"/>
+        </g>
+        <!-- dimension line down the spine: this is a drawing, and says so -->
+        <g stroke="currentColor" style="color: var(--rule-strong)" stroke-width="1">
+          <path d="M20 86 L20 700"/><path d="M12 86h16M12 700h16"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- foreground: register marks and the baseline dimension line -->
+    <div class="plane plane--rule" data-sc-parallax="0.55" aria-hidden="true">
+      <svg viewBox="0 0 1600 220" fill="none" stroke="currentColor" style="color: var(--rule-strong)" stroke-width="1">
+        <path d="M0 150 H1600" opacity="0.7"/>
+        <path d="M80 140v20M80 150h40" />
+        <path d="M1520 140v20M1480 150h40"/>
+        <g opacity="0.8">
+          <path d="M300 144v12M620 144v12M940 144v12M1260 144v12"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="plane plane--mist" data-sc-parallax="1.1" aria-hidden="true"></div>
+
+    <div class="spread title-page__copy">
+      <svg class="title-page__reg" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.1" aria-hidden="true">
+        <circle cx="13" cy="13" r="8"/><path d="M13 0v26M0 13h26"/>
+      </svg>
+      <h1 id="h1">The record is already there. Fondealo makes it <em>portable</em>.</h1>
+      <p class="title-page__lede">A Business Passport: one credit identity the business owns, carries between lenders, and builds on with every repayment.</p>
+      <p class="title-page__es" lang="es">Infraestructura de crédito para PyMEs latinoamericanas, sobre Stellar.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= CHAPTER II ============================== -->
+<section class="chapter ground--ink" id="ch2" data-chapter="2" data-sc-act="flow" aria-labelledby="h2">
+  <div class="spread">
+    <div class="intertitle">
+      <div class="intertitle__rule">
+        <p class="intertitle__num">II</p>
+        <h2 id="h2">Where the record goes</h2>
+      </div>
+      <hr>
+    </div>
+
+    <div class="measure--wide" data-sc-in data-sc-stagger="60">
+      <p class="sc-lede">Every lender starts the same business from zero.</p>
+      <p class="sc-body">A shop with eight years of invoices, a supplier who has never been paid late, and two loans closed on time. None of it leaves the place it happened in. The next funder is handed a form.</p>
+    </div>
+
+    <div class="scatter" data-sc-in data-sc-stagger="70">
+      <article class="frag" data-signal="Payment history">
+        <h3 class="frag__head"><span class="mark mark--open" aria-hidden="true"></span>Invoices</h3>
+        <p>Eight years of them, in an accounting file nobody outside the business can read.</p>
+        <svg viewBox="0 0 220 34" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M0 8h150M0 20h96M0 32h124"/></svg>
+      </article>
+      <article class="frag" data-signal="Trade terms">
+        <h3 class="frag__head"><span class="mark mark--open" aria-hidden="true"></span>Supplier terms</h3>
+        <p>A reputation held in one person's memory. It does not survive them changing jobs.</p>
+        <svg viewBox="0 0 220 34" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M0 8h88M0 20h132"/><circle cx="200" cy="20" r="6"/></svg>
+      </article>
+      <article class="frag" data-signal="Closed loans">
+        <h3 class="frag__head"><span class="mark mark--open" aria-hidden="true"></span>Two closed loans</h3>
+        <p>Repaid in full, on time. Known only to the lender that issued them.</p>
+        <svg viewBox="0 0 220 34" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M0 14h64M84 14h58M162 14h58"/><path d="M64 8v12M142 8v12"/></svg>
+      </article>
+      <article class="frag" data-signal="Bank standing">
+        <h3 class="frag__head"><span class="mark mark--open" aria-hidden="true"></span>Bank statements</h3>
+        <p>A snapshot of one month, read as if it were a history.</p>
+        <svg viewBox="0 0 220 34" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><rect x="0" y="4" width="60" height="26"/><path d="M78 10h142M78 24h110"/></svg>
+      </article>
+      <article class="frag" data-signal="Tax standing">
+        <h3 class="frag__head"><span class="mark mark--open" aria-hidden="true"></span>Tax standing</h3>
+        <p>Proof of compliance, which is not the same thing as proof of reliability.</p>
+        <svg viewBox="0 0 220 34" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M0 17h180"/><path d="M180 9l14 8-14 8z"/></svg>
+      </article>
+      <article class="frag" data-signal="Identity key">
+        <h3 class="frag__head"><span class="mark mark--open" aria-hidden="true"></span>Who the business is</h3>
+        <p>Re-proved from scratch at every institution, from the same documents, by hand.</p>
+        <svg viewBox="0 0 220 34" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M0 17h40M60 17h40M120 17h40M180 17h40"/></svg>
+      </article>
+
+      <p class="scatter__note">Six true things about one business, and no way to hand them to the next funder.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= CHAPTER III ============================= -->
+<section class="chapter ground--paper" id="ch3" data-chapter="3" data-sc-act="flow" aria-labelledby="h3">
+  <div class="spread">
+    <div class="intertitle">
+      <div class="intertitle__rule">
+        <p class="intertitle__num">III</p>
+        <h2 id="h3">The Business Passport</h2>
+      </div>
+      <hr>
+    </div>
+
+    <div class="plate-spread">
+      <figure class="plate-figure" data-sc-reveal="up" data-sc-reveal-at="0.12 0.42">
+        <svg viewBox="0 0 680 470" fill="none" stroke="currentColor" aria-labelledby="plate-title plate-desc" role="img">
+          <title id="plate-title">Specimen drawing of a Fondealo Business Passport</title>
+          <desc id="plate-desc">An orthographic plate of the credential, with the eight field rows labelled and no values filled in, surrounded by dimension lines and three leader callouts.</desc>
+
+          <!-- dimension lines, outside the card -->
+          <g style="color: var(--sc-ink-soft)" stroke-width="1" opacity="0.6">
+            <path d="M60 44 H560"/><path d="M60 36v16M560 36v16"/>
+            <path d="M40 72 V404"/><path d="M32 72h16M32 404h16"/>
+          </g>
+
+          <!-- the card -->
+          <g stroke-width="1.4" style="color: var(--sc-ink)">
+            <rect x="60" y="72" width="500" height="332" rx="10" fill="color-mix(in oklab, var(--sc-surface) 70%, transparent)"/>
+            <path d="M60 128 H560"/>
+            <text x="84" y="108" font-size="15" font-family="Space Grotesk, sans-serif" font-weight="700" letter-spacing="1.6" fill="currentColor" stroke="none">BUSINESS PASSPORT</text>
+            <text x="536" y="108" font-size="11" font-family="Space Grotesk, sans-serif" letter-spacing="1.2" text-anchor="end" fill="currentColor" stroke="none" opacity="0.65">FONDEALO</text>
+          </g>
+
+          <!-- field rows: labels only. No values, because there is no business. -->
+          <g font-size="11.5" font-family="Instrument Sans, sans-serif" fill="currentColor" stroke="none">
+            <g style="color: var(--sc-ink-soft)">
+              <text x="84" y="158">Identity key</text>
+              <text x="84" y="190">KYB status</text>
+              <text x="84" y="222">Trade terms</text>
+              <text x="84" y="254">Tax standing</text>
+              <text x="84" y="286">Bank standing</text>
+              <text x="84" y="318">Payment history</text>
+              <text x="84" y="350">Closed loans</text>
+              <text x="84" y="382">Issuer</text>
+            </g>
+          </g>
+          <!-- the empty value rules -->
+          <g stroke-width="1" stroke-dasharray="2 4" style="color: var(--sc-ink-soft)" opacity="0.8">
+            <path d="M210 154 H420"/><path d="M210 186 H420"/><path d="M210 218 H420"/><path d="M210 250 H420"/>
+            <path d="M210 282 H420"/><path d="M210 314 H420"/><path d="M210 346 H420"/><path d="M210 378 H420"/>
+          </g>
+
+          <!-- the derived marks: segments, not numbers -->
+          <g style="color: var(--sc-ink)" stroke-width="1.2">
+            <circle cx="492" cy="212" r="38" opacity="0.35"/>
+            <path d="M492 174 A38 38 0 0 1 528 200" stroke="var(--sc-accent)" stroke-width="3"/>
+            <text x="492" y="266" font-size="10" font-family="Instrument Sans, sans-serif" text-anchor="middle" fill="currentColor" stroke="none" opacity="0.7">Reputation</text>
+            <g opacity="0.5">
+              <rect x="462" y="300" width="14" height="14"/><rect x="480" y="300" width="14" height="14"/>
+              <rect x="498" y="300" width="14" height="14"/><rect x="516" y="300" width="14" height="14"/>
+            </g>
+            <text x="492" y="334" font-size="10" font-family="Instrument Sans, sans-serif" text-anchor="middle" fill="currentColor" stroke="none" opacity="0.7">Risk band</text>
+          </g>
+
+          <!-- leader callouts -->
+          <g stroke-width="1" style="color: var(--sc-accent)">
+            <path d="M560 96 H628"/><circle cx="560" cy="96" r="2.5" fill="currentColor"/>
+            <path d="M560 300 H628"/><circle cx="560" cy="300" r="2.5" fill="currentColor"/>
+            <path d="M310 404 V440 H420" /><circle cx="310" cy="404" r="2.5" fill="currentColor"/>
+          </g>
+          <g font-size="10.5" font-family="Instrument Sans, sans-serif" fill="currentColor" stroke="none" style="color: var(--sc-ink)">
+            <text x="634" y="92">Non</text><text x="634" y="104">transferable</text>
+            <text x="634" y="296">Fields are</text><text x="634" y="308">fixed</text>
+            <text x="428" y="444">Only a hash goes on chain</text>
+          </g>
+        </svg>
+        <figcaption>
+          <span><b>Specimen.</b> Fields only, no business.</span>
+          <span>Orthographic, 1:1</span>
+          <span>Drawn from the app's Passport interface</span>
+        </figcaption>
+      </figure>
+
+      <div data-sc-in data-sc-stagger="60">
+        <p class="sc-lede">One document, with the fields a funder actually asks for.</p>
+        <p class="sc-body">Fondealo issues the Passport. The business holds it. Because the shape is fixed, a funder reads the same eight fields every time, whoever issued the credential and whatever the business sells.</p>
+
+        <ul class="facts">
+          <li>
+            <span class="mark mark--live" aria-hidden="true"></span>
+            <span><b>Non transferable.</b><span>The credential is bound to the business that earned it. It cannot be sold or lent.</span></span>
+          </li>
+          <li data-signal="KYB status">
+            <span class="mark mark--live" aria-hidden="true"></span>
+            <span><b>Personal data stays off chain.</b><span>Verification is recorded as a KYB status. Only a hash is written to Soroban, and the documents never leave the places that already hold them.</span></span>
+          </li>
+          <li>
+            <span class="mark mark--live" aria-hidden="true"></span>
+            <span><b>Read by anyone, written by one thing.</b><span>Any funder can verify the Passport. Only <code>loan_escrow</code> can report a repayment to <code>credit_score</code>.</span></span>
+          </li>
+        </ul>
+
+        <p class="countline">It takes <em><span data-sc-count="0 3" data-sc-count-at="0.42 0.6">0</span></em> contracts.</p>
+        <p><code>business_passport</code> issues the credential. <code>credit_score</code> holds the reputation. <code>loan_escrow</code> moves the USDC and is the only reporter the score accepts.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= CHAPTER IV ==============================
+     The peak. Pinned, the longest act on the page, and the only one that
+     empties the folio. The ground is already drawn when the act begins, so the
+     opening screen is the authored silence rather than an empty stage. -->
+<section class="chapter ground--ink" id="ch4" data-chapter="4" data-sc-act="pin" data-sc-span="3.4" aria-labelledby="h4">
+  <div data-sc-stage class="bind-stage">
+    <div class="bind" id="bind">
+      <h2 id="h4" class="sr-only">Reputation that evolves</h2>
+
+      <figure class="bind__plate">
+        <!-- Portrait plate. Not the landscape one scaled down: at 390px that
+             sets the field labels at about 7px, which is the whole point of the
+             act rendered illegible. Rows run full width, the derived marks move
+             below the card, and the seal lands bottom right. -->
+        <svg class="plate-portrait" viewBox="0 0 360 566" fill="none" stroke="currentColor" aria-hidden="true">
+          <g stroke-width="1.4" style="color: var(--sc-ink)">
+            <rect x="6" y="6" width="348" height="424" rx="10" fill="color-mix(in oklab, var(--sc-surface) 80%, transparent)"/>
+            <path d="M6 54 H354"/>
+            <text x="22" y="36" font-size="13" font-family="Space Grotesk, sans-serif" font-weight="700" letter-spacing="1.3" fill="currentColor" stroke="none">BUSINESS PASSPORT</text>
+            <text x="338" y="36" font-size="9.5" font-family="Space Grotesk, sans-serif" letter-spacing="1" text-anchor="end" fill="currentColor" stroke="none" opacity="0.65">FONDEALO</text>
+          </g>
+          <g font-size="12.5" font-family="Instrument Sans, sans-serif" stroke="none" fill="currentColor">
+            <g class="row-field" data-row="Identity key"><text x="22" y="90" style="color: var(--sc-ink-soft)">Identity key</text><rect x="170" y="80" width="164" height="1.6" fill="var(--sc-accent)"/></g>
+            <g class="row-field" data-row="KYB status"><text x="22" y="132" style="color: var(--sc-ink-soft)">KYB status</text><rect x="170" y="122" width="164" height="1.6" fill="var(--sc-accent)"/></g>
+            <g class="row-field" data-row="Trade terms"><text x="22" y="174" style="color: var(--sc-ink-soft)">Trade terms</text><rect x="170" y="164" width="164" height="1.6" fill="var(--sc-accent)"/></g>
+            <g class="row-field" data-row="Tax standing"><text x="22" y="216" style="color: var(--sc-ink-soft)">Tax standing</text><rect x="170" y="206" width="164" height="1.6" fill="var(--sc-accent)"/></g>
+            <g class="row-field" data-row="Bank standing"><text x="22" y="258" style="color: var(--sc-ink-soft)">Bank standing</text><rect x="170" y="248" width="164" height="1.6" fill="var(--sc-accent)"/></g>
+            <g class="row-field" data-row="Payment history"><text x="22" y="300" style="color: var(--sc-ink-soft)">Payment history</text><rect x="170" y="290" width="164" height="1.6" fill="var(--sc-accent)"/></g>
+            <g class="row-field" data-row="Closed loans"><text x="22" y="342" style="color: var(--sc-ink-soft)">Closed loans</text><rect x="170" y="332" width="164" height="1.6" fill="var(--sc-accent)"/></g>
+            <g class="row-derived">
+              <text x="22" y="392" style="color: var(--sc-ink-soft)">Issuer</text>
+              <text x="170" y="392" font-family="Space Grotesk, sans-serif" font-size="11.5" style="color: var(--sc-ink)">business_passport</text>
+            </g>
+          </g>
+          <g class="row-derived" stroke-width="1.2" style="color: var(--sc-ink)">
+            <circle cx="52" cy="492" r="30" opacity="0.3"/>
+            <path d="M52 462 A30 30 0 0 1 78 477" stroke="var(--sc-accent)" stroke-width="3"/>
+            <text x="52" y="543" font-size="9.5" font-family="Instrument Sans, sans-serif" text-anchor="middle" fill="currentColor" stroke="none" opacity="0.75">Reputation</text>
+            <g>
+              <rect x="124" y="484" width="15" height="15" fill="var(--sc-accent)" stroke="none"/>
+              <rect x="143" y="484" width="15" height="15" fill="var(--sc-accent)" stroke="none"/>
+              <rect x="162" y="484" width="15" height="15" opacity="0.4"/>
+              <rect x="181" y="484" width="15" height="15" opacity="0.4"/>
+            </g>
+            <text x="160" y="543" font-size="9.5" font-family="Instrument Sans, sans-serif" text-anchor="middle" fill="currentColor" stroke="none" opacity="0.75">Risk band</text>
+          </g>
+          <g class="seal" style="color: var(--sc-accent)">
+            <circle cx="296" cy="488" r="36" stroke-width="1.4"/>
+            <circle cx="296" cy="488" r="29" stroke-width="1" opacity="0.6"/>
+            <path d="M281 488l10 10 20 -22" stroke-width="2.4"/>
+            <text x="296" y="543" font-size="8.5" font-family="Space Grotesk, sans-serif" letter-spacing="1.1" text-anchor="middle" fill="currentColor" stroke="none">NON TRANSFERABLE</text>
+          </g>
+        </svg>
+
+        <svg class="plate-landscape" viewBox="34 14 596 376" fill="none" stroke="currentColor" aria-hidden="true" id="bind-plate">
+          <g stroke-width="1.4" style="color: var(--sc-ink)">
+            <rect x="40" y="30" width="500" height="332" rx="10" fill="color-mix(in oklab, var(--sc-surface) 80%, transparent)"/>
+            <path d="M40 86 H540"/>
+            <text x="64" y="66" font-size="15" font-family="Space Grotesk, sans-serif" font-weight="700" letter-spacing="1.6" fill="currentColor" stroke="none">BUSINESS PASSPORT</text>
+            <text x="516" y="66" font-size="11" font-family="Space Grotesk, sans-serif" letter-spacing="1.2" text-anchor="end" fill="currentColor" stroke="none" opacity="0.65">FONDEALO</text>
+          </g>
+
+          <!-- six bind targets, in the order the folio filed them -->
+          <g font-size="11.5" font-family="Instrument Sans, sans-serif" stroke="none" fill="currentColor">
+            <g class="row-field" data-row="Identity key">
+              <text x="64" y="116" style="color: var(--sc-ink-soft)">Identity key</text>
+              <rect x="190" y="106" width="210" height="1.4" fill="var(--sc-accent)" stroke="none"/>
+            </g>
+            <g class="row-field" data-row="KYB status">
+              <text x="64" y="148" style="color: var(--sc-ink-soft)">KYB status</text>
+              <rect x="190" y="138" width="210" height="1.4" fill="var(--sc-accent)" stroke="none"/>
+            </g>
+            <g class="row-field" data-row="Trade terms">
+              <text x="64" y="180" style="color: var(--sc-ink-soft)">Trade terms</text>
+              <rect x="190" y="170" width="210" height="1.4" fill="var(--sc-accent)" stroke="none"/>
+            </g>
+            <g class="row-field" data-row="Tax standing">
+              <text x="64" y="212" style="color: var(--sc-ink-soft)">Tax standing</text>
+              <rect x="190" y="202" width="210" height="1.4" fill="var(--sc-accent)" stroke="none"/>
+            </g>
+            <g class="row-field" data-row="Bank standing">
+              <text x="64" y="244" style="color: var(--sc-ink-soft)">Bank standing</text>
+              <rect x="190" y="234" width="210" height="1.4" fill="var(--sc-accent)" stroke="none"/>
+            </g>
+            <g class="row-field" data-row="Payment history">
+              <text x="64" y="276" style="color: var(--sc-ink-soft)">Payment history</text>
+              <rect x="190" y="266" width="210" height="1.4" fill="var(--sc-accent)" stroke="none"/>
+            </g>
+            <g class="row-field" data-row="Closed loans">
+              <text x="64" y="308" style="color: var(--sc-ink-soft)">Closed loans</text>
+              <rect x="190" y="298" width="210" height="1.4" fill="var(--sc-accent)" stroke="none"/>
+            </g>
+            <g class="row-derived">
+              <text x="64" y="340" style="color: var(--sc-ink-soft)">Issuer</text>
+              <text x="190" y="340" font-family="Space Grotesk, sans-serif" font-size="11" style="color: var(--sc-ink)">business_passport · Soroban</text>
+            </g>
+          </g>
+
+          <!-- the derived side: marks, never invented numbers -->
+          <g class="row-derived" stroke-width="1.2" style="color: var(--sc-ink)">
+            <circle cx="472" cy="180" r="40" opacity="0.3"/>
+            <path d="M472 140 A40 40 0 0 1 507 160" stroke="var(--sc-accent)" stroke-width="3.5"/>
+            <text x="472" y="236" font-size="10" font-family="Instrument Sans, sans-serif" text-anchor="middle" fill="currentColor" stroke="none" opacity="0.75">Reputation, compounding</text>
+            <g>
+              <rect x="440" y="266" width="14" height="14" fill="var(--sc-accent)" stroke="none"/>
+              <rect x="458" y="266" width="14" height="14" fill="var(--sc-accent)" stroke="none"/>
+              <rect x="476" y="266" width="14" height="14" opacity="0.4"/>
+              <rect x="494" y="266" width="14" height="14" opacity="0.4"/>
+            </g>
+            <text x="472" y="300" font-size="10" font-family="Instrument Sans, sans-serif" text-anchor="middle" fill="currentColor" stroke="none" opacity="0.75">Risk band</text>
+          </g>
+
+          <!-- the seal -->
+          <g class="seal" id="bind-seal" style="color: var(--sc-accent)">
+            <circle cx="548" cy="322" r="42" stroke-width="1.4"/>
+            <circle cx="548" cy="322" r="34" stroke-width="1" opacity="0.6"/>
+            <path d="M531 322l11 11 23 -25" stroke-width="2.6"/>
+            <text x="548" y="378" font-size="9.5" font-family="Space Grotesk, sans-serif" letter-spacing="1.4" text-anchor="middle" fill="currentColor" stroke="none">NON TRANSFERABLE</text>
+          </g>
+        </svg>
+      </figure>
+
+      <div class="bind__copy">
+        <div class="bind__lines">
+          <p data-sc-cue="0.04 0.30">Nothing new was created. The same six signals, read in one shape.</p>
+          <p data-sc-cue="0.26 0.58">Every repayment is reported by <code>loan_escrow</code> and recorded by <code>credit_score</code>. The escrow writes the record, not the borrower.</p>
+          <p data-sc-cue="0.54 1 0.1 0.04">Bound to the business. Carried to the next funder. Added to, never restarted.</p>
+        </div>
+        <p class="bind__note" data-sc-cue="0.66 1 0.08 0.02">
+          <span class="mark mark--open" aria-hidden="true"></span>
+          <span>Design intent: the continuous score update on repayment is not live in production today. The contracts that do it are written and deploy to Testnet.</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== CHAPTER V ============================== -->
+<section class="chapter ground--paper" id="ch5" data-chapter="5" aria-labelledby="h5">
+  <div class="spread">
+    <div class="intertitle">
+      <div class="intertitle__rule">
+        <p class="intertitle__num">V</p>
+        <h2 id="h5">Opportunities and the ecosystem</h2>
+      </div>
+      <hr>
+    </div>
+
+    <div class="measure--wide" data-sc-in data-sc-stagger="60">
+      <p class="sc-lede">Two sides, one document between them.</p>
+    </div>
+
+    <div class="sides" data-sc-in data-sc-stagger="70">
+      <div class="side">
+        <h3>The business</h3>
+        <p>Publishes an opportunity: the amount, the term, and what the money is for. The Passport travels with the request, so the funder is reading fields instead of forming an impression.</p>
+        <p>Repayments go back through the escrow, which is what makes them count toward the reputation.</p>
+        <figure>
+          <svg viewBox="0 0 420 150" fill="none" stroke="currentColor" stroke-width="1" aria-label="Line drawing of an opportunity row in the Fondealo app" role="img">
+            <rect x="0.5" y="0.5" width="419" height="149"/>
+            <path d="M0 40h420"/>
+            <text x="16" y="26" font-size="11" font-family="Space Grotesk, sans-serif" letter-spacing="1" fill="currentColor" stroke="none">OPPORTUNITY</text>
+            <text x="404" y="26" font-size="11" font-family="Instrument Sans, sans-serif" text-anchor="end" fill="currentColor" stroke="none" opacity="0.7">USDC</text>
+            <g font-size="10" font-family="Instrument Sans, sans-serif" fill="currentColor" stroke="none" opacity="0.75">
+              <text x="16" y="62">Amount</text><text x="150" y="62">Term</text><text x="260" y="62">Risk band</text>
+            </g>
+            <g stroke-dasharray="2 4" opacity="0.8">
+              <path d="M16 78h110"/><path d="M150 78h80"/>
+            </g>
+            <g><rect x="260" y="68" width="12" height="12" fill="currentColor" stroke="none"/><rect x="276" y="68" width="12" height="12" fill="currentColor" stroke="none"/><rect x="292" y="68" width="12" height="12" opacity="0.4"/><rect x="308" y="68" width="12" height="12" opacity="0.4"/></g>
+            <rect x="16" y="104" width="128" height="30" rx="4"/>
+            <text x="80" y="124" font-size="11" font-family="Space Grotesk, sans-serif" text-anchor="middle" fill="currentColor" stroke="none">Fund in USDC</text>
+            <path d="M170 119h90"/><path d="M260 114l8 5-8 5z"/>
+            <text x="276" y="123" font-size="10" font-family="Instrument Sans, sans-serif" fill="currentColor" stroke="none" opacity="0.7">escrow</text>
+          </svg>
+          <figcaption>Interface drawing, not a screenshot.</figcaption>
+        </figure>
+      </div>
+
+      <div class="side">
+        <h3>The funder</h3>
+        <p>Reads the Passport, funds in USDC, and is repaid through <code>loan_escrow</code>. Because the escrow is the only thing that can report a repayment, the record cannot be flattered by either side.</p>
+        <p>The same credential is readable by the next funder, which is the part a private credit file has never done.</p>
+        <figure>
+          <svg viewBox="0 0 420 150" fill="none" stroke="currentColor" stroke-width="1" aria-label="Line drawing of the five stage trust rail in the Fondealo app" role="img">
+            <rect x="0.5" y="0.5" width="419" height="149"/>
+            <path d="M0 40h420"/>
+            <text x="16" y="26" font-size="11" font-family="Space Grotesk, sans-serif" letter-spacing="1" fill="currentColor" stroke="none">TRUST RAIL</text>
+            <path d="M34 86h352" opacity="0.6"/>
+            <g>
+              <circle cx="34" cy="86" r="7" fill="var(--sc-accent)" stroke="none"/>
+              <circle cx="122" cy="86" r="7" fill="var(--sc-accent)" stroke="none"/>
+              <circle cx="210" cy="86" r="7" fill="currentColor" stroke="none" opacity="0.45"/>
+              <circle cx="298" cy="86" r="7" opacity="0.55"/>
+              <circle cx="386" cy="86" r="7" opacity="0.55"/>
+            </g>
+            <g font-size="9.5" font-family="Instrument Sans, sans-serif" fill="currentColor" stroke="none" opacity="0.8">
+              <text x="34" y="112" text-anchor="middle">Wallet</text>
+              <text x="122" y="112" text-anchor="middle">Identity</text>
+              <text x="210" y="112" text-anchor="middle">KYB</text>
+              <text x="298" y="112" text-anchor="middle">Reputation</text>
+              <text x="386" y="112" text-anchor="middle">Funding</text>
+            </g>
+            <text x="16" y="140" font-size="9.5" font-family="Instrument Sans, sans-serif" fill="currentColor" stroke="none" opacity="0.65">The pipeline the business walks, visible on every authenticated screen.</text>
+          </svg>
+          <figcaption>Interface drawing, not a screenshot.</figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <div class="ledger" id="ledger">
+      <table>
+        <caption>What runs where, today.</caption>
+        <thead>
+          <tr><th scope="col">Capability</th><th scope="col">Where it runs</th><th scope="col">State</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Onboarding, Passport view, dashboards</th>
+            <td>Web app on Vercel</td>
+            <td><span class="state"><span class="mark mark--live" aria-hidden="true"></span>Live</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Passport issue and status</th>
+            <td><code>business_passport</code>, Soroban</td>
+            <td><span class="state"><span class="mark mark--part" aria-hidden="true"></span>Testnet, deploy pending</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Reputation score, reported by the escrow</th>
+            <td><code>credit_score</code>, Soroban</td>
+            <td><span class="state"><span class="mark mark--part" aria-hidden="true"></span>Testnet, deploy pending</span></td>
+          </tr>
+          <tr>
+            <th scope="row">USDC funding and repayment</th>
+            <td><code>loan_escrow</code>, Soroban</td>
+            <td><span class="state"><span class="mark mark--part" aria-hidden="true"></span>Testnet, deploy pending</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Continuous score update on each repayment</th>
+            <td>Contract written, flow not wired end to end</td>
+            <td><span class="state"><span class="mark mark--open" aria-hidden="true"></span>In design</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="ledger__legend">
+        <span><span class="mark mark--live" aria-hidden="true"></span>Live in production</span>
+        <span><span class="mark mark--part" aria-hidden="true"></span>Built, runs on Stellar Testnet</span>
+        <span><span class="mark mark--open" aria-hidden="true"></span>Designed, not yet running</span>
+      </p>
+      <p class="ledger__source" id="ledger-source">Read from the repository on 10 October 2026. The deployment table in <code>README.md</code> is the source, and it is the thing to change when a contract id is pasted in.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= CHAPTER VI ==============================
+     The close: a colophon, the smallest type on the site, the ask set as a
+     line of running text. Ground is present from p = 0, hold cues, and the
+     last element on the page. -->
+<section class="chapter ground--paper" id="ch6" data-chapter="6" data-sc-act="pin" data-sc-span="1.2" aria-labelledby="h6">
+  <div data-sc-stage class="colophon-stage">
+    <div class="colophon">
+      <div class="intertitle" style="padding-block: 0 var(--sc-5)" data-sc-cue="0 1 0 0">
+        <div class="intertitle__rule">
+          <p class="intertitle__num">VI</p>
+          <h2 id="h6">The future of business credit</h2>
+        </div>
+      </div>
+
+      <div class="colophon__plate">
+        <p class="colophon__statement" data-sc-cue="0.04">
+          Credit in Latin America is still written from scratch for every lender. It does not have to be.
+          A business that has paid on time should be able to prove it to the next funder without asking the
+          last one for permission. That is the whole of Fondealo: one document, owned by the business,
+          read the same way by everyone, and longer every year.
+          <a href="https://fondealo.vercel.app/onboarding?intent=business">Start a Passport</a>.
+        </p>
+
+        <dl data-sc-cue="0.1">
+          <dt>Credential</dt><dd>Business Passport, non transferable</dd>
+          <dt>Settlement</dt><dd>USDC on Stellar</dd>
+          <dt>Contracts</dt><dd><code>business_passport</code>, <code>credit_score</code>, <code>loan_escrow</code></dd>
+          <dt>State</dt><dd>Web app live. Contracts on Testnet.</dd>
+          <dt>Set in</dt><dd>Space Grotesk and Instrument Sans</dd>
+          <dt>Drawn in</dt><dd>Ink, on two grounds</dd>
+        </dl>
+      </div>
+
+      <p class="colophon__seal" data-sc-cue="0.12">
+        <svg width="22" height="22" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
+          <circle cx="13" cy="13" r="11"/><path d="M8 13l3.4 3.4L18 9.6"/>
+        </svg>
+        Folio closed. Seven signals, one document, carried by the business that earned it.
+      </p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script src="scrollcraft.js"></script>
+<script>
+ScrollCraft.mount(document.body);
+
+/* ===========================================================================
+   THE BINDING MARGIN · the signature move
+   The folio collects every signal the reader passes, as a numbered line of a
+   document. At the peak the margin empties: each line flies into its row on
+   the plate and binds. Afterwards the margin carries the bound folio.
+   Bespoke to this page. The engine is untouched; this reads --sc-p off the
+   peak act and the chapters' own geometry.
+   =========================================================================== */
+(function () {
+  "use strict";
+  var reduceQ = window.matchMedia("(prefers-reduced-motion: reduce)");
+  var signals = [].slice.call(document.querySelectorAll("[data-signal]"));
+  var stubList = document.getElementById("folio-stub");
+  var stubN = document.getElementById("stub-n");
+  var tally = document.getElementById("bar-tally");
+  var bound = document.getElementById("folio-bound");
+  var act = document.getElementById("ch4");
+  var seals = [].slice.call(document.querySelectorAll("#bind .seal"));
+  var rows = [].slice.call(document.querySelectorAll("#bind .row-field"));
+  var derived = [].slice.call(document.querySelectorAll("#bind .row-derived"));
+  if (!signals.length || !stubList || !act) return;
+
+  /* ---- 1 · the stub, one line per signal, filed as it is read ---------- */
+  var ROMAN = ["i", "ii", "iii", "iv", "v", "vi", "vii"];
+  /* Each line knows the plate row it belongs to by name, so the folio order and
+     the plate order can differ without a line landing on somebody else's field. */
+  function rowFor(name) {
+    var fallback = null;
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].getAttribute("data-row") !== name) continue;
+      if (rows[i].getClientRects().length) return rows[i];   // the plate on screen
+      if (!fallback) fallback = rows[i];
+    }
+    return fallback;
+  }
+
+  var lines = signals.map(function (sig, i) {
+    var name = sig.getAttribute("data-signal");
+    var li = document.createElement("li");
+    li.className = "stub__line";
+    li.innerHTML =
+      '<span class="stub__i">' + ROMAN[i] + "</span>" +
+      "<span>" + name + "</span>" +
+      '<span class="mark mark--open" aria-hidden="true"></span>';
+    stubList.appendChild(li);
+
+    var pip = document.createElement("span");
+    pip.className = "mark mark--open";
+    if (tally) tally.appendChild(pip);
+    return { el: li, pip: pip, name: name, filed: false, mark: li.querySelector(".mark") };
+  });
+
+  var filed = 0;
+  function file(i) {
+    var L = lines[i];
+    if (L.filed) return;
+    L.filed = true;
+    filed++;
+    L.el.classList.add("is-filed");
+    L.mark.className = "mark mark--live";
+    L.pip.className = "mark mark--live";
+    if (stubN) stubN.textContent = String(filed);
+  }
+
+  if ("IntersectionObserver" in window) {
+    var fio = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var i = signals.indexOf(e.target);
+        if (i > -1) file(i);
+        fio.unobserve(e.target);
+      });
+    }, { threshold: 0.75, rootMargin: "0px 0px -15% 0px" });
+    signals.forEach(function (s) { fio.observe(s); });
+  } else {
+    lines.forEach(function (_, i) { file(i); });
+  }
+
+  /* ---- 2 · the chapter the reader is in, for the folio and the strip --- */
+  var chapters = [].slice.call(document.querySelectorAll("[data-chapter]"));
+  var indexLinks = [].slice.call(document.querySelectorAll("#folio-index a"));
+  var barNum = document.getElementById("bar-num");
+  var barTitle = document.getElementById("bar-title");
+  var titles = indexLinks.map(function (a) { return a.lastElementChild.textContent; });
+  var numerals = ["I", "II", "III", "IV", "V", "VI"];
+  var current = -1;
+  function setChapter(n) {
+    if (n === current || n < 0) return;
+    current = n;
+    indexLinks.forEach(function (a, i) {
+      if (i === n) a.setAttribute("aria-current", "true");
+      else a.removeAttribute("aria-current");
+    });
+    if (barNum) barNum.textContent = numerals[n];
+    if (barTitle) barTitle.textContent = titles[n];
+  }
+
+  /* ---- 3 · the peak: empty the margin into the plate ------------------- */
+  var targets = null;
+  /* The flier is whichever folio is actually on screen: the margin line on a
+     desktop, the tally pip in the strip on a phone. The move has to survive the
+     narrow viewport, not be a desktop-only flourish. */
+  function flierOf(L) {
+    if (L.el.getClientRects().length) return L.el;
+    if (L.pip && L.pip.getClientRects().length) return L.pip;
+    return null;
+  }
+  function measure() {
+    if (!rows.length) { targets = []; return false; }
+    var ok = false;
+    targets = lines.map(function (L, i) {
+      var row = rowFor(L.name), flier = flierOf(L);
+      if (!row || !flier) return null;
+      var a = flier.getBoundingClientRect();
+      var b = row.getBoundingClientRect();
+      if (!a.width || !b.width) return null;
+      ok = true;
+      return {
+        flier: flier,
+        dx: (b.left + b.width * 0.18) - (a.left + a.width * 0.5),
+        dy: (b.top + b.height / 2) - (a.top + a.height / 2)
+      };
+    });
+    return ok;
+  }
+
+  var FROM = 0.14, EACH = 0.05, RUN = 0.24;
+  var sealOn = false, boundOn = false;
+  function bindFrame() {
+    var p = parseFloat(getComputedStyle(act).getPropertyValue("--sc-p")) || 0;
+    var r = act.getBoundingClientRect();
+    var live = r.top < window.innerHeight && r.bottom > 0;
+    var reduce = reduceQ.matches;
+
+    /* Measure only once the stage is actually pinned. Measuring during the
+       entry slide records a row position the plate has already left, and the
+       lines then fly to the wrong place. Dropped on the way back up so the
+       move replays correctly in both directions. */
+    if (live && !reduce && targets === null && p >= FROM - 0.04) measure();
+    if (p < 0.02 && targets !== null) {
+      targets.forEach(function (T) {
+        if (!T || !T.flier) return;
+        T.flier.style.transform = "";
+        T.flier.style.opacity = "";
+      });
+      targets = null;
+    }
+
+    var allBound = true;
+
+    for (var i = 0; i < lines.length; i++) {
+      var L = lines[i];
+      var T = targets && targets[i];
+      var t = (p - (FROM + i * EACH)) / RUN;
+      t = t < 0 ? 0 : t > 1 ? 1 : t;
+      var e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      L.el.classList.toggle("is-flying", live && t > 0 && t < 1);
+
+      if (live && !reduce && T && T.flier) {
+        if (t > 0) {
+          T.flier.style.transform =
+            "translate3d(" + (T.dx * e).toFixed(1) + "px," + (T.dy * e).toFixed(1) + "px,0) scale(" + (1 - 0.12 * e).toFixed(3) + ")";
+          T.flier.style.opacity = (t > 0.82 ? (1 - (t - 0.82) / 0.18) : 1).toFixed(3);
+        } else {
+          T.flier.style.transform = "";
+          T.flier.style.opacity = "";
+        }
+      } else if (reduce) {
+        L.el.style.opacity = t >= 1 ? "0.3" : "";
+      }
+
+      var row = rowFor(L.name);
+      if (row) row.classList.toggle("is-bound", t >= (reduce ? 0.6 : 0.88));
+      if (t < 1) allBound = false;
+    }
+
+    var wantSeal = live && p > 0.70;
+    if (wantSeal !== sealOn) {
+      sealOn = wantSeal;
+      seals.forEach(function (sl) { sl.classList.toggle("is-on", wantSeal); });
+    }
+    derived.forEach(function (d) { d.classList.toggle("is-bound", live && p > 0.66); });
+
+    /* Once the act is off screen the fliers go home, so the strip on a phone
+       reads as a complete tally again rather than as six invisible marks. */
+    if (!live && targets) {
+      targets.forEach(function (T) {
+        if (!T || !T.flier) return;
+        T.flier.style.transform = "";
+        T.flier.style.opacity = "";
+      });
+    }
+
+    var wantBound = p > 0.7 || r.bottom < 0;
+    if (wantBound !== boundOn) {
+      boundOn = wantBound;
+      if (bound) bound.classList.toggle("is-on", wantBound);
+      stubList.style.opacity = wantBound ? "0" : "";
+    }
+    return allBound;
+  }
+
+  /* ---- 4 · dwell: hold still on the ledger and the source line arrives - */
+  var ledger = document.getElementById("ledger");
+  var source = document.getElementById("ledger-source");
+  var dwellAt = 0, dwellDone = false;
+  function dwell(now) {
+    if (dwellDone || !ledger || !source) return;
+    var r = ledger.getBoundingClientRect();
+    var seen = r.top < window.innerHeight * 0.85 && r.bottom > window.innerHeight * 0.15;
+    if (!seen) { dwellAt = now; return; }
+    if (now - dwellAt > 900) { source.classList.add("is-on"); dwellDone = true; }
+  }
+
+  /* ---- 5 · one loop ---------------------------------------------------- */
+  var lastY = -1;
+  function frame(now) {
+    var y = window.scrollY;
+    if (y !== lastY) {
+      lastY = y;
+      dwellAt = now;
+      var mid = window.innerHeight * 0.45;
+      for (var i = chapters.length - 1; i >= 0; i--) {
+        if (chapters[i].getBoundingClientRect().top <= mid) { setChapter(i); break; }
+      }
+    }
+    bindFrame();
+    dwell(now);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  addEventListener("resize", function () { targets = null; }, { passive: true });
+  if (reduceQ.matches) { source && source.classList.add("is-on"); }
+})();
+</script>
+</body>
+</html>

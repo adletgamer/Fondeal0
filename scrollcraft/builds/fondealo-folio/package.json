@@ -1,0 +1,8 @@
+{
+  "name": "fondealo-folio",
+  "private": true,
+  "description": "scroll-craft build: Fondealo, chaptered editorial",
+  "dependencies": {
+    "playwright-core": "^1.64.0"
+  }
+}
