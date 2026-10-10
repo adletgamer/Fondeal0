@@ -1,0 +1,8 @@
+# Verification output. Regenerate it, never commit it:
+#   node <scroll-craft>/scripts/shoot.mjs --url http://localhost:4500 --out lab/shots
+builds/*/lab/*/
+builds/*/lab/*.log
+
+# The verification harness only. Not a dependency of the prototype, which is
+# one static HTML file and runs with no build step.
+builds/*/node_modules/
