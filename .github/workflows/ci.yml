@@ -48,24 +48,9 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
 
-      # KNOWN BROKEN — backlog A9. Not enforced yet, on purpose.
-      #
-      # `credit_score` and `loan_escrow` depend on `business-passport` as a
-      # Rust crate, and every contract crate exports symbols named `init`,
-      # `admin`, and so on. Linking a dependent contract therefore pulls the
-      # sibling's exports in and rust-lld fails with duplicate symbols. Only
-      # `business_passport.wasm` builds today.
-      #
-      # This is pre-existing: the wasm step has never succeeded in CI. It was
-      # previously masked by a target error (soroban-sdk 27 rejects
-      # wasm32-unknown-unknown on Rust 1.82+), fixed in SA1.
-      #
-      # The fix is the standard Soroban multi-contract layout: shared types in
-      # a non-contract crate plus `#[contractclient]` traits instead of
-      # sibling-crate dependencies. That changes the exported surface of each
-      # contract, so it gets its own phase with the contract tests as the net,
-      # and must land before the Testnet deploy that needs these artifacts.
-      #
-      # fmt, clippy and the 50 contract tests above ARE enforced.
       - run: cargo build --target wasm32v1-none --release
-        continue-on-error: true
+      - name: Verify all three contract artifacts
+        run: |
+          test -s target/wasm32v1-none/release/business_passport.wasm
+          test -s target/wasm32v1-none/release/credit_score.wasm
+          test -s target/wasm32v1-none/release/loan_escrow.wasm

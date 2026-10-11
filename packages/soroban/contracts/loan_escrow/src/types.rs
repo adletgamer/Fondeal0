@@ -1,4 +1,4 @@
-use business_passport::RiskBand;
+use fondealo_soroban_shared::RiskBand;
 use soroban_sdk::{contracterror, contracttype, Address};
 
 /// Reputation-adjusted collateral ratio, in basis points of principal.

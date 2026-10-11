@@ -45,12 +45,10 @@
 //! kept alive (every read/write bumps TTL, and [`BusinessPassportContract::bump_ttl`]
 //! plus an off-chain job extend it before archival).
 
-mod types;
-
 #[cfg(test)]
 mod test;
 
-pub use types::{
+pub use fondealo_soroban_shared::{
     Credential, CredentialStatus, DataKey, Error, KybStatus, Passport, PassportStatus, RiskBand,
     MAX_CREDENTIALS, MAX_METADATA_URI_LEN, SCORE_MAX,
 };

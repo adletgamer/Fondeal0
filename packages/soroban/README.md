@@ -15,14 +15,17 @@ Fondealo's Soroban smart contracts (Rust). Cargo workspace, `soroban-sdk` 27.
   the next score, and writes it back via a cross-contract call (it is the
   Passport's `reputation_manager`). Reporter-gated; self-funded round trips are
   score-neutral (anti-gaming, R-01).
+- **`loan_escrow`** — holds collateral and investor funds, distributes repayment
+  or recovery, and reports loan outcomes to `credit_score`.
+- **`shared`** — Passport wire types and cross-contract client interfaces. The
+  deployed contract crates depend on this non-contract crate so their Wasm
+  artifacts do not contain another contract's entrypoint exports.
 
 Wiring order at deploy: deploy both → `passport.init(admin, issuer, score_id)` →
 `score.init(admin, passport_id, reporter)`. See `scripts/deploy_testnet.sh`.
 
-Planned (next phase): `loan_escrow` (Phase 6).
-
-**Tests:** 20/20 passing (`business_passport` 11, `credit_score` 9), including the
-cross-contract path and anti-gaming rule.
+**Tests:** 50 passing (`business_passport` 24, `credit_score` 9,
+`loan_escrow` 17), including the cross-contract paths and anti-gaming rule.
 
 ## Develop
 

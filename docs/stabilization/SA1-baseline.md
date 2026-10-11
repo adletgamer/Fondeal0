@@ -5,6 +5,10 @@ already uses A1–A9 for Epic A; SA1 closes backlog **A8** and opened **A9**.
 
 **Baseline commit:** `b7a8f49` (`main`, PR #7) · **Date:** 2026-10-10
 
+**Follow-up:** A9 was resolved in the SA1 integration PR. The baseline findings
+and verification results below describe the state before that fix. The three
+contracts now build as Wasm and CI requires their artifacts.
+
 SA1 changed no application behavior. It repaired CI, added a regression net, and
 recorded what the analysis found. Every defect below is **pre-existing** and
 left unfixed on purpose.
