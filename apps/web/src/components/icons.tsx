@@ -190,23 +190,3 @@ export function Lock(p: IconProps) {
     </svg>
   );
 }
-
-/** Fondealo wordmark + mark. */
-export function Logo({ className }: { className?: string }) {
-  return (
-    <span className={className} style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-      <svg width="30" height="30" viewBox="0 0 64 64" fill="none" aria-hidden>
-        <defs>
-          <linearGradient id="fondealo-mark" x1="0" y1="0" x2="64" y2="64">
-            <stop stopColor="#10b981" />
-            <stop offset="1" stopColor="#047857" />
-          </linearGradient>
-        </defs>
-        <rect width="64" height="64" rx="16" fill="url(#fondealo-mark)" />
-        <path d="M22 46V18h21v7H30.5v6H41v7H30.5v8H22Z" fill="white" />
-        <circle cx="45" cy="40" r="5" fill="#fbbf24" />
-      </svg>
-      <span className="font-display text-lg font-bold tracking-tight">Fondealo</span>
-    </span>
-  );
-}
