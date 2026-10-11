@@ -50,4 +50,17 @@ describe('onboarding role choice', () => {
     expect(html).toContain('I am an Investor');
     expect(html).toMatch(/disabled=""[^>]*>Choose a role to continue/);
   });
+
+  it('shows a recoverable error when the verified login cannot reach the database', () => {
+    const html = renderToStaticMarkup(
+      createElement(OnboardingFlow, {
+        hasServerSession: true,
+        hasServerWallet: false,
+        accountServiceUnavailable: true,
+      }),
+    );
+    expect(html).toContain('Account setup is paused');
+    expect(html).toContain('Try again');
+    expect(html).not.toContain('Continue as Business');
+  });
 });

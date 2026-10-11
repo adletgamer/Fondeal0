@@ -80,4 +80,15 @@ describe('server identity resolution', () => {
     });
     expect(state.walletUpsert).not.toHaveBeenCalled();
   });
+
+  it('reports an unavailable database without granting a wallet or role', async () => {
+    state.cookie.mockReturnValue({ value: 'valid' });
+    state.walletFind.mockRejectedValue(new Error('database unavailable'));
+    expect(await getSession()).toEqual({
+      privyUserId: 'verified-privy-user',
+      stellarAddress: null,
+      role: null,
+      accountServiceUnavailable: true,
+    });
+  });
 });

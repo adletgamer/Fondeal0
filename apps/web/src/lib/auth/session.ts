@@ -30,6 +30,8 @@ export interface Session {
   privyUserId: string;
   stellarAddress: string | null;
   role: UserRole | null;
+  /** Verified Privy identity, but account resolution failed in a downstream service. */
+  accountServiceUnavailable?: boolean;
 }
 
 export function privyClient(): PrivyClient | null {
@@ -98,7 +100,7 @@ export const getSession = cache(async (): Promise<Session | null> => {
     }
     // Database or Privy API unreachable — fail closed on role (no cross-role
     // access by accident) but still report the verified identity.
-    return { privyUserId, stellarAddress: null, role: null };
+    return { privyUserId, stellarAddress: null, role: null, accountServiceUnavailable: true };
   }
 });
 

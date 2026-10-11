@@ -20,6 +20,7 @@ export default async function OnboardingPage() {
       <OnboardingFlow
         hasServerSession={Boolean(session)}
         hasServerWallet={Boolean(session?.stellarAddress)}
+        accountServiceUnavailable={Boolean(session?.accountServiceUnavailable)}
       />
     </>
   );

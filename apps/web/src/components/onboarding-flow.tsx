@@ -35,23 +35,27 @@ function Spinner() {
 export function OnboardingFlow({
   hasServerSession,
   hasServerWallet,
+  accountServiceUnavailable = false,
 }: {
   hasServerSession: boolean;
   hasServerWallet: boolean;
+  accountServiceUnavailable?: boolean;
 }) {
+  const router = useRouter();
   if (!PRIVY_CONFIGURED) {
     return (
       <Shell>
         <Card className="mx-auto max-w-lg border-white/10 bg-white/5 p-8 text-center backdrop-blur">
-          <h1 className="font-display text-xl font-bold text-white">Login not configured yet</h1>
+          <h1 className="font-display text-xl font-bold text-white">
+            Sign-in is unavailable in this preview
+          </h1>
           <p className="mt-2 text-sm text-slate-300">
-            Set{' '}
-            <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs">
-              NEXT_PUBLIC_PRIVY_APP_ID
-            </code>{' '}
-            and <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs">PRIVY_APP_SECRET</code>{' '}
-            to enable login.
+            Account creation and login need a configured Privy app and database. This local preview
+            does not have a safe test environment connected yet.
           </p>
+          <Button variant="ghost-light" className="mt-6" onClick={() => router.push('/')}>
+            Go back
+          </Button>
         </Card>
       </Shell>
     );
@@ -59,7 +63,11 @@ export function OnboardingFlow({
 
   return (
     <Suspense fallback={<Spinner />}>
-      <ConnectedOnboarding hasServerSession={hasServerSession} hasServerWallet={hasServerWallet} />
+      <ConnectedOnboarding
+        hasServerSession={hasServerSession}
+        hasServerWallet={hasServerWallet}
+        accountServiceUnavailable={accountServiceUnavailable}
+      />
     </Suspense>
   );
 }
@@ -67,9 +75,11 @@ export function OnboardingFlow({
 function ConnectedOnboarding({
   hasServerSession,
   hasServerWallet,
+  accountServiceUnavailable,
 }: {
   hasServerSession: boolean;
   hasServerWallet: boolean;
+  accountServiceUnavailable: boolean;
 }) {
   const wallet = useStellarWallet();
   const searchParams = useSearchParams();
@@ -80,6 +90,7 @@ function ConnectedOnboarding({
       intent={intent}
       hasServerSession={hasServerSession}
       hasServerWallet={hasServerWallet}
+      accountServiceUnavailable={accountServiceUnavailable}
     />
   );
 }
@@ -89,11 +100,13 @@ function OnboardingContent({
   intent,
   hasServerSession,
   hasServerWallet,
+  accountServiceUnavailable,
 }: {
   wallet: StellarWalletState;
   intent: 'Business' | 'Investor';
   hasServerSession: boolean;
   hasServerWallet: boolean;
+  accountServiceUnavailable: boolean;
 }) {
   const router = useRouter();
   const { ready, authenticated, stellarAddress, creatingWallet, walletError, login } = wallet;
@@ -154,6 +167,23 @@ function OnboardingContent({
             <p className="mt-2 text-xs text-red-400">{walletError} Try refreshing the page.</p>
           ) : null}
         </div>
+      </Shell>
+    );
+  }
+
+  if (accountServiceUnavailable) {
+    return (
+      <Shell>
+        <Card className="mx-auto max-w-lg border-white/10 bg-white/5 p-8 text-center backdrop-blur">
+          <h1 className="font-display text-xl font-bold text-white">Account setup is paused</h1>
+          <p className="mt-2 text-sm text-slate-300">
+            Your login succeeded, but we could not finish setting up your account right now. Your
+            role has not been saved. Please try again shortly.
+          </p>
+          <Button variant="ghost-light" className="mt-6" onClick={() => router.refresh()}>
+            Try again
+          </Button>
+        </Card>
       </Shell>
     );
   }

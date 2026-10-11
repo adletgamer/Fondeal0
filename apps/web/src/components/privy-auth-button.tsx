@@ -21,8 +21,9 @@ export function PrivyAuthButton({
       <Button
         variant="dark"
         size={size}
-        disabled
-        title="Set NEXT_PUBLIC_PRIVY_APP_ID to enable login"
+        onClick={() => {
+          window.location.href = '/onboarding';
+        }}
       >
         <Wallet width={16} height={16} />
         Log in
