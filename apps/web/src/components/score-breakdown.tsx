@@ -49,8 +49,8 @@ export function ScoreBreakdown({ passport }: { passport: Passport }) {
       <p className="mt-1 text-xs text-slate-500">
         At your current score ({passport.score}) and streak ({passport.onTimeStreak}), the next
         on-time, investor-funded repayment adds{' '}
-        <strong className="text-brand-600">+{nextGain} points</strong>. Gains shrink as you
-        approach 1000; penalties are flat, so they bite hardest for high scorers.
+        <strong className="text-brand-600">+{nextGain} points</strong>. Gains shrink as you approach
+        1000; penalties are flat, so they bite hardest for high scorers.
       </p>
       <ul className="mt-4 divide-y divide-slate-100">
         {rows.map((r) => (

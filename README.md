@@ -95,7 +95,7 @@ cp .env.example .env         # repo-root .env is the single source of secrets (s
 
 # --- contracts ---
 pnpm contracts:test             # cargo test (native)
-pnpm contracts:build            # build wasm (needs wasm32-unknown-unknown target)
+pnpm contracts:build            # build wasm (needs wasm32v1-none target)
 
 # --- web / packages ---
 pnpm --filter @fondealo/database db:generate   # generate Prisma client
@@ -141,7 +141,7 @@ the on-chain-derived (not asserted) anti-gaming rule. TypeScript packages typech
 The cloud sandbox has no Testnet egress, so run the deploy on a machine with internet:
 
 ```bash
-rustup target add wasm32-unknown-unknown
+rustup target add wasm32v1-none
 curl -sSf https://stellar.org/install.sh | sh   # Stellar CLI
 ./scripts/deploy_testnet.sh                       # funds a key, deploys, wires, writes .env.local
 ```

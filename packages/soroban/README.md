@@ -30,7 +30,7 @@ cross-contract path and anti-gaming rule.
 cargo test                                   # native unit tests
 cargo fmt --all --check                      # formatting
 cargo clippy --all-targets -- -D warnings    # lints
-cargo build --target wasm32-unknown-unknown --release   # build wasm
+cargo build --target wasm32v1-none --release   # build wasm
 ```
 
 Deploy to Testnet with `scripts/deploy_testnet.sh` (requires `stellar-cli`).

@@ -3,7 +3,7 @@
 # Deploy Fondealo contracts to Stellar Testnet and wire them together.
 #
 # Prerequisites (run on a machine WITH internet — the cloud sandbox has none):
-#   1. Rust + wasm target:   rustup target add wasm32-unknown-unknown
+#   1. Rust + wasm target:   rustup target add wasm32v1-none
 #   2. Stellar CLI (>=27):   curl -sSf https://stellar.org/install.sh | sh
 #                            (Windows: winget install --id Stellar.StellarCLI  — or use WSL)
 #
@@ -55,7 +55,7 @@ KEEPER="${KEEPER_ADDRESS:-$DEPLOYER}"
 
 echo "==> 3/7 Build contracts (wasm release)"
 stellar contract build --manifest-path "$SOROBAN_DIR/Cargo.toml"
-WASM_DIR="$SOROBAN_DIR/target/wasm32-unknown-unknown/release"
+WASM_DIR="$SOROBAN_DIR/target/wasm32v1-none/release"
 PASSPORT_WASM="$WASM_DIR/business_passport.wasm"
 SCORE_WASM="$WASM_DIR/credit_score.wasm"
 ESCROW_WASM="$WASM_DIR/loan_escrow.wasm"

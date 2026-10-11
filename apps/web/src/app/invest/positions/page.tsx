@@ -35,7 +35,9 @@ export default async function PositionsPage() {
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
               <h1 className="font-display text-3xl font-bold text-slate-900">Your positions</h1>
-              <p className="mt-1 text-slate-500">Every opportunity you have funded, past and present.</p>
+              <p className="mt-1 text-slate-500">
+                Every opportunity you have funded, past and present.
+              </p>
             </div>
             <DataSourceBadge source={source} />
           </div>
@@ -69,10 +71,12 @@ export default async function PositionsPage() {
                 <tbody>
                   {positions.map((p) => {
                     const expected =
-                      Number(p.investorAmount) *
-                      (1 + (p.aprBps / 10_000) * (p.termDays / 365));
+                      Number(p.investorAmount) * (1 + (p.aprBps / 10_000) * (p.termDays / 365));
                     return (
-                      <tr key={p.opportunityId} className="border-b border-slate-50 last:border-b-0">
+                      <tr
+                        key={p.opportunityId}
+                        className="border-b border-slate-50 last:border-b-0"
+                      >
                         <td className="px-4 py-3">
                           <a
                             href={`/invest/opportunity/${p.opportunityId}`}
