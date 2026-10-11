@@ -1,452 +1,523 @@
+import Image from 'next/image';
 import Link from 'next/link';
-import { Badge, Button, Container } from '@fondealo/ui';
-import { Navbar } from '@/components/navbar';
-import { Footer } from '@/components/footer';
-import { PassportShowcase } from '@/components/passport-showcase';
-import { ReputationSimulator } from '@/components/reputation-simulator';
-import { LayerExplainer } from '@/components/layer-explainer';
-import { ReputationRing } from '@/components/reputation-ring';
-import { SHOWCASE_PASSPORT } from '@/lib/showcase';
-import { ArrowRight, Check, Lock, Sparkle } from '@/components/icons';
+import type { Metadata } from 'next';
+import { Logo } from '@/components/logo';
+import { PrivyAuthButton } from '@/components/privy-auth-button';
+import { MarketingMotion } from '@/components/marketing-motion';
+import styles from './marketing.module.css';
 
-export default function Home() {
-  return (
-    <>
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-xl focus:bg-brand-fill focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-on-brand"
-      >
-        Skip to content
-      </a>
-      <Navbar />
-      <main id="main" tabIndex={-1} className="outline-none">
-        <Hero />
-        <Composability />
-        <HowItWorks />
-        <TwoLayers />
-        <ReputationSection />
-        <Audiences />
-        <CtaBand />
-      </main>
-      <Footer />
-    </>
+const pageTitle = 'Fondealo — A Business Passport for a portable financial identity';
+const pageDescription =
+  'Explore the Fondealo web MVP and Business Passport. KYB runs in a sandbox; Soroban contracts await Testnet deployment.';
+
+export const metadata: Metadata = {
+  title: pageTitle,
+  description: pageDescription,
+  openGraph: { title: pageTitle, description: pageDescription, url: 'https://www.fondealo.xyz/' },
+  twitter: { card: 'summary_large_image', title: pageTitle, description: pageDescription },
+};
+
+const signals = [
+  { number: '01', title: 'Business identity', detail: 'Who is behind the work' },
+  { number: '02', title: 'Verified activity', detail: 'What the business has done' },
+  { number: '03', title: 'Repayment history', detail: 'How commitments were met' },
+] as const;
+
+const passportFields = [
+  ['Identity', 'Business profile'],
+  ['Verification', 'KYB status'],
+  ['Credit', 'Reputation record'],
+  ['History', 'Repayment events'],
+] as const;
+
+function Arrow({ diagonal = false }: { diagonal?: boolean }) {
+  return diagonal ? (
+    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" width="18" height="18">
+      <path d="M4 16 16 4M6 4h10v10" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  ) : (
+    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" width="18" height="18">
+      <path d="M3 10h13m-5-5 5 5-5 5" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
   );
 }
 
-/* ------------------------------- Hero ------------------------------- */
-const PROOF = [
-  { title: '3 Soroban contracts', body: 'Passport · Score · Escrow' },
-  { title: 'Non-custodial', body: 'Your wallet, your keys' },
-  { title: 'PII stays off-chain', body: 'Only a hash goes on-chain' },
-  { title: 'Stellar · USDC', body: 'Protocol 27 settlement' },
-];
+function SectionIndex({ number, children }: { number: string; children: React.ReactNode }) {
+  return (
+    <p className={styles.sectionIndex}>
+      <span>{number}</span>
+      <span>{children}</span>
+    </p>
+  );
+}
+
+function MarketingHeader() {
+  return (
+    <header className={styles.header}>
+      <div className={styles.headerInner}>
+        <Link href="/" aria-label="Fondealo home" className={styles.headerLogo}>
+          <Logo priority />
+        </Link>
+        <nav aria-label="Main navigation" className={styles.headerNav}>
+          <a href="#idea">The idea</a>
+          <a href="#passport">Passport</a>
+          <a href="#reputation">Reputation</a>
+          <a href="#status">Status</a>
+        </nav>
+        <div className={styles.headerActions}>
+          <span className={styles.loginControl}>
+            <PrivyAuthButton />
+          </span>
+          <Link href="/onboarding?intent=business" className={styles.headerCta}>
+            Explore the MVP <Arrow diagonal />
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function HeroObject() {
+  return (
+    <div
+      className={styles.heroObject}
+      role="img"
+      aria-label="Illustrative Business Passport surrounded by verified business signals"
+    >
+      <div className={styles.heroOrbitBack} aria-hidden="true" />
+      <div className={styles.heroOrbitFront} aria-hidden="true" />
+      <div className={styles.heroHalo} aria-hidden="true" />
+      <div className={styles.heroSignalTop} aria-hidden="true">
+        <span className={styles.signalDot} />
+        VERIFIED ACTIVITY
+      </div>
+      <div className={styles.heroSignalBottom} aria-hidden="true">
+        <span className={styles.signalDot} />
+        PORTABLE IDENTITY
+      </div>
+      <div className={styles.heroPassport} aria-hidden="true">
+        <div className={styles.passportTopline}>
+          <span>FONDEALO / BUSINESS PASSPORT</span>
+          <span>SPECIMEN</span>
+        </div>
+        <div className={styles.passportEmblem}>
+          <Image src="/orbital-badge.png" alt="" width={88} height={88} sizes="88px" priority />
+        </div>
+        <div className={styles.passportTitle}>A record that moves with you.</div>
+        <div className={styles.passportRule} />
+        <div className={styles.passportGrid}>
+          <div>
+            <span>IDENTITY</span>
+            <strong>Business</strong>
+          </div>
+          <div>
+            <span>VERIFICATION</span>
+            <strong>KYB</strong>
+          </div>
+          <div>
+            <span>REPUTATION</span>
+            <strong>History</strong>
+          </div>
+        </div>
+        <div className={styles.passportFoot}>
+          <span>Illustrative product concept</span>
+          <span>01 / 01</span>
+        </div>
+      </div>
+      <div className={styles.heroObjectCaption} aria-hidden="true">
+        <span>FIG. 01</span>
+        <span>ONE IDENTITY · MANY OPPORTUNITIES</span>
+      </div>
+    </div>
+  );
+}
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden bg-night-950 text-white">
-      <div className="absolute inset-0 bg-grid mask-fade-b opacity-60" aria-hidden />
-      <div className="absolute inset-0 bg-radial-brand" aria-hidden />
-      <Container className="relative grid items-center gap-14 pb-16 pt-14 lg:grid-cols-[1.08fr_0.92fr] lg:gap-10 lg:pb-20 lg:pt-20">
-        <div className="animate-fade-up">
-          <Badge variant="outline" className="mb-7">
-            <Sparkle width={14} height={14} className="text-brand-300" />
-            Stellar · Soroban · USDC
-          </Badge>
-          <h1 className="font-serif text-[2.6rem] font-medium leading-[1.03] tracking-tight sm:text-6xl lg:text-[4.35rem]">
-            <em className="text-gradient pr-1 italic">Portable credit infrastructure</em> for Latin
-            American businesses.
+    <section className={styles.hero} id="top" data-hero>
+      <div className={styles.heroGrid} aria-hidden="true" />
+      <div className={styles.heroInner}>
+        <div className={styles.heroCopy}>
+          <p className={styles.eyebrow}>
+            <span className={styles.liveDot} />
+            CREDIT IDENTITY, REIMAGINED
+          </p>
+          <h1>
+            A business deserves a financial identity <span>that travels.</span>
           </h1>
-          <p className="mt-7 max-w-xl text-lg leading-relaxed text-slate-300">
-            Every SME gets one{' '}
-            <strong className="font-semibold text-white">Business Passport</strong> — a
-            non-transferable credential and a credit reputation that grows with each repayment, and
-            follows the business from loan to loan.
+          <p className={styles.heroLead}>
+            Fondealo brings business identity and activity into a reusable Business Passport — a
+            clearer way to build trust and approach funding on Stellar.
           </p>
-          <p className="mt-3 max-w-xl text-sm text-slate-400">
-            Infraestructura de crédito para PyMEs latinoamericanas, sobre Stellar.
-          </p>
-          <div className="mt-9 flex flex-wrap gap-3">
-            <Link href="/onboarding?intent=business">
-              <Button size="lg">
-                Get your Business Passport
-                <ArrowRight width={18} height={18} />
-              </Button>
+          <div className={styles.heroActions}>
+            <Link href="/onboarding?intent=business" className={styles.primaryButton}>
+              Explore the web MVP <Arrow />
             </Link>
-            <Link href="/onboarding?intent=invest">
-              <Button variant="ghost-light" size="lg">
-                Fund opportunities in USDC
-              </Button>
-            </Link>
+            <a href="#idea" className={styles.textLink}>
+              See how it works <span aria-hidden="true">↓</span>
+            </a>
           </div>
-        </div>
-
-        <div className="animate-fade-up lg:justify-self-end">
-          <PassportShowcase />
-        </div>
-      </Container>
-
-      <Container className="relative pb-2">
-        <ul className="grid grid-cols-2 border-t border-white/10 lg:grid-cols-4 lg:divide-x lg:divide-white/10">
-          {PROOF.map(({ title, body }) => (
-            <li key={title} className="px-1 py-5 lg:px-6 lg:first:pl-0">
-              <span className="block font-display text-[15px] font-semibold text-white">
-                {title}
-              </span>
-              <span className="mt-0.5 block text-xs text-slate-400">{body}</span>
-            </li>
-          ))}
-        </ul>
-      </Container>
-    </section>
-  );
-}
-
-/* --------------------------- Composability -------------------------- */
-function Composability() {
-  const legos = [
-    ['Blend', 'lending'],
-    ['Reflector', 'oracle'],
-    ['DeFindex', 'yield'],
-    ['USDC', 'settlement'],
-  ];
-  return (
-    <section id="compose" className="scroll-mt-20 border-b border-slate-200 bg-white">
-      <Container className="flex flex-wrap items-center justify-between gap-x-12 gap-y-4 py-7">
-        <p className="max-w-sm text-sm leading-relaxed text-slate-600">
-          We don&apos;t rebuild lending. We compose the Stellar money-legos and own the credit
-          layer.
-        </p>
-        <ul className="flex flex-wrap items-baseline gap-x-9 gap-y-2">
-          {legos.map(([name, role]) => (
-            <li key={name} className="font-display text-xl font-semibold text-slate-800">
-              {name}
-              <span className="ml-1.5 text-xs font-normal uppercase tracking-wider text-slate-500">
-                {role}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </Container>
-    </section>
-  );
-}
-
-/* --------------------------- How it works --------------------------- */
-function HowItWorks() {
-  const steps = [
-    {
-      title: 'Verify once, reuse everywhere',
-      body: 'Complete KYB and receive a Business Passport — an on-chain identity any lender on Stellar can read.',
-    },
-    {
-      title: 'Raise financing in USDC',
-      body: 'Open a funding opportunity. Investors fund it in USDC and the risk band sets a fair rate.',
-    },
-    {
-      title: 'Repay, and your score compounds',
-      body: 'Each on-time, externally-funded repayment lifts the score, lowers your collateral and unlocks cheaper capital.',
-    },
-  ];
-  return (
-    <section id="how" className="scroll-mt-20 bg-slate-50 py-20 lg:py-28">
-      <Container className="grid items-start gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
-        <div>
-          <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-700">
-            How it works
-          </span>
-          <h2 className="mt-4 font-serif text-4xl font-medium leading-[1.08] tracking-tight text-slate-900 sm:text-5xl">
-            Repay once. Borrow cheaper next time.
-          </h2>
-          <ol className="mt-12 space-y-9">
-            {steps.map((s, i) => (
-              <li key={s.title} className="relative grid grid-cols-[3rem_1fr] gap-5">
-                {i < steps.length - 1 ? (
-                  <span
-                    className="absolute left-[1.05rem] top-11 h-[calc(100%+0.25rem)] w-px bg-slate-300"
-                    aria-hidden
-                  />
-                ) : null}
-                <span className="font-serif text-4xl font-medium leading-none text-brand-600">
-                  {i + 1}
-                </span>
-                <div>
-                  <h3 className="font-display text-lg font-semibold text-slate-900">{s.title}</h3>
-                  <p className="mt-1.5 text-[15px] leading-relaxed text-slate-600">{s.body}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-
-        <div className="lg:sticky lg:top-24">
-          <ReputationSimulator />
-        </div>
-      </Container>
-    </section>
-  );
-}
-
-/* --------------------------- Two-layer passport --------------------------- */
-const YOU_CONTROL = ['Colour theme', 'Pattern', 'How your name is presented'];
-const WE_ATTEST = ['KYB status', 'Credit score & risk band', 'Repayment history', 'On-chain proof'];
-
-const CONTRACT_ROWS: { call: string; who: string }[] = [
-  { call: 'issue()  get()  is_active()', who: 'read / issue' },
-  { call: 'update_metadata()', who: 'owner only' },
-  { call: 'freeze()  revoke()  add_credential()', who: 'issuer only' },
-  { call: 'apply_reputation()', who: 'score engine only' },
-];
-
-function TwoLayers() {
-  return (
-    <section
-      id="passport"
-      className="scroll-mt-20 relative overflow-hidden bg-night-950 py-20 text-white lg:py-28"
-    >
-      <div className="absolute inset-0 bg-grid opacity-40 mask-fade-b" aria-hidden />
-      <Container className="relative grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20">
-        <div>
-          <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-300">
-            Business Passport
-          </span>
-          <h2 className="mt-4 font-serif text-4xl font-medium leading-[1.08] tracking-tight sm:text-5xl">
-            Yours to style. <em className="text-gradient italic">Ours to verify.</em>
-          </h2>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-300">
-            The top of the Passport is your identity, and you decide how it looks. The bottom is
-            your standing, and nobody — you included — gets to restyle it.
+          <p className={styles.heroTruth}>
+            Web MVP live <span>·</span> KYB sandbox <span>·</span> Soroban contracts awaiting
+            Testnet deployment
           </p>
+        </div>
+        <HeroObject />
+      </div>
+      <div className={styles.heroBottom}>
+        <span>IDENTITY IS INFRASTRUCTURE</span>
+        <span>SCROLL TO FOLLOW THE RECORD</span>
+        <span>01 / 06</span>
+      </div>
+    </section>
+  );
+}
 
-          <div className="mt-8 grid gap-8 sm:grid-cols-2">
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-300">
-                You control
-              </h3>
-              <ul className="mt-3 space-y-2 text-[15px] text-slate-200">
-                {YOU_CONTROL.map((t) => (
-                  <li key={t} className="flex items-center gap-2.5">
-                    <Sparkle width={13} height={13} className="shrink-0 text-brand-300" />
-                    {t}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Fondealo attests
-              </h3>
-              <ul className="mt-3 space-y-2 text-[15px] text-slate-200">
-                {WE_ATTEST.map((t) => (
-                  <li key={t} className="flex items-center gap-2.5">
-                    <Lock width={13} height={13} className="shrink-0 text-slate-400" />
-                    {t}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-wider text-slate-500">
-              <span>BusinessPassport · Soroban</span>
-              <span>non-transferable</span>
-            </div>
-            <ul className="mt-4 space-y-2 font-mono text-[13px]">
-              {CONTRACT_ROWS.map((r) => (
-                <li
-                  key={r.call}
-                  className="flex flex-wrap items-baseline justify-between gap-x-4 text-slate-200"
-                >
-                  <span>{r.call}</span>
-                  <span className="text-xs text-slate-500">{r.who}</span>
-                </li>
-              ))}
-              <li className="flex flex-wrap items-baseline justify-between gap-x-4 border-t border-white/10 pt-3">
-                <span className="text-red-300/90 line-through decoration-red-300/50">
-                  transfer() approve() transfer_from()
-                </span>
-                <span className="text-xs text-slate-500">deliberately absent</span>
-              </li>
-            </ul>
-            <p className="mt-4 text-xs leading-relaxed text-slate-400">
-              A credential can&apos;t be sold, lent or faked: ownership never moves. Implemented and
-              tested in <code className="text-slate-300">packages/soroban</code>; Testnet deployment
-              is next.
+function Problem() {
+  return (
+    <section className={styles.problem} id="idea" aria-labelledby="problem-title">
+      <div className={styles.sectionShell}>
+        <SectionIndex number="01 / THE PROBLEM">A record in fragments</SectionIndex>
+        <div className={styles.problemLayout}>
+          <div className={styles.problemIntro} data-reveal>
+            <h2 id="problem-title">
+              The work is real. <span>The record is scattered.</span>
+            </h2>
+            <p>
+              A business can prove who it is, show what it has done, and repay what it owes. Those
+              signals often live in different places. A new funder has to start the story again.
             </p>
           </div>
-        </div>
-
-        <LayerExplainer />
-      </Container>
-    </section>
-  );
-}
-
-/* --------------------------- Reputation ring --------------------------- */
-const LAYERS = [
-  {
-    name: 'Identity',
-    color: '#34d399',
-    body: 'KYB verified by a provider. PII stays off-chain; only a hash commitment goes on-chain.',
-  },
-  {
-    name: 'Repayment',
-    color: '#22d3ee',
-    body: 'The share of loans repaid. On-time, investor-funded repayments are what raise the score.',
-  },
-  {
-    name: 'Activity',
-    color: '#fbbf24',
-    body: 'How many loans the business has actually taken through Fondealo.',
-  },
-  {
-    name: 'Longevity',
-    color: '#a78bfa',
-    body: 'How long the Passport has been building history. Reputation takes time.',
-  },
-];
-
-function ReputationSection() {
-  return (
-    <section className="bg-white py-20 lg:py-28">
-      <Container className="grid items-center gap-14 lg:grid-cols-[1fr_auto] lg:gap-24">
-        <div>
-          <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-700">
-            Credit Reputation Ring
-          </span>
-          <h2 className="mt-4 max-w-xl font-serif text-4xl font-medium leading-[1.08] tracking-tight text-slate-900 sm:text-5xl">
-            One score. Four ways to read it.
-          </h2>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-600">
-            The on-chain score is a single deterministic number. The ring shows what it is made of,
-            so a lender can see why a business looks the way it does — and a business can see what
-            to improve.
-          </p>
-          <dl className="mt-10 grid gap-x-10 gap-y-7 sm:grid-cols-2">
-            {LAYERS.map((l) => (
-              <div key={l.name}>
-                <dt className="flex items-center gap-2.5 font-display text-base font-semibold text-slate-900">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ background: l.color }}
-                    aria-hidden
-                  />
-                  {l.name}
-                </dt>
-                <dd className="mt-1.5 text-[15px] leading-relaxed text-slate-600">{l.body}</dd>
+          <div
+            className={styles.fragmentField}
+            aria-label="Three signals that form a business record"
+          >
+            {signals.map((signal, index) => (
+              <div
+                className={`${styles.fragment} ${styles[`fragment${index + 1}`]}`}
+                key={signal.number}
+                data-reveal
+              >
+                <span>{signal.number} / SIGNAL</span>
+                <strong>{signal.title}</strong>
+                <small>{signal.detail}</small>
               </div>
             ))}
-          </dl>
-          <p className="mt-9 max-w-xl text-sm text-slate-500">
-            Reputation compounds with diminishing returns near the cap, and self-funded round-trips
-            are score-neutral, so it can&apos;t be gamed.
-          </p>
-        </div>
-
-        <div className="mx-auto w-full max-w-[290px] rounded-3xl bg-night-950 p-6 shadow-soft">
-          <ReputationRing passport={SHOWCASE_PASSPORT} size={220} />
-        </div>
-      </Container>
-    </section>
-  );
-}
-
-/* ----------------------------- Audiences ---------------------------- */
-function Audiences() {
-  return (
-    <section className="bg-slate-50 py-20 lg:py-28">
-      <Container>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <article className="flex flex-col rounded-3xl bg-night-950 p-8 text-white sm:p-10">
-            <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-300">
-              For businesses
-            </span>
-            <h3 className="mt-4 font-serif text-3xl font-medium leading-tight tracking-tight">
-              Turn a clean track record into cheaper capital.
-            </h3>
-            <ul className="mt-7 space-y-3 text-[15px] text-slate-200">
-              {[
-                'Verify once and keep a Passport no one can take from you',
-                'Lock less collateral with every on-time repayment',
-                'Style the identity layer to look like your brand',
-              ].map((t) => (
-                <li key={t} className="flex gap-3">
-                  <Check width={16} height={16} className="mt-1 shrink-0 text-brand-400" />
-                  {t}
-                </li>
-              ))}
-            </ul>
-            <Link href="/onboarding?intent=business" className="mt-9 self-start">
-              <Button size="lg">
-                Get my Passport
-                <ArrowRight width={18} height={18} />
-              </Button>
-            </Link>
-          </article>
-
-          <article className="flex flex-col rounded-3xl border border-slate-200 bg-white p-8 sm:p-10">
-            <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-700">
-              For investors
-            </span>
-            <h3 className="mt-4 font-serif text-3xl font-medium leading-tight tracking-tight text-slate-900">
-              Fund vetted SMEs and earn USDC returns.
-            </h3>
-            <ul className="mt-7 space-y-3 text-[15px] text-slate-700">
-              {[
-                'See each business’s score, band and collateral before you fund',
-                'First-loss collateral is locked ahead of your capital',
-                'Try it end to end with 10,000 test USDC on Testnet',
-              ].map((t) => (
-                <li key={t} className="flex gap-3">
-                  <Check width={16} height={16} className="mt-1 shrink-0 text-brand-600" />
-                  {t}
-                </li>
-              ))}
-            </ul>
-            <Link href="/onboarding?intent=invest" className="mt-9 self-start">
-              <Button variant="dark" size="lg">
-                Explore opportunities
-                <ArrowRight width={18} height={18} />
-              </Button>
-            </Link>
-          </article>
-        </div>
-      </Container>
-    </section>
-  );
-}
-
-/* ----------------------------- CTA band ----------------------------- */
-function CtaBand() {
-  return (
-    <section className="bg-slate-50 pb-24">
-      <Container>
-        <div className="relative overflow-hidden rounded-3xl bg-night-950 px-8 py-14 text-center text-white sm:py-16">
-          <div className="absolute inset-0 bg-grid opacity-50" aria-hidden />
-          <div className="absolute inset-0 bg-radial-brand" aria-hidden />
-          <div className="relative mx-auto max-w-2xl">
-            <h2 className="font-serif text-3xl font-medium leading-tight tracking-tight sm:text-4xl">
-              Build credit that belongs to the business, not the bank.
-            </h2>
-            <p className="mt-4 text-slate-300">
-              Fondealo is a Testnet MVP built for the Stellar Community Fund.
-            </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Link href="/onboarding">
-                <Button size="lg">
-                  Get started
-                  <ArrowRight width={18} height={18} />
-                </Button>
-              </Link>
-              <a href="https://github.com/adletgamer/Fondeal0" target="_blank" rel="noreferrer">
-                <Button variant="ghost-light" size="lg">
-                  View on GitHub
-                </Button>
-              </a>
-            </div>
+            <div className={styles.fragmentAxis} aria-hidden="true" />
           </div>
         </div>
-      </Container>
+        <p className={styles.sectionEndnote}>
+          <span>THE GAP</span>
+          <span>Evidence exists. Continuity does not.</span>
+        </p>
+      </div>
     </section>
+  );
+}
+
+function Passport() {
+  return (
+    <section className={styles.passportSection} id="passport" aria-labelledby="passport-title">
+      <div className={styles.sectionShell}>
+        <SectionIndex number="02 / THE PRODUCT">One identity to carry forward</SectionIndex>
+        <div className={styles.passportLayout}>
+          <div className={styles.passportCopy} data-reveal>
+            <h2 id="passport-title">
+              Meet the <span>Business Passport.</span>
+            </h2>
+            <p>
+              A reusable view of a business, designed around verification status and a credit
+              record. The business can shape how it presents itself. Evidence stays distinct from
+              presentation.
+            </p>
+            <div className={styles.passportPrinciples}>
+              <div>
+                <span className={styles.principleNum}>A</span>
+                <div>
+                  <h3>Your identity</h3>
+                  <p>Business details and presentation travel together.</p>
+                </div>
+              </div>
+              <div>
+                <span className={styles.principleNum}>B</span>
+                <div>
+                  <h3>Verified standing</h3>
+                  <p>KYB status and repayment evidence have their own provenance.</p>
+                </div>
+              </div>
+            </div>
+            <Link href="/onboarding?intent=business" className={styles.inlineLink}>
+              Explore the Business Passport <Arrow />
+            </Link>
+          </div>
+          <div className={styles.specimenWrap} data-reveal>
+            <div className={styles.specimenShadow} aria-hidden="true" />
+            <article
+              className={styles.specimen}
+              aria-label="Illustrative Business Passport specimen"
+            >
+              <div className={styles.specimenHead}>
+                <span>FONDEALO</span>
+                <span>BUSINESS PASSPORT / SPECIMEN</span>
+              </div>
+              <div className={styles.specimenBody}>
+                <div className={styles.specimenIdentity}>
+                  <span className={styles.specimenMonogram} aria-hidden="true">
+                    <Image src="/orbital-badge.png" alt="" width={52} height={52} sizes="52px" />
+                  </span>
+                  <div>
+                    <span>PORTABLE BUSINESS IDENTITY</span>
+                    <strong>Your record, in context.</strong>
+                  </div>
+                </div>
+                <dl>
+                  {passportFields.map(([label, value]) => (
+                    <div key={label}>
+                      <dt>{label}</dt>
+                      <dd>{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+              <div className={styles.specimenFoot}>
+                <span>NO CUSTOMER DATA SHOWN</span>
+                <span>DESIGN SPECIMEN</span>
+              </div>
+            </article>
+            <p className={styles.specimenCaption}>
+              A visual specimen based on the product structure. No customer, score, or loan data is
+              represented.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Reputation() {
+  return (
+    <section
+      className={styles.reputationTrack}
+      id="reputation"
+      data-sequence
+      aria-labelledby="reputation-title"
+    >
+      <div className={styles.reputationSticky}>
+        <div className={styles.sectionShell}>
+          <SectionIndex number="03 / THE CONTINUITY">
+            Reputation is a history, not a headline
+          </SectionIndex>
+          <div className={styles.reputationLayout}>
+            <div className={styles.reputationCopy}>
+              <h2 id="reputation-title">
+                Every verified step deserves <span>a place in the story.</span>
+              </h2>
+              <p>
+                Fondealo&apos;s reputation model connects identity, activity, and repayment events.
+                The contract logic is implemented and tested; the continuous production update flow
+                is still being built.
+              </p>
+              <p className={styles.reputationQualifier}>
+                Illustration of the product vision · not live account data
+              </p>
+            </div>
+            <div className={styles.sequenceScene} aria-hidden="true">
+              <div className={styles.sequenceRing} />
+              <div className={styles.sequenceSignal} data-sequence-signal="0">
+                <span>01</span> IDENTITY
+              </div>
+              <div className={styles.sequenceSignal} data-sequence-signal="1">
+                <span>02</span> ACTIVITY
+              </div>
+              <div className={styles.sequenceSignal} data-sequence-signal="2">
+                <span>03</span> REPAYMENT
+              </div>
+              <div className={styles.sequenceCard} data-sequence-card>
+                <div className={styles.sequenceCardHead}>BUSINESS PASSPORT</div>
+                <div className={styles.sequenceCardMark}>
+                  <Image src="/orbital-badge.png" alt="" width={66} height={66} sizes="66px" />
+                </div>
+                <div className={styles.sequenceCardLines}>
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <div className={styles.sequenceCardFoot}>ONE PORTABLE RECORD</div>
+              </div>
+              <div className={styles.sequenceGround} />
+            </div>
+          </div>
+          <div className={styles.sequenceProgress} aria-hidden="true">
+            <span data-sequence-progress />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Opportunity() {
+  return (
+    <section className={styles.opportunity} id="opportunity" aria-labelledby="opportunity-title">
+      <div className={styles.sectionShell}>
+        <SectionIndex number="04 / THE PATH FORWARD">From identity to opportunity</SectionIndex>
+        <div className={styles.opportunityHeading} data-reveal>
+          <h2 id="opportunity-title">A clearer record can open a better conversation.</h2>
+          <p>
+            Businesses and funders see the same context, while ownership, authorization, and money
+            movement stay governed by the product&apos;s actual flows.
+          </p>
+        </div>
+        <div className={styles.pathways}>
+          <article className={styles.pathway} data-reveal>
+            <div className={styles.pathwayTop}>
+              <span>01 / FOR BUSINESSES</span>
+              <Arrow diagonal />
+            </div>
+            <h3>Bring your business into focus.</h3>
+            <p>
+              Complete the sandbox verification journey, view your Passport, and explore the
+              opportunity flow.
+            </p>
+            <Link href="/onboarding?intent=business" className={styles.pathwayLink}>
+              Explore the business flow <Arrow />
+            </Link>
+          </article>
+          <article className={`${styles.pathway} ${styles.pathwayAlt}`} data-reveal>
+            <div className={styles.pathwayTop}>
+              <span>02 / FOR FUNDERS</span>
+              <Arrow diagonal />
+            </div>
+            <h3>Read the context behind an opportunity.</h3>
+            <p>
+              Explore the investor experience. Funding and on-chain settlement remain subject to
+              Testnet readiness.
+            </p>
+            <Link href="/onboarding?intent=invest" className={styles.pathwayLink}>
+              Explore the investor flow <Arrow />
+            </Link>
+          </article>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Status() {
+  return (
+    <section className={styles.status} id="status" aria-labelledby="status-title">
+      <div className={styles.sectionShell}>
+        <SectionIndex number="05 / PRODUCT TRUTH">Built in the open</SectionIndex>
+        <div className={styles.statusIntro} data-reveal>
+          <h2 id="status-title">Know what runs today.</h2>
+          <p>
+            Fondealo is an evolving dApp. The web experience is available now; contract deployment
+            and end-to-end reputation updates are separate milestones.
+          </p>
+        </div>
+        <div className={styles.statusTableWrap} data-reveal>
+          <table className={styles.statusTable}>
+            <caption>Current capability status</caption>
+            <thead>
+              <tr>
+                <th scope="col">Capability</th>
+                <th scope="col">Environment</th>
+                <th scope="col">Current state</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Web app and onboarding</th>
+                <td>Vercel</td>
+                <td>
+                  <span className={styles.statusLive}>Live MVP</span>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Business verification</th>
+                <td>Web app</td>
+                <td>
+                  <span className={styles.statusSandbox}>KYB sandbox</span>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Passport, score, and escrow contracts</th>
+                <td>Soroban</td>
+                <td>
+                  <span className={styles.statusPending}>
+                    Implemented; Testnet deployment pending
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Score update after repayment</th>
+                <td>End-to-end flow</td>
+                <td>
+                  <span className={styles.statusPlanned}>In progress</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className={styles.statusSource}>
+          Status follows the repository&apos;s{' '}
+          <a href="https://github.com/adletgamer/Fondeal0#deployments">deployment record</a>. No
+          live contract address or production return is implied.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function Closing() {
+  return (
+    <footer className={styles.closing}>
+      <div className={styles.sectionShell}>
+        <SectionIndex number="06 / THE NEXT CHAPTER">The future of business credit</SectionIndex>
+        <div className={styles.closingMain} data-reveal>
+          <h2>Good work should leave a record that can move forward.</h2>
+          <div className={styles.closingAside}>
+            <p>
+              Start with the web MVP. See the Passport. Follow the infrastructure as it comes
+              online.
+            </p>
+            <Link href="/onboarding?intent=business" className={styles.primaryButton}>
+              Explore Fondealo <Arrow />
+            </Link>
+          </div>
+        </div>
+        <div className={styles.closingBottom}>
+          <Link href="/" aria-label="Fondealo home" className={styles.footerLogo}>
+            <Logo />
+          </Link>
+          <span>Credit identity for Latin American businesses, built on Stellar.</span>
+          <a href="https://github.com/adletgamer/Fondeal0" target="_blank" rel="noreferrer">
+            View the source <Arrow diagonal />
+          </a>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+export default function Home() {
+  return (
+    <div className={styles.site} data-marketing-root>
+      <a className={styles.skipLink} href="#main">
+        Skip to content
+      </a>
+      <MarketingHeader />
+      <main id="main" tabIndex={-1}>
+        <Hero />
+        <Problem />
+        <Passport />
+        <Reputation />
+        <Opportunity />
+        <Status />
+      </main>
+      <Closing />
+      <MarketingMotion />
+    </div>
   );
 }
