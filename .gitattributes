@@ -1,0 +1,27 @@
+# Normalize line endings.
+#
+# Prettier is configured with `endOfLine: "lf"` (.prettierrc.json) and
+# .editorconfig sets `end_of_line = lf`, but Git for Windows defaults to
+# core.autocrlf=true, so a Windows checkout produced CRLF working copies.
+# `pnpm run format:check` then reported essentially every file as unformatted,
+# which drowned out the three files that were genuinely misformatted and kept
+# CI red (backlog A8). Declaring the policy here makes the checkout match the
+# tooling on every platform.
+* text=auto eol=lf
+
+# Binary: never touch these.
+*.woff2 binary
+*.woff  binary
+*.ttf   binary
+*.otf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.mp4   binary
+*.wasm  binary
+
+# Generated; keep out of diffs and reviews.
+pnpm-lock.yaml -diff
