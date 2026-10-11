@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Container } from '@fondealo/ui';
-import { Logo } from './icons';
+import { Logo } from './logo';
 import { PrivyAuthButton } from './privy-auth-button';
 import { ThemeToggle } from './theme-toggle';
 
@@ -17,7 +17,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-slate-50/80 backdrop-blur-md">
       <Container className="flex h-16 items-center justify-between">
         <Link href="/" aria-label="Fondealo home" className="text-slate-900">
-          <Logo />
+          <Logo priority />
         </Link>
         <nav
           aria-label="Primary"

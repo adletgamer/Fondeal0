@@ -58,7 +58,10 @@ export const metadata: Metadata = {
     type: 'website',
   },
   twitter: { card: 'summary_large_image', title, description },
-  icons: { icon: '/favicon.svg' },
+  icons: {
+    icon: [{ url: '/orbital-badge.png?v=2', type: 'image/png' }],
+    apple: [{ url: '/orbital-badge.png?v=2', type: 'image/png' }],
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
