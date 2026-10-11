@@ -247,6 +247,7 @@ checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
 name = "business-passport"
 version = "0.1.0"
 dependencies = [
+ "fondealo-soroban-shared",
  "soroban-sdk",
 ]
 
@@ -364,6 +365,7 @@ name = "credit-score"
 version = "0.1.0"
 dependencies = [
  "business-passport",
+ "fondealo-soroban-shared",
  "soroban-sdk",
 ]
 
@@ -788,6 +790,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
+name = "fondealo-soroban-shared"
+version = "0.1.0"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
 name = "futures-core"
 version = "0.3.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1102,6 +1111,7 @@ version = "0.1.0"
 dependencies = [
  "business-passport",
  "credit-score",
+ "fondealo-soroban-shared",
  "soroban-sdk",
 ]
 

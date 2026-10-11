@@ -1,0 +1,18 @@
+# Pin the Rust toolchain so CI and local builds cannot drift.
+#
+# This is a pin of the version already in use locally, not an upgrade.
+#
+# Why it matters: CI tracked `stable`, and once stable moved past 1.82 the
+# soroban-sdk 27 build script started rejecting the `wasm32-unknown-unknown`
+# target outright:
+#
+#   Rust compiler 1.82+ with target 'wasm32-unknown-unknown' is unsupported by
+#   the Soroban Environment, use 'wasm32v1-none' available with Rust 1.84+.
+#
+# So the wasm target below is not cosmetic: `wasm32v1-none` is the only target
+# soroban-sdk 27 will build for on a modern toolchain. See backlog A8.
+[toolchain]
+channel = "1.93.1"
+components = ["rustfmt", "clippy"]
+targets = ["wasm32v1-none"]
+profile = "minimal"

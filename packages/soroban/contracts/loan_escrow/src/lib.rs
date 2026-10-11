@@ -22,8 +22,7 @@ mod test;
 
 pub use types::{collateral_ratio_bps, DataKey, Error, Opportunity, OpportunityStatus};
 
-use business_passport::{BusinessPassportContractClient, RiskBand};
-use credit_score::CreditScoreContractClient;
+use fondealo_soroban_shared::{BusinessPassportClient, CreditScoreClient, RiskBand};
 use soroban_sdk::{contract, contractevent, contractimpl, token, Address, Env, Map};
 
 // --- Grace + TTL policy (ledgers/seconds). Testnet ~5s/ledger => ~17,280 ledgers/day. ---
@@ -467,22 +466,22 @@ impl LoanEscrowContract {
         token::Client::new(env, &addr)
     }
 
-    fn passport_client(env: &Env) -> BusinessPassportContractClient<'_> {
+    fn passport_client(env: &Env) -> BusinessPassportClient<'_> {
         let addr: Address = env
             .storage()
             .instance()
             .get(&DataKey::Passport)
             .expect("not initialized");
-        BusinessPassportContractClient::new(env, &addr)
+        BusinessPassportClient::new(env, &addr)
     }
 
-    fn score_client(env: &Env) -> CreditScoreContractClient<'_> {
+    fn score_client(env: &Env) -> CreditScoreClient<'_> {
         let addr: Address = env
             .storage()
             .instance()
             .get(&DataKey::Score)
             .expect("not initialized");
-        CreditScoreContractClient::new(env, &addr)
+        CreditScoreClient::new(env, &addr)
     }
 
     fn require_admin(env: &Env) -> Result<(), Error> {

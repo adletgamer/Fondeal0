@@ -13,7 +13,9 @@ Estimates are rough (S ≤1d, M ≤3d, L ≤1w). IDs are stable references for P
 | A5 | `packages/database` Postgres schema (Prisma/Drizzle) + migrations | P0 | M | A1 |
 | A6 | `packages/types` shared TS types + zod schemas | P0 | S | A1 |
 | A7 | `packages/sdk` RPC client + tx builder scaffold + Wallets Kit wrapper | P0 | M | A1,A6 |
-| A8 | Fix repo-wide `pnpm run format:check` failures + retarget contracts CI build to `wasm32v1-none` (soroban-sdk 27 needs it on Rust 1.84+) — both pre-existing, silently broken since Phase 3 | P1 | S | A3 |
+| A8 | Fix repo-wide `pnpm run format:check` failures + retarget contracts CI build to `wasm32v1-none` (soroban-sdk 27 needs it on Rust 1.84+) — both pre-existing, silently broken since Phase 3 | ✅ done — SA1 | S | A3 |
+| A9 | Fix duplicate Wasm exports by moving the Passport wire types and cross-contract clients to a non-contract shared crate; all three Wasm artifacts now build and CI enforces them. Surfaced by SA1 after A8 unmasked the linker error. | ✅ done — SA1 integration | M | A8,E1 |
+| SA1 | Stabilization baseline: green Node CI (first time `pnpm test` has ever run in CI), TS↔Rust parity tests, ledger invariants, defect register — see `docs/stabilization/SA1-baseline.md` | ✅ done | M | A8 |
 
 ## Epic B — Auth & wallets (Phase 3/4)
 | ID | Item | Pri | Est | Depends |

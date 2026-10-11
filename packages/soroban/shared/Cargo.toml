@@ -1,0 +1,10 @@
+[package]
+name = "fondealo-soroban-shared"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+description = "Shared Soroban ABI types and cross-contract clients for Fondealo."
+
+[dependencies]
+soroban-sdk = { workspace = true }

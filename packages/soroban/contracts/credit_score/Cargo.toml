@@ -12,7 +12,8 @@ doctest = false
 
 [dependencies]
 soroban-sdk = { workspace = true }
-business-passport = { path = "../business_passport" }
+fondealo-soroban-shared = { path = "../../shared" }
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
+business-passport = { path = "../business_passport" }

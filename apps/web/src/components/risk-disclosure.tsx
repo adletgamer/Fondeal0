@@ -18,8 +18,8 @@ export function RiskDisclosure({ className = '' }: { className?: string }) {
           Businesses post partial collateral in USDC, sized by their risk band — never full
           collateral, never zero. If a loan defaults, collateral is seized and paid to investors
           first, but a loss beyond the collateral share is borne by investors. Collateral
-          enforcement happens on-chain; there is no cross-border legal recourse behind it. No
-          return is guaranteed.
+          enforcement happens on-chain; there is no cross-border legal recourse behind it. No return
+          is guaranteed.
         </p>
       </div>
     </div>

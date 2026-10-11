@@ -21,7 +21,7 @@
 #[cfg(test)]
 mod test;
 
-use business_passport::BusinessPassportContractClient;
+use fondealo_soroban_shared::BusinessPassportClient;
 use soroban_sdk::{
     contract, contracterror, contractevent, contractimpl, contracttype, Address, Env,
 };
@@ -214,13 +214,13 @@ impl CreditScoreContract {
         }
     }
 
-    fn passport_client(env: &Env) -> BusinessPassportContractClient<'_> {
+    fn passport_client(env: &Env) -> BusinessPassportClient<'_> {
         let addr: Address = env
             .storage()
             .instance()
             .get(&DataKey::Passport)
             .expect("not initialized");
-        BusinessPassportContractClient::new(env, &addr)
+        BusinessPassportClient::new(env, &addr)
     }
 
     fn require_admin(env: &Env) -> Result<(), Error> {
