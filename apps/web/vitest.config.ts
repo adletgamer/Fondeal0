@@ -4,11 +4,11 @@ import { fileURLToPath } from 'node:url';
 /**
  * Unit tests for the off-chain money paths in apps/web.
  *
- * Node environment on purpose: every test here exercises server-side logic
- * (server actions, the ledger) and nothing renders. Component tests would need
- * jsdom and a different setup, and are out of scope for SA1.
+ * Node environment on purpose: these tests exercise server-side logic and
+ * Server Components directly, without a browser DOM.
  */
 export default defineConfig({
+  esbuild: { jsx: 'automatic' },
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],

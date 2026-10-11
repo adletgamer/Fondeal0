@@ -4,6 +4,8 @@ import { DataSourceBadge } from '@/components/data-source-badge';
 import { MarketGrid } from '@/components/market-grid';
 import { RiskDisclosure } from '@/components/risk-disclosure';
 import { getMarketOpportunities } from '@/lib/data/opportunities';
+import { getSession } from '@/lib/auth/session';
+import { redirect } from 'next/navigation';
 
 const TABS = [
   { href: '/invest', label: 'Dashboard' },
@@ -14,6 +16,11 @@ const TABS = [
 export const dynamic = 'force-dynamic';
 
 export default async function MarketPage() {
+  const session = await getSession();
+  if (!session?.stellarAddress) redirect('/onboarding');
+  if (session.role !== 'Investor')
+    redirect(session.role === 'Business' ? '/business' : '/onboarding');
+
   const { source, opportunities } = await getMarketOpportunities();
 
   return (

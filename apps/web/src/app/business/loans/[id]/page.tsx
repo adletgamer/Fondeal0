@@ -23,6 +23,8 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ id:
   // walking loan ids (the IDOR the ?address= removal was meant to close).
   const session = await getSession();
   if (!session?.stellarAddress) redirect('/onboarding');
+  if (session.role !== 'Business')
+    redirect(session.role === 'Investor' ? '/invest' : '/onboarding');
 
   const { source, opportunity } = await getOpportunityDetail(id);
   if (!opportunity) notFound();

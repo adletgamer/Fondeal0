@@ -2,9 +2,9 @@ use super::*;
 use business_passport::{BusinessPassportContract, BusinessPassportContractClient, KybStatus};
 use credit_score::{CreditScoreContract, CreditScoreContractClient};
 use soroban_sdk::{
-    testutils::{Address as _, Ledger as _},
+    testutils::{Address as _, Ledger as _, MockAuth, MockAuthInvoke},
     token::StellarAssetClient,
-    Address, BytesN, Env,
+    Address, BytesN, Env, IntoVal,
 };
 
 const ONE_USDC: i128 = 10_000_000;
@@ -169,6 +169,34 @@ fn partial_funding_keeps_the_opportunity_open() {
     assert_eq!(o.status, OpportunityStatus::Open);
     assert_eq!(o.funded, 40 * ONE_USDC);
     assert_eq!(f.escrow.get_position(&1, &investor), 40 * ONE_USDC);
+}
+
+#[test]
+fn a_stranger_cannot_fund_using_an_investors_address() {
+    let f = setup(500);
+    f.escrow.create(
+        &1,
+        &f.business,
+        &(100 * ONE_USDC),
+        &90,
+        &(50 * ONE_USDC),
+        &1800,
+    );
+    let investor = f.investor_with(100 * ONE_USDC);
+    let attacker = Address::generate(&f.env);
+    f.env.mock_auths(&[MockAuth {
+        address: &attacker,
+        invoke: &MockAuthInvoke {
+            contract: &f.escrow.address,
+            fn_name: "fund",
+            args: (1u64, investor.clone(), 10 * ONE_USDC).into_val(&f.env),
+            sub_invokes: &[],
+        },
+    }]);
+
+    assert!(f.escrow.try_fund(&1, &investor, &(10 * ONE_USDC)).is_err());
+    assert_eq!(f.escrow.get_position(&1, &investor), 0);
+    assert_eq!(f.escrow.get_opportunity(&1).unwrap().funded, 0);
 }
 
 #[test]

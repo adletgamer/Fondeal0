@@ -20,6 +20,8 @@ export const dynamic = 'force-dynamic';
 export default async function NewRequestPage() {
   const session = await getSession();
   if (!session?.stellarAddress) redirect('/onboarding');
+  if (session.role !== 'Business')
+    redirect(session.role === 'Investor' ? '/invest' : '/onboarding');
   const address = session.stellarAddress;
   const kyb = await getKybState(address);
   if (kyb && kyb.status !== 'Accepted') redirect('/business/verify');

@@ -25,6 +25,8 @@ export const dynamic = 'force-dynamic';
 export default async function PositionsPage() {
   const session = await getSession();
   if (!session?.stellarAddress) redirect('/onboarding');
+  if (session.role !== 'Investor')
+    redirect(session.role === 'Business' ? '/business' : '/onboarding');
   const { source, positions } = await getInvestorPositions(session.stellarAddress);
 
   return (

@@ -21,6 +21,8 @@ const DEPLOYED_STATUSES = new Set(['Open', 'Funded', 'Active']);
 export default async function InvestDashboard() {
   const session = await getSession();
   if (!session?.stellarAddress) redirect('/onboarding');
+  if (session.role !== 'Investor')
+    redirect(session.role === 'Business' ? '/business' : '/onboarding');
   const [{ source, positions }, wallet] = await Promise.all([
     getInvestorPositions(session.stellarAddress),
     getWalletSummary(session.stellarAddress),
