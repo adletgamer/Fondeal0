@@ -1,7 +1,5 @@
 import { redirect } from 'next/navigation';
 import { Badge, Card, Container } from '@fondealo/ui';
-import { SectionTabs } from '@/components/section-tabs';
-import { WalletStatusBar } from '@/components/wallet-status-bar';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { RiskDisclosure } from '@/components/risk-disclosure';
 import { getInvestorPositions } from '@/lib/data/opportunities';
@@ -9,12 +7,6 @@ import { getSession } from '@/lib/auth/session';
 import { getWalletSummary } from '@/lib/wallet/ledger';
 import { BalanceCard } from '@/components/balance-card';
 import { Coins, Landmark, ShieldCheck, TrendingUp } from '@/components/icons';
-
-const TABS = [
-  { href: '/invest', label: 'Dashboard' },
-  { href: '/invest/market', label: 'Market' },
-  { href: '/invest/positions', label: 'Positions' },
-];
 
 const DEPLOYED_STATUSES = new Set(['Open', 'Funded', 'Active']);
 
@@ -64,7 +56,6 @@ export default async function InvestDashboard() {
 
   return (
     <>
-      <SectionTabs tabs={TABS} active="/invest" />
       <main className="bg-slate-50 pb-20">
         <Container className="py-10">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -75,10 +66,6 @@ export default async function InvestDashboard() {
               </p>
             </div>
             <DataSourceBadge source={source} />
-          </div>
-
-          <div className="mb-6">
-            <WalletStatusBar />
           </div>
 
           <BalanceCard summary={wallet} className="mb-6" />

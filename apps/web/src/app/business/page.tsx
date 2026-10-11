@@ -1,8 +1,6 @@
 import { redirect } from 'next/navigation';
 import { Badge, Card, Container } from '@fondealo/ui';
 import { COLLATERAL_CONFIG_V1, RiskBand, requiredCollateral } from '@fondealo/types';
-import { SectionTabs } from '@/components/section-tabs';
-import { WalletStatusBar } from '@/components/wallet-status-bar';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { PassportV2 } from '@/components/passport-v2';
 import { getBorrowerPassport, getBusinessOpportunities } from '@/lib/data/opportunities';
@@ -12,13 +10,6 @@ import { getPassportTheme } from '@/lib/data/passport-theme';
 import { getWalletSummary } from '@/lib/wallet/ledger';
 import { BalanceCard } from '@/components/balance-card';
 import { Calendar, Coins, Plus, ShieldCheck } from '@/components/icons';
-
-const TABS = [
-  { href: '/business', label: 'Dashboard' },
-  { href: '/business/new', label: 'New request' },
-  { href: '/business/passport', label: 'Passport' },
-  { href: '/business/verify', label: 'Verification' },
-];
 
 const BAND_ORDER = Object.values(RiskBand);
 const ACTIVE_STATUSES = new Set(['Open', 'Funded', 'Active']);
@@ -60,7 +51,6 @@ export default async function BusinessDashboard() {
 
   return (
     <>
-      <SectionTabs tabs={TABS} active="/business" />
       <main className="bg-slate-50 pb-20">
         <Container className="py-10">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -78,10 +68,6 @@ export default async function BusinessDashboard() {
                 </Badge>
               </a>
             </div>
-          </div>
-
-          <div className="mb-6">
-            <WalletStatusBar />
           </div>
 
           <BalanceCard summary={wallet} className="mb-6" />
