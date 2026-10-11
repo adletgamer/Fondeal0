@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Badge, Card, Container } from '@fondealo/ui';
 import { buildRepaymentSchedule, maxProtectedPct, requiredCollateral } from '@fondealo/types';
 import { PassportV2 } from '@/components/passport-v2';
@@ -22,14 +22,18 @@ export default async function OpportunityDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await getSession();
+  if (!session?.stellarAddress) redirect('/onboarding');
+  if (session.role !== 'Investor')
+    redirect(session.role === 'Business' ? '/business' : '/onboarding');
+
   const { id } = await params;
   const { source, opportunity } = await getOpportunityDetail(id);
   if (!opportunity) notFound();
 
   const { passport } = await getBorrowerPassport(opportunity.business);
-  const session = await getSession();
   const theme = await getPassportTheme(opportunity.business);
-  const wallet = session?.stellarAddress ? await getWalletSummary(session.stellarAddress) : null;
+  const wallet = await getWalletSummary(session.stellarAddress);
 
   const collateral = requiredCollateral(opportunity.amount, opportunity.riskBand);
   const protectedPct = maxProtectedPct(opportunity.riskBand);

@@ -26,12 +26,12 @@ const ACTIVE_STATUSES = new Set(['Open', 'Funded', 'Active']);
 export const dynamic = 'force-dynamic';
 
 export default async function BusinessDashboard() {
-  // The layout above already verified the session and matched its role to
-  // this section, and a role can only be persisted once a Stellar address
-  // exists (see chooseRole) — so `stellarAddress` here is never null in
-  // practice. The redirect is defense in depth, not the primary guard.
+  // Pages validate before querying because layouts and pages can render in
+  // parallel; a layout redirect alone cannot protect server-rendered data.
   const session = await getSession();
   if (!session?.stellarAddress) redirect('/onboarding');
+  if (session.role !== 'Business')
+    redirect(session.role === 'Investor' ? '/invest' : '/onboarding');
   const address = session.stellarAddress;
   const kyb = await getKybState(address);
   if (kyb && kyb.status !== 'Accepted') redirect('/business/verify');

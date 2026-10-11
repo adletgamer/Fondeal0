@@ -1,6 +1,9 @@
 use super::*;
 use business_passport::{BusinessPassportContract, BusinessPassportContractClient, KybStatus};
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
+use soroban_sdk::{
+    testutils::{Address as _, MockAuth, MockAuthInvoke},
+    Address, BytesN, Env, IntoVal,
+};
 
 struct Fixture {
     env: Env,
@@ -131,4 +134,34 @@ fn repayment_without_passport_fails() {
     let stranger = Address::generate(&f.env);
     let res = f.score.try_on_repayment(&stranger, &true, &true);
     assert_eq!(res, Err(Ok(Error::PassportNotFound)));
+}
+
+#[test]
+fn an_untrusted_address_cannot_report_a_default() {
+    let env = Env::default();
+    let contract_id = env.register(CreditScoreContract, ());
+    let client = CreditScoreContractClient::new(&env, &contract_id);
+    let admin = Address::generate(&env);
+    let passport = Address::generate(&env);
+    let reporter = Address::generate(&env);
+    let attacker = Address::generate(&env);
+    let business = Address::generate(&env);
+    client.init(&admin, &passport, &reporter);
+
+    env.mock_auths(&[MockAuth {
+        address: &attacker,
+        invoke: &MockAuthInvoke {
+            contract: &contract_id,
+            fn_name: "on_default",
+            args: (business.clone(),).into_val(&env),
+            sub_invokes: &[],
+        },
+    }]);
+
+    // Authentication must fail before the missing Passport is even queried.
+    assert_ne!(
+        client.try_on_default(&business),
+        Err(Ok(Error::PassportNotFound))
+    );
+    assert!(client.try_on_default(&business).is_err());
 }

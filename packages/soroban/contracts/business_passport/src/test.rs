@@ -292,6 +292,41 @@ fn someone_else_cannot_update_the_metadata() {
 }
 
 #[test]
+fn an_untrusted_address_cannot_issue_a_passport() {
+    let env = Env::default();
+    let contract_id = env.register(BusinessPassportContract, ());
+    let client = BusinessPassportContractClient::new(&env, &contract_id);
+    let admin = Address::generate(&env);
+    let issuer = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let attacker = Address::generate(&env);
+    let business = Address::generate(&env);
+    let data_hash = hash(&env);
+    client.init(&admin, &issuer, &manager);
+
+    env.mock_auths(&[MockAuth {
+        address: &attacker,
+        invoke: &MockAuthInvoke {
+            contract: &contract_id,
+            fn_name: "issue",
+            args: (
+                business.clone(),
+                KybStatus::Accepted,
+                500u32,
+                data_hash.clone(),
+            )
+                .into_val(&env),
+            sub_invokes: &[],
+        },
+    }]);
+
+    assert!(client
+        .try_issue(&business, &KybStatus::Accepted, &500, &data_hash)
+        .is_err());
+    assert!(!client.exists(&business));
+}
+
+#[test]
 fn metadata_length_is_capped() {
     let f = setup();
     let business = issue_default(&f);

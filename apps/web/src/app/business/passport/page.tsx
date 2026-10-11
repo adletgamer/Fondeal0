@@ -24,6 +24,8 @@ export const dynamic = 'force-dynamic';
 export default async function BusinessPassportPage() {
   const session = await getSession();
   if (!session?.stellarAddress) redirect('/onboarding');
+  if (session.role !== 'Business')
+    redirect(session.role === 'Investor' ? '/invest' : '/onboarding');
   const kyb = await getKybState(session.stellarAddress);
   if (kyb && kyb.status !== 'Accepted') redirect('/business/verify');
   const address = session.stellarAddress;
