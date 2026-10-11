@@ -1,16 +1,8 @@
 import { redirect } from 'next/navigation';
 import { Badge, Card, Container } from '@fondealo/ui';
-import { SectionTabs } from '@/components/section-tabs';
-import { WalletStatusBar } from '@/components/wallet-status-bar';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { getInvestorPositions } from '@/lib/data/opportunities';
 import { getSession } from '@/lib/auth/session';
-
-const TABS = [
-  { href: '/invest', label: 'Dashboard' },
-  { href: '/invest/market', label: 'Market' },
-  { href: '/invest/positions', label: 'Positions' },
-];
 
 const STATUS_TONE: Record<string, string> = {
   Open: 'border-brand-300 text-brand-700',
@@ -31,7 +23,6 @@ export default async function PositionsPage() {
 
   return (
     <>
-      <SectionTabs tabs={TABS} active="/invest/positions" />
       <main className="bg-slate-50 pb-20">
         <Container className="py-10">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -42,10 +33,6 @@ export default async function PositionsPage() {
               </p>
             </div>
             <DataSourceBadge source={source} />
-          </div>
-
-          <div className="mb-6">
-            <WalletStatusBar />
           </div>
 
           {positions.length === 0 ? (

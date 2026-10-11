@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import { Navbar } from '@/components/navbar';
+import { AppShell } from '@/components/app-shell';
 import { AuthGate } from '@/components/auth-gate';
 import { getSession } from '@/lib/auth/session';
 
@@ -16,8 +16,13 @@ export default async function InvestLayout({ children }: { children: ReactNode }
 
   return (
     <AuthGate section="invest">
-      <Navbar />
-      {children}
+      {session?.role === 'Investor' && session.stellarAddress ? (
+        <AppShell role="Investor" address={session.stellarAddress}>
+          {children}
+        </AppShell>
+      ) : (
+        children
+      )}
     </AuthGate>
   );
 }

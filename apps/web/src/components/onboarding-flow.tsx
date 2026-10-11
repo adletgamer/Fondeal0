@@ -1,7 +1,7 @@
 'use client';
 
-import { Suspense, useEffect, useState, useTransition, type ReactNode } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState, useTransition, type ReactNode } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Container } from '@fondealo/ui';
 import { useStellarWallet, type StellarWalletState } from '@/hooks/use-stellar-wallet';
 import { chooseRole } from '@/lib/actions/onboarding';
@@ -32,20 +32,30 @@ function Spinner() {
  * State 5's target once a role already exists is decided server-side in
  * app/onboarding/page.tsx before this component ever mounts.
  */
-export function OnboardingFlow({ hasServerSession = false }: { hasServerSession?: boolean }) {
+export function OnboardingFlow({
+  hasServerSession,
+  hasServerWallet,
+  accountServiceUnavailable = false,
+}: {
+  hasServerSession: boolean;
+  hasServerWallet: boolean;
+  accountServiceUnavailable?: boolean;
+}) {
+  const router = useRouter();
   if (!PRIVY_CONFIGURED) {
     return (
       <Shell>
         <Card className="mx-auto max-w-lg border-white/10 bg-white/5 p-8 text-center backdrop-blur">
-          <h1 className="font-display text-xl font-bold text-white">Login not configured yet</h1>
+          <h1 className="font-display text-xl font-bold text-white">
+            Sign-in is unavailable in this preview
+          </h1>
           <p className="mt-2 text-sm text-slate-300">
-            Set{' '}
-            <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs">
-              NEXT_PUBLIC_PRIVY_APP_ID
-            </code>{' '}
-            and <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs">PRIVY_APP_SECRET</code>{' '}
-            to enable login.
+            Account creation and login need a configured Privy app and database. This local preview
+            does not have a safe test environment connected yet.
           </p>
+          <Button variant="ghost-light" className="mt-6" onClick={() => router.push('/')}>
+            Go back
+          </Button>
         </Card>
       </Shell>
     );
@@ -53,56 +63,75 @@ export function OnboardingFlow({ hasServerSession = false }: { hasServerSession?
 
   return (
     <Suspense fallback={<Spinner />}>
-      <ConnectedOnboarding hasServerSession={hasServerSession} />
+      <ConnectedOnboarding
+        hasServerSession={hasServerSession}
+        hasServerWallet={hasServerWallet}
+        accountServiceUnavailable={accountServiceUnavailable}
+      />
     </Suspense>
   );
 }
 
-function ConnectedOnboarding({ hasServerSession }: { hasServerSession: boolean }) {
+function ConnectedOnboarding({
+  hasServerSession,
+  hasServerWallet,
+  accountServiceUnavailable,
+}: {
+  hasServerSession: boolean;
+  hasServerWallet: boolean;
+  accountServiceUnavailable: boolean;
+}) {
   const wallet = useStellarWallet();
   const searchParams = useSearchParams();
   const intent = searchParams.get('intent') === 'invest' ? 'Investor' : 'Business';
-  return <OnboardingContent wallet={wallet} intent={intent} hasServerSession={hasServerSession} />;
+  return (
+    <OnboardingContent
+      wallet={wallet}
+      intent={intent}
+      hasServerSession={hasServerSession}
+      hasServerWallet={hasServerWallet}
+      accountServiceUnavailable={accountServiceUnavailable}
+    />
+  );
 }
-
-/** How long to wait for <SessionSync>'s recovery before assuming this really is a new user. */
-const RECOVERY_GRACE_MS = 2000;
 
 function OnboardingContent({
   wallet,
   intent,
   hasServerSession,
+  hasServerWallet,
+  accountServiceUnavailable,
 }: {
   wallet: StellarWalletState;
   intent: 'Business' | 'Investor';
   hasServerSession: boolean;
+  hasServerWallet: boolean;
+  accountServiceUnavailable: boolean;
 }) {
+  const router = useRouter();
   const { ready, authenticated, stellarAddress, creatingWallet, walletError, login } = wallet;
   const [isPending, startTransition] = useTransition();
   const [roleError, setRoleError] = useState<string | null>(null);
-  const [graceElapsed, setGraceElapsed] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'Business' | 'Investor' | null>(null);
+  const refreshRequested = useRef(false);
 
   useEffect(() => {
-    if (hasServerSession || !authenticated) return;
-    const t = window.setTimeout(() => setGraceElapsed(true), RECOVERY_GRACE_MS);
-    return () => window.clearTimeout(t);
-  }, [hasServerSession, authenticated]);
+    // Wallet linking can finish after the first server render. Refresh once
+    // when the client has a wallet so getSession can resolve its association.
+    // SessionSync also refreshes after it establishes the server cookie.
+    if (
+      !ready ||
+      !authenticated ||
+      !stellarAddress ||
+      (hasServerSession && hasServerWallet) ||
+      refreshRequested.current
+    )
+      return;
+    refreshRequested.current = true;
+    router.refresh();
+  }, [ready, authenticated, stellarAddress, hasServerSession, hasServerWallet, router]);
 
   if (!ready) return <Spinner />;
-
-  // Privy says we're signed in but the server render didn't see a session —
-  // <SessionSync> is mid-recovery and about to router.refresh() us to the
-  // right place. Hold a restoring state rather than flashing the role picker.
-  if (authenticated && !hasServerSession && !graceElapsed) {
-    return (
-      <Shell>
-        <div className="mx-auto max-w-lg text-center">
-          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-brand-400" />
-          <p className="text-sm font-medium text-slate-200">Restoring your session…</p>
-        </div>
-      </Shell>
-    );
-  }
 
   if (!authenticated) {
     return (
@@ -137,6 +166,41 @@ function OnboardingContent({
           {walletError ? (
             <p className="mt-2 text-xs text-red-400">{walletError} Try refreshing the page.</p>
           ) : null}
+        </div>
+      </Shell>
+    );
+  }
+
+  if (accountServiceUnavailable) {
+    return (
+      <Shell>
+        <Card className="mx-auto max-w-lg border-white/10 bg-white/5 p-8 text-center backdrop-blur">
+          <h1 className="font-display text-xl font-bold text-white">Account setup is paused</h1>
+          <p className="mt-2 text-sm text-slate-300">
+            Your login succeeded, but we could not finish setting up your account right now. Your
+            role has not been saved. Please try again shortly.
+          </p>
+          <Button variant="ghost-light" className="mt-6" onClick={() => router.refresh()}>
+            Try again
+          </Button>
+        </Card>
+      </Shell>
+    );
+  }
+
+  if (!hasServerSession || !hasServerWallet) {
+    return (
+      <Shell>
+        <div className="mx-auto max-w-lg text-center" aria-live="polite">
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-brand-400 motion-reduce:animate-none" />
+          <h1 className="font-display text-xl font-semibold text-white">Verifying your account</h1>
+          <p className="mt-2 text-sm text-slate-300">
+            Your Stellar wallet is ready. We are confirming your secure session before you choose a
+            role.
+          </p>
+          <Button variant="ghost-light" className="mt-6" onClick={() => router.refresh()}>
+            Check again
+          </Button>
         </div>
       </Shell>
     );
@@ -183,8 +247,12 @@ function OnboardingContent({
               key={c.role}
               type="button"
               disabled={isPending}
-              onClick={() => pick(c.role)}
-              className="group flex flex-col items-start rounded-2xl border border-white/10 bg-white/5 p-6 text-left backdrop-blur transition-colors hover:border-brand-400/50 hover:bg-white/10 disabled:opacity-60"
+              aria-pressed={selectedRole === c.role}
+              onClick={() => {
+                setSelectedRole(c.role);
+                setRoleError(null);
+              }}
+              className={`group flex flex-col items-start rounded-2xl border bg-white/5 p-6 text-left backdrop-blur transition-colors hover:border-brand-400/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 disabled:opacity-60 ${selectedRole === c.role ? 'border-brand-400 bg-brand-500/10' : 'border-white/10'}`}
             >
               <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-500/15 text-brand-400">
                 <c.icon width={22} height={22} />
@@ -192,11 +260,27 @@ function OnboardingContent({
               <h2 className="mt-4 text-lg font-semibold text-white">{c.title}</h2>
               <p className="mt-1.5 text-sm text-slate-300">{c.body}</p>
               <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-400">
-                Continue
+                {selectedRole === c.role ? 'Selected' : 'Select role'}
                 <ArrowRight width={16} height={16} />
               </span>
             </button>
           ))}
+      </div>
+      <div className="mx-auto mt-8 max-w-2xl text-center">
+        <Button
+          size="lg"
+          disabled={!selectedRole || isPending}
+          onClick={() => selectedRole && pick(selectedRole)}
+        >
+          {isPending
+            ? 'Saving your role…'
+            : selectedRole
+              ? `Continue as ${selectedRole}`
+              : 'Choose a role to continue'}
+        </Button>
+        <p className="mt-3 text-xs text-slate-400">
+          Your role cannot be changed after confirmation.
+        </p>
       </div>
       {roleError ? (
         <p className="mx-auto mt-6 max-w-md text-center text-sm text-red-400">{roleError}</p>

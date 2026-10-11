@@ -126,6 +126,9 @@
   background: #78eee0;
   transform: translateY(-2px);
 }
+.headerCtaShort {
+  display: none;
+}
 
 .hero {
   position: relative;
@@ -1181,9 +1184,6 @@
   .headerNav a {
     font-size: 12px;
   }
-  .headerCta {
-    display: none;
-  }
   .heroInner {
     min-height: 620px;
     gap: 0;
@@ -1353,6 +1353,17 @@
 }
 
 @media (max-width: 480px) {
+  .headerCta {
+    min-height: 38px;
+    padding-inline: 11px;
+  }
+  .headerCtaLong,
+  .headerCta > svg {
+    display: none;
+  }
+  .headerCtaShort {
+    display: inline;
+  }
   .headerLogo span span {
     font-size: 17px;
   }

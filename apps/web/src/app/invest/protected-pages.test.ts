@@ -30,7 +30,6 @@ vi.mock('@/lib/data/opportunities', () => ({
 vi.mock('@/lib/data/passport-theme', () => ({ getPassportTheme: state.theme }));
 vi.mock('@/lib/wallet/ledger', () => ({ getWalletSummary: state.wallet }));
 vi.mock('@fondealo/ui', () => ({ Badge: () => null, Card: () => null, Container: () => null }));
-vi.mock('@/components/section-tabs', () => ({ SectionTabs: () => null }));
 vi.mock('@/components/data-source-badge', () => ({ DataSourceBadge: () => null }));
 vi.mock('@/components/market-grid', () => ({ MarketGrid: () => null }));
 vi.mock('@/components/risk-disclosure', () => ({ RiskDisclosure: () => null }));

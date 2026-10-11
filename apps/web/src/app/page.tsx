@@ -66,10 +66,12 @@ function MarketingHeader() {
         </nav>
         <div className={styles.headerActions}>
           <span className={styles.loginControl}>
-            <PrivyAuthButton />
+            <PrivyAuthButton enterAppOnLogin />
           </span>
           <Link href="/onboarding?intent=business" className={styles.headerCta}>
-            Explore the MVP <Arrow diagonal />
+            <span className={styles.headerCtaLong}>Create account</span>
+            <span className={styles.headerCtaShort}>Sign up</span>
+            <Arrow diagonal />
           </Link>
         </div>
       </div>

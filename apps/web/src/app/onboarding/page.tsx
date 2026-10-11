@@ -17,11 +17,11 @@ export default async function OnboardingPage() {
   return (
     <>
       <Navbar />
-      {/* `hasServerSession` lets the client tell "brand-new user" apart from
-          "returning user whose cookie is mid-recovery" — the latter shows a
-          restoring state instead of flashing the role picker before
-          <SessionSync>'s router.refresh() redirects them. */}
-      <OnboardingFlow hasServerSession={Boolean(session)} />
+      <OnboardingFlow
+        hasServerSession={Boolean(session)}
+        hasServerWallet={Boolean(session?.stellarAddress)}
+        accountServiceUnavailable={Boolean(session?.accountServiceUnavailable)}
+      />
     </>
   );
 }

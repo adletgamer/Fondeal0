@@ -1,8 +1,6 @@
 import { redirect } from 'next/navigation';
 import { Card, Container } from '@fondealo/ui';
 import { COLLATERAL_CONFIG_V1, RiskBand } from '@fondealo/types';
-import { SectionTabs } from '@/components/section-tabs';
-import { WalletStatusBar } from '@/components/wallet-status-bar';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { ScoreBreakdown } from '@/components/score-breakdown';
 import { getBorrowerPassport } from '@/lib/data/opportunities';
@@ -11,13 +9,6 @@ import { getKybState } from '@/lib/data/kyb';
 import { getPassportTheme } from '@/lib/data/passport-theme';
 import { PassportStudio } from '@/components/passport-studio';
 import { FileCheck, Repeat, TrendingUp } from '@/components/icons';
-
-const TABS = [
-  { href: '/business', label: 'Dashboard' },
-  { href: '/business/new', label: 'New request' },
-  { href: '/business/passport', label: 'Passport' },
-  { href: '/business/verify', label: 'Verification' },
-];
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +30,6 @@ export default async function BusinessPassportPage() {
 
   return (
     <>
-      <SectionTabs tabs={TABS} active="/business/passport" />
       <main className="bg-slate-50 pb-20">
         <Container className="py-10">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -50,10 +40,6 @@ export default async function BusinessPassportPage() {
               </p>
             </div>
             <DataSourceBadge source={source} />
-          </div>
-
-          <div className="mb-6">
-            <WalletStatusBar />
           </div>
 
           <PassportStudio

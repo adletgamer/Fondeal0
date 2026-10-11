@@ -1,17 +1,9 @@
 import { redirect } from 'next/navigation';
 import { Card, Container } from '@fondealo/ui';
-import { SectionTabs } from '@/components/section-tabs';
 import { KybWizard } from '@/components/kyb-wizard';
 import { ShieldCheck } from '@/components/icons';
 import { getKybState } from '@/lib/data/kyb';
 import { getSession } from '@/lib/auth/session';
-
-const TABS = [
-  { href: '/business', label: 'Dashboard' },
-  { href: '/business/new', label: 'New request' },
-  { href: '/business/passport', label: 'Passport' },
-  { href: '/business/verify', label: 'Verification' },
-];
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +16,6 @@ export default async function VerifyBusinessPage() {
 
   return (
     <>
-      <SectionTabs tabs={TABS} active="/business/verify" />
       <main className="bg-slate-50 pb-20">
         <Container className="py-10">
           <div className="mx-auto mb-8 max-w-2xl">

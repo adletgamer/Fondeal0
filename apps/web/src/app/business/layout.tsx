@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import { Navbar } from '@/components/navbar';
+import { AppShell } from '@/components/app-shell';
 import { AuthGate } from '@/components/auth-gate';
 import { getSession } from '@/lib/auth/session';
 
@@ -16,8 +16,13 @@ export default async function BusinessLayout({ children }: { children: ReactNode
 
   return (
     <AuthGate section="business">
-      <Navbar />
-      {children}
+      {session?.role === 'Business' && session.stellarAddress ? (
+        <AppShell role="Business" address={session.stellarAddress}>
+          {children}
+        </AppShell>
+      ) : (
+        children
+      )}
     </AuthGate>
   );
 }

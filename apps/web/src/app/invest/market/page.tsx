@@ -1,17 +1,10 @@
 import { Container } from '@fondealo/ui';
-import { SectionTabs } from '@/components/section-tabs';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { MarketGrid } from '@/components/market-grid';
 import { RiskDisclosure } from '@/components/risk-disclosure';
 import { getMarketOpportunities } from '@/lib/data/opportunities';
 import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
-
-const TABS = [
-  { href: '/invest', label: 'Dashboard' },
-  { href: '/invest/market', label: 'Market' },
-  { href: '/invest/positions', label: 'Positions' },
-];
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +18,6 @@ export default async function MarketPage() {
 
   return (
     <>
-      <SectionTabs tabs={TABS} active="/invest/market" />
       <main className="bg-slate-50 pb-20">
         <Container className="py-10">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
