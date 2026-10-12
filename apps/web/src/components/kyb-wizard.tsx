@@ -17,8 +17,8 @@ import { Check, ShieldCheck } from './icons';
 const STEPS = ['Business', 'Verifier', 'Documents', 'Review'] as const;
 const PROGRESS_LABELS = [
   'Checking your tax ID format',
-  'Screening the business (simulated)',
-  'Issuing your Business Passport',
+  'Recording the sandbox signal',
+  'Saving your application for review',
 ];
 
 interface Draft {
@@ -115,18 +115,18 @@ export function KybWizard({
     set('docs', draft.docs.includes(id) ? draft.docs.filter((d) => d !== id) : [...draft.docs, id]);
   }
 
-  if (state?.ok && state.accepted) {
+  if (state?.ok && state.status === 'Processing') {
     return (
       <Card className="mx-auto max-w-xl p-8 text-center">
         <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand-50 text-brand-600">
           <ShieldCheck width={26} height={26} />
         </span>
         <h2 className="mt-4 font-display text-2xl font-bold text-slate-900">
-          {draft.legalName} is verified
+          Application received
         </h2>
         <p className="mt-2 text-sm text-slate-500">
-          Your Business Passport has been issued at a starting score of 500. Repay on time to grow
-          it and unlock cheaper capital.
+          The sandbox checked the format of your details. Business verification and underwriting are
+          pending; no Passport has been issued.
         </p>
         <ul className="mx-auto mt-5 max-w-sm space-y-1.5 text-left text-xs text-slate-500">
           {state.reasons.map((r) => (
@@ -137,14 +137,12 @@ export function KybWizard({
           ))}
         </ul>
         <p className="mt-4 font-mono text-[11px] text-slate-400">Reference {state.providerRef}</p>
-        <a href="/business">
-          <Button className="mt-6">Go to my dashboard</Button>
+        <a href="/business/verify">
+          <Button className="mt-6">View application status</Button>
         </a>
       </Card>
     );
   }
-
-  const rejected = state?.ok && !state.accepted ? state : null;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -287,7 +285,7 @@ export function KybWizard({
                 <h2 className="text-lg font-semibold text-slate-900">Choose a verifier</h2>
                 <p className="mt-1 text-sm text-slate-500">
                   Verifiers check that your business is real. More will join the network; today the
-                  sandbox lets you test the full flow.
+                  sandbox records a format check for review.
                 </p>
               </div>
               <div className="space-y-2">
@@ -330,7 +328,7 @@ export function KybWizard({
               </div>
               <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
                 Sandbox rule: a tax ID ending in <code>0000</code> is rejected so you can test the
-                failure path. Anything else with a valid format is accepted.
+                failure path. This signal does not verify a real business or approve financing.
               </p>
             </div>
           ) : null}
@@ -418,17 +416,6 @@ export function KybWizard({
                 </ul>
               ) : null}
 
-              {rejected ? (
-                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                  <div className="font-semibold">Verification rejected</div>
-                  <ul className="mt-1 list-disc pl-5">
-                    {rejected.reasons.map((r) => (
-                      <li key={r}>{r}</li>
-                    ))}
-                  </ul>
-                  <p className="mt-2 text-xs">Go back, correct the details and submit again.</p>
-                </div>
-              ) : null}
               {state && !state.ok ? <p className="text-sm text-red-600">{state.error}</p> : null}
             </div>
           ) : null}
@@ -453,7 +440,7 @@ export function KybWizard({
               </Button>
             ) : (
               <Button type="submit" disabled={pending}>
-                {pending ? 'Verifying…' : 'Submit for verification'}
+                {pending ? 'Submitting…' : 'Submit for review'}
               </Button>
             )}
           </div>

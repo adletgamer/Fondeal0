@@ -135,7 +135,7 @@ export const KYB_VERIFIERS: KybVerifier[] = [
     id: 'sandbox',
     name: 'Fondealo Sandbox Verifier',
     description:
-      'Instant test verification. It checks the format only — no real registry, ownership or sanctions screening. Testnet only.',
+      'Demo format check only. No registry, ownership or sanctions screening; no KYB or financing approval.',
     status: 'available',
     turnaround: '~10 seconds',
   },
@@ -163,7 +163,7 @@ export const KYB_VERIFIERS: KybVerifier[] = [
   },
 ];
 
-/** Score a freshly verified business starts with (bottom of band C — see docs/score-spec.md). */
+/** Starting score reserved for issuance after KYB and underwriting approval. */
 export const INITIAL_SCORE_AFTER_KYB = 500;
 
 /**

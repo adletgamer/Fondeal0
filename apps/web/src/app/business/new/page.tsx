@@ -15,7 +15,7 @@ export default async function NewRequestPage() {
     redirect(session.role === 'Investor' ? '/invest' : '/onboarding');
   const address = session.stellarAddress;
   const kyb = await getKybState(address);
-  if (kyb && kyb.status !== 'Accepted') redirect('/business/verify');
+  if (!kyb?.eligible) redirect('/business/verify');
   const wallet = await getWalletSummary(address);
   const { passport } = await getBorrowerPassport(address);
 

@@ -25,8 +25,11 @@ export default async function BusinessDashboard() {
     redirect(session.role === 'Investor' ? '/invest' : '/onboarding');
   const address = session.stellarAddress;
   const kyb = await getKybState(address);
-  if (kyb && kyb.status !== 'Accepted') redirect('/business/verify');
-  const [wallet, theme] = await Promise.all([getWalletSummary(address), getPassportTheme(address)]);
+  const eligible = kyb?.eligible === true;
+  const [wallet, theme] = await Promise.all([
+    getWalletSummary(address),
+    eligible ? getPassportTheme(address) : Promise.resolve(null),
+  ]);
   const holder = kyb?.legalName
     ? { name: kyb.legalName, place: [kyb.country, kyb.sector].filter(Boolean).join(' · ') }
     : undefined;
@@ -44,7 +47,9 @@ export default async function BusinessDashboard() {
     .map((o) => ({ opportunity: o, dueAt: o.createdAt + o.termDays * 86_400 }))
     .sort((a, b) => a.dueAt - b.dueAt)[0];
 
-  const currentRatioBps = COLLATERAL_CONFIG_V1[passport.riskBand].collateralRatioBps;
+  const currentRatioBps = eligible
+    ? COLLATERAL_CONFIG_V1[passport.riskBand].collateralRatioBps
+    : null;
   const bandIndex = BAND_ORDER.indexOf(passport.riskBand);
   const nextBand = bandIndex > 0 ? BAND_ORDER[bandIndex - 1] : null;
   const nextRatioBps = nextBand ? COLLATERAL_CONFIG_V1[nextBand].collateralRatioBps : null;
@@ -56,33 +61,52 @@ export default async function BusinessDashboard() {
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
               <h1 className="font-display text-3xl font-bold text-slate-900">Business dashboard</h1>
-              <p className="mt-1 text-slate-500">
-                Your Passport, active loans, and collateral — in one place.
-              </p>
+              <p className="mt-1 text-slate-500">Your balance and existing obligations.</p>
             </div>
             <div className="flex gap-2">
               <DataSourceBadge source={loansSource === 'demo' ? loansSource : passportSource} />
-              <a href="/business/new">
-                <Badge variant="brand">
-                  <Plus width={12} height={12} /> New request
-                </Badge>
-              </a>
+              {eligible ? (
+                <a href="/business/new">
+                  <Badge variant="brand">
+                    <Plus width={12} height={12} /> New request
+                  </Badge>
+                </a>
+              ) : null}
             </div>
           </div>
 
           <BalanceCard summary={wallet} className="mb-6" />
 
-          <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-            <PassportV2
-              passport={passport}
-              theme={theme}
-              holder={holder}
-              explorerUrl={
-                passportSource === 'chain'
-                  ? `https://stellar.expert/explorer/testnet/account/${passport.business}`
-                  : undefined
-              }
-            />
+          {!eligible ? (
+            <Card className="mb-6 border-amber-200 bg-amber-50 p-5">
+              <h2 className="font-semibold text-amber-900">Verification review required</h2>
+              <p className="mt-1 text-sm text-amber-800">
+                You can continue managing existing loans and repayments. New financing requires
+                verified KYB, underwriting approval and a Passport. Sandbox results do not provide
+                that approval.
+              </p>
+              <a
+                href="/business/verify"
+                className="mt-2 inline-block text-sm font-semibold text-amber-900 underline"
+              >
+                View application status
+              </a>
+            </Card>
+          ) : null}
+
+          <div className={eligible ? 'grid gap-6 lg:grid-cols-[380px_1fr]' : 'grid gap-6'}>
+            {eligible && theme ? (
+              <PassportV2
+                passport={passport}
+                theme={theme}
+                holder={holder}
+                explorerUrl={
+                  passportSource === 'chain'
+                    ? `https://stellar.expert/explorer/testnet/account/${passport.business}`
+                    : undefined
+                }
+              />
+            ) : null}
 
             <div className="grid content-start gap-6">
               <div className="grid gap-4 sm:grid-cols-3">
@@ -116,32 +140,34 @@ export default async function BusinessDashboard() {
                     </span>
                   </div>
                   <div className="mt-2 font-display text-2xl font-bold text-slate-900">
-                    {currentRatioBps / 100}% collateral
+                    {currentRatioBps !== null
+                      ? `${currentRatioBps / 100}% collateral`
+                      : 'Pending review'}
                   </div>
-                  {nextBand && nextRatioBps !== null ? (
+                  {eligible && nextBand && nextRatioBps !== null ? (
                     <p className="mt-1 text-xs text-slate-500">
                       Band {nextBand} would need only {nextRatioBps / 100}%.
                     </p>
-                  ) : (
+                  ) : eligible ? (
                     <p className="mt-1 text-xs text-emerald-600">Best band already.</p>
-                  )}
+                  ) : null}
                 </Card>
               </div>
 
               <Card className="p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-slate-900">Your loans</h2>
-                  <a
-                    href="/business/new"
-                    className="text-sm font-medium text-brand-600 hover:underline"
-                  >
-                    + New request
-                  </a>
+                  {eligible ? (
+                    <a
+                      href="/business/new"
+                      className="text-sm font-medium text-brand-600 hover:underline"
+                    >
+                      + New request
+                    </a>
+                  ) : null}
                 </div>
                 {opportunities.length === 0 ? (
-                  <p className="text-sm text-slate-500">
-                    No requests yet. Create one to start building reputation.
-                  </p>
+                  <p className="text-sm text-slate-500">No requests yet.</p>
                 ) : (
                   <ul className="divide-y divide-slate-100">
                     {opportunities.map((o) => (

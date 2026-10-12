@@ -20,9 +20,6 @@ const state = vi.hoisted(() => ({
   transaction: vi.fn(),
 }));
 
-vi.mock('@fondealo/database', () => ({
-  prisma: { business: { findUnique: state.businessFind } },
-}));
 vi.mock('@/lib/auth/session', () => ({
   getSession: async () => state.session,
   describeError: (error: unknown) => String(error),
@@ -63,13 +60,34 @@ beforeEach(() => {
   });
   state.businessFind.mockResolvedValue({
     id: 'business-1',
-    kybSubmissions: [{ id: 'kyb-1' }],
-    passport: { riskBand: 'C' },
+    kybSubmissions: [
+      {
+        id: 'kyb-1',
+        status: 'Accepted',
+        provider: 'registry',
+        reviewedAt: new Date('2026-10-10T00:00:00Z'),
+        dataHash: '0xabc',
+      },
+    ],
+    underwritingDecisions: [
+      {
+        status: 'Approved',
+        kybSubmissionId: 'kyb-1',
+        policyVersion: 'v1',
+        evidenceRefs: ['registry-1'],
+        decidedBy: 'reviewer-1',
+        maxPrincipalStroops: 2_000_000_000n,
+        maxTermDays: 180,
+        expiresAt: new Date('2099-01-01T00:00:00Z'),
+      },
+    ],
+    passport: { riskBand: 'C', kybStatus: 'Accepted', dataHash: '0xabc' },
   });
   state.repaymentFind.mockResolvedValue([]);
   state.fundingFind.mockResolvedValue([{ investor: 'GINVESTOR', amount: '100' }]);
   state.transaction.mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) =>
     fn({
+      business: { findUnique: state.businessFind },
       opportunity: {
         findUnique: state.opportunityFind,
         create: state.opportunityCreate,
@@ -94,7 +112,7 @@ describe('financial Server Actions', () => {
     expect(state.transaction).not.toHaveBeenCalled();
   });
 
-  it('requires KYB and locks collateral before creating an opportunity', async () => {
+  it('requires verified KYB, underwriting and Passport before locking collateral', async () => {
     state.session = { privyUserId: 'business', stellarAddress: 'GBUSINESS', role: 'Business' };
     state.businessFind.mockResolvedValueOnce(null);
     expect(await createOpportunity(null, creationForm())).toMatchObject({ ok: false });
@@ -112,6 +130,18 @@ describe('financial Server Actions', () => {
     );
   });
 
+  it('does not let a sandbox acceptance create a financing opportunity', async () => {
+    state.session = { privyUserId: 'business', stellarAddress: 'GBUSINESS', role: 'Business' };
+    const valid = await state.businessFind();
+    state.businessFind.mockResolvedValueOnce({
+      ...valid,
+      kybSubmissions: [{ ...valid.kybSubmissions[0], provider: 'sandbox' }],
+    });
+    expect(await createOpportunity(null, creationForm())).toMatchObject({ ok: false });
+    expect(state.debit).not.toHaveBeenCalled();
+    expect(state.opportunityCreate).not.toHaveBeenCalled();
+  });
+
   it('rejects self-funding and overfunding without debiting or recording a funding', async () => {
     state.opportunityFind.mockResolvedValueOnce({
       id: 'loan-1',
@@ -122,6 +152,17 @@ describe('financial Server Actions', () => {
     });
     expect(await fundOpportunity(null, fundingForm('10'))).toMatchObject({ ok: false });
     expect(await fundOpportunity(null, fundingForm('101'))).toMatchObject({ ok: false });
+    expect(state.debit).not.toHaveBeenCalled();
+    expect(state.fundingCreate).not.toHaveBeenCalled();
+  });
+
+  it('blocks funding an old open opportunity when its business has only sandbox KYB', async () => {
+    const valid = await state.businessFind();
+    state.businessFind.mockResolvedValueOnce({
+      ...valid,
+      kybSubmissions: [{ ...valid.kybSubmissions[0], provider: 'sandbox' }],
+    });
+    expect(await fundOpportunity(null, fundingForm('10'))).toMatchObject({ ok: false });
     expect(state.debit).not.toHaveBeenCalled();
     expect(state.fundingCreate).not.toHaveBeenCalled();
   });

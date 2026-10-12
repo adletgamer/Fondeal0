@@ -1,10 +1,10 @@
 'use server';
 
-import { prisma } from '@fondealo/database';
 import { requiredCollateral, splitProRata, type RiskBand } from '@fondealo/types';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { describeError, getSession, type Session } from '@/lib/auth/session';
+import { canRequestFinancing } from '@/lib/underwriting/eligibility';
 import {
   InsufficientFundsError,
   credit,
@@ -29,6 +29,10 @@ export type ActionResult = { ok: true; message: string } | { ok: false; error: s
 
 const DB_UNREACHABLE = 'We could not reach the database. Try again in a moment.';
 const SESSION_EXPIRED = 'Your session expired. Refresh the page and log in again.';
+const REVIEW_REQUIRED =
+  'Business verification and underwriting approval are required before requesting financing.';
+
+class ReviewRequiredError extends Error {}
 
 function firstIssue(error: z.ZodError): string {
   return error.issues[0]?.message ?? 'Invalid input';
@@ -63,9 +67,8 @@ const createOpportunitySchema = z.object({
 });
 
 /**
- * Opens a funding opportunity for the caller's verified business and locks the
- * collateral its Passport band requires. The band comes from the Passport
- * projection, not the form — a tampered request can't lower its own collateral.
+ * Opens an opportunity only with current KYB and underwriting approval.
+ * Eligibility, collateral debit and creation share one serializable transaction.
  */
 export async function createOpportunity(
   _prev: ActionResult | null,
@@ -80,20 +83,33 @@ export async function createOpportunity(
   const data = parsed.data;
 
   try {
-    const business = await prisma.business.findUnique({
-      where: { stellarAddress: address },
-      include: {
-        passport: true,
-        kybSubmissions: { where: { status: 'Accepted' }, take: 1, select: { id: true } },
-      },
-    });
-    if (!business || business.kybSubmissions.length === 0 || !business.passport) {
-      return { ok: false, error: 'Verify your business before requesting financing.' };
-    }
-    const band: RiskBand = business.passport.riskBand;
-    const collateral = Number(requiredCollateral(String(data.amount), band));
-
-    await withSerializableRetry(async (tx) => {
+    const collateral = await withSerializableRetry(async (tx) => {
+      const business = await tx.business.findUnique({
+        where: { stellarAddress: address },
+        include: {
+          passport: true,
+          kybSubmissions: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 1 },
+          underwritingDecisions: {
+            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+            take: 1,
+          },
+        },
+      });
+      if (
+        !business ||
+        !canRequestFinancing({
+          kyb: business.kybSubmissions[0] ?? null,
+          decision: business.underwritingDecisions[0] ?? null,
+          passport: business.passport,
+          amountStroops: usdcToStroops(data.amount),
+          termDays: data.termDays,
+          now: new Date(),
+        })
+      ) {
+        throw new ReviewRequiredError(REVIEW_REQUIRED);
+      }
+      const band: RiskBand = business.passport!.riskBand;
+      const collateral = Number(requiredCollateral(String(data.amount), band));
       if (collateral > 0) {
         await debit(tx, {
           address,
@@ -114,6 +130,7 @@ export async function createOpportunity(
           status: 'Open',
         },
       });
+      return collateral;
     });
 
     revalidatePath('/invest', 'layout');
@@ -123,6 +140,7 @@ export async function createOpportunity(
       message: `Opportunity created — ${collateral.toLocaleString()} USDC collateral locked, now open for funding.`,
     };
   } catch (err) {
+    if (err instanceof ReviewRequiredError) return { ok: false, error: err.message };
     if (err instanceof InsufficientFundsError) {
       return {
         ok: false,
@@ -168,6 +186,31 @@ export async function fundOpportunity(
       }
       if (opportunity.business.stellarAddress === investor) {
         return { error: 'You cannot fund your own business.' };
+      }
+
+      const business = await tx.business.findUnique({
+        where: { stellarAddress: opportunity.business.stellarAddress },
+        include: {
+          passport: true,
+          kybSubmissions: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 1 },
+          underwritingDecisions: {
+            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+            take: 1,
+          },
+        },
+      });
+      if (
+        !business ||
+        !canRequestFinancing({
+          kyb: business.kybSubmissions[0] ?? null,
+          decision: business.underwritingDecisions[0] ?? null,
+          passport: business.passport,
+          amountStroops: usdcToStroops(Number(opportunity.amount)),
+          termDays: opportunity.termDays,
+          now: new Date(),
+        })
+      ) {
+        return { error: REVIEW_REQUIRED };
       }
 
       const target = Number(opportunity.amount);
