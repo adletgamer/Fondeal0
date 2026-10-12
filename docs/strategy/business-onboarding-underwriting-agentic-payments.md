@@ -1,6 +1,6 @@
 # Fondealo: business approval, Passport and agentic verification market
 
-**Status:** staged backend implementation, 2026-10-11. No migration has been applied to Production and no contract has been deployed.
+**Status:** staged backend implementation in [draft PR #13](https://github.com/adletgamer/Fondeal0/pull/13), 2026-10-11. CI passed; the PR has not been merged, migrated or deployed to Production. No contract has been deployed as part of this change.
 
 ## 1. Verified baseline before Stage 1
 

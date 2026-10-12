@@ -1,5 +1,9 @@
 # Fondealo — Research (Phase 1)
 
+> Historical research snapshot from August 2026. Recheck time-sensitive
+> protocol, vendor and market claims before using them in a decision or pitch.
+> See [the operating model](operating-model.md) for the current implementation.
+
 > Credit infrastructure for Latin American SMEs, built natively on Stellar (Soroban, USDC, on-chain reputation).
 > This document is the evidence base for every architectural decision that follows. It is written for a Stellar Community Fund (SCF) reviewer as much as for the engineering team.
 

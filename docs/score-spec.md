@@ -1,5 +1,9 @@
 # Fondealo — Credit Reputation Score Spec (v1)
 
+> Contract formula specification. The contract implementation is not evidence
+> of a deployed or reconciled production score. See
+> [the operating model](operating-model.md) for product status.
+
 **Status:** Implemented in `packages/soroban/contracts/credit_score` · **Owner:** CTO
 **Related:** ADR-0005 (on-chain reputation), ADR-0008 (score engine design), Risk R-01 (gaming).
 

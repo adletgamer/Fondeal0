@@ -2,163 +2,80 @@
 
 # Fondealo
 
-**Credit infrastructure for Latin American SMEs, built natively on Stellar.**
-_Infraestructura de crédito para PyMEs latinoamericanas, construida de forma nativa sobre Stellar._
+**Business identity and financing infrastructure for Latin American SMEs, built with Stellar.**
+_Identidad empresarial e infraestructura de financiamiento para PyMEs latinoamericanas._
 
-`Stellar` · `Soroban` · `USDC` · `on-chain reputation`
+`Stellar` · `Soroban` · `Next.js` · `PostgreSQL`
 
-**▶ Live MVP: [fondealo.vercel.app](https://fondealo.vercel.app)**
+**Public site: [fondealo.xyz](https://fondealo.xyz)**
 
 </div>
 
----
+## Product status
 
-## Deployments
+Fondealo has a public website and an authenticated Business/Investor application. New business registration currently records a **sandbox KYB intake**. It does not verify a legal entity or establish creditworthiness. The financing experience uses a database-backed **test ledger**; its balances are not redeemable USDC or evidence of on-chain settlement.
 
-| Environment | Target | Address / URL | Status |
-| ----------- | ------ | ------------- | ------ |
-| Web (MVP)   | Vercel | https://fondealo.vercel.app | ✅ live |
-| `business_passport` | Stellar Testnet (Soroban) | _run `scripts/deploy_testnet.sh` → paste id_ | ⏳ pending |
-| `credit_score` | Stellar Testnet (Soroban) | _run `scripts/deploy_testnet.sh` → paste id_ | ⏳ pending |
-| `loan_escrow` | Stellar Testnet (Soroban) | _run `scripts/deploy_testnet.sh` → paste id_ | ⏳ pending |
+[Draft PR #13](https://github.com/adletgamer/Fondeal0/pull/13) keeps sandbox applications pending and gates new financing on reviewed KYB, a current underwriting decision and a matching Passport projection. CI passed, but the PR has **not** been merged, migrated or deployed to Production. A real Peru KYB provider, reviewer workflow, approved decision path and reconciled on-chain Passport issuance are still pending.
 
-> The web app is live on Vercel. The Soroban contracts deploy separately with
-> `scripts/deploy_testnet.sh` on a machine with internet (funds a Testnet key via
-> Friendbot, deploys all three contracts, wires roles — including `loan_escrow`
-> as `credit_score`'s reporter — writes `apps/web/.env.local`). Requires
-> `USDC_SAC_ADDRESS` (the USDC Stellar Asset Contract to escrow) since there is
-> no fixed Testnet USDC address to fall back to. Once deployed, paste the `C…`
-> contract ids above and set them in the app env.
+Read the [operating model](docs/operating-model.md) for precise capability claims and release gates.
 
----
+## Intended product journey
 
-## What Fondealo is · Qué es Fondealo
-
-**EN —** Fondealo is not a lending protocol and not a migration of anything. It is the missing
-**credit-identity layer** for Stellar DeFi: a reusable **Business Passport** (KYB status, credit
-score, risk band, payment history — verifiable from Soroban) and a portable **Credit Reputation
-Score** that grows with every successful repayment and survives across loans. We compose on the
-existing Stellar money-legos — **Blend** (lending), **Reflector** (pricing), **DeFindex** (yield),
-**USDC** (settlement) — and own the layer they lack: _who is this business, can they repay, and does
-good behavior compound?_
-
-**ES —** Fondealo no es un protocolo de préstamos ni una migración. Es la **capa de identidad
-crediticia** que le falta al DeFi de Stellar: un **Business Passport** reutilizable (estado KYB,
-score, riesgo, historial — verificable desde Soroban) y un **Credit Reputation Score** portable que
-crece con cada repago y sobrevive entre préstamos. Componemos sobre Blend, Reflector, DeFindex y
-USDC, y construimos la capa que ellos no tienen.
-
-### Core loop · Flujo principal
-
-```
-register → KYB → Business Passport → create opportunity → fund in USDC → repay → score up
+```text
+register → KYB review → underwriting → Passport issuance → financing → repayment
 ```
 
-### Two differentiators · Dos diferenciadores
+These are distinct decisions. A sandbox check is never a verified business or a lending approval. A Business Passport is intended to be a nontransferable credential backed by reviewed evidence; it is not a promise to fund every request. A paid verification response may inform underwriting, but cannot approve an application by itself.
 
-1. **Business Passport** — a reusable, on-chain, verifiable business identity.
-2. **Credit Reputation Score** — portable reputation that compounds across loans.
+## Repository
 
----
-
-## Monorepo
-
-```
-fondealo/
-├─ apps/
-│  └─ web/            Next.js 15 (App Router, Server Actions) · Tailwind · shadcn-style UI
-├─ packages/
-│  ├─ soroban/        Rust / Soroban contracts (Cargo workspace)
-│  │  ├─ contracts/business_passport   ← the trust primitive (implemented + tested)
-│  │  ├─ contracts/credit_score        ← reputation engine (implemented + tested)
-│  │  └─ contracts/loan_escrow         ← collateral + funding flow (implemented + tested)
-│  ├─ sdk/            TS client: network config, Wallets Kit, Passport read client
-│  ├─ types/          Shared domain types + zod schemas
-│  ├─ database/       Prisma schema for the off-chain index / PII
-│  └─ ui/             Shared design-system components
-├─ docs/              research · architecture · ADRs · roadmap · risks · backlog
-├─ scripts/           deploy + ops (Testnet deploy, TTL bumper)
-└─ .github/workflows  CI (Node + Rust)
+```text
+apps/web                 Next.js app, authenticated flows and server actions
+packages/database        Prisma schema and additive migrations
+packages/soroban         Business Passport, credit score and loan escrow contracts
+packages/sdk             Stellar client integration
+packages/types           Shared domain types
+packages/ui              Shared UI
+docs                     Product, architecture, operations and decisions
+scripts                  Development and Testnet operations
+.github/workflows        Node and Soroban CI
 ```
 
-## Tech baseline
+The contracts compile for `wasm32v1-none` in CI. Their compilation does not establish network compatibility, deployed contract addresses, safe issuance or production readiness. The repository pins `soroban-sdk` 27; review compatibility before a Testnet deployment. No dependency upgrade is part of PR #13.
 
-Protocol **27** · `soroban-sdk` **27** · `@stellar/stellar-sdk` **16.2.0** · Stellar CLI **27** ·
-Next.js **15** · React **19** · TypeScript **5.7** · PostgreSQL + Prisma **6**. Testnet-first.
+## Local development
 
-## Quickstart
+Prerequisites: Node.js 22+, pnpm 10, Rust for contract work, and a **Development** PostgreSQL database. Copy `.env.example` to the gitignored root `.env` and use Development credentials only. See [deployment and database](docs/deployment-and-database.md) for environment precedence and connection checks.
 
 ```bash
-# prerequisites: Node 22, pnpm 10, Rust (stable) + wasm target, and stellar-cli for deploys
-pnpm install                    # install JS workspaces
-cp .env.example .env         # repo-root .env is the single source of secrets (see docs/deployment-and-database.md)
-
-# --- contracts ---
-pnpm contracts:test             # cargo test (native)
-pnpm contracts:build            # build wasm (needs wasm32v1-none target)
-
-# --- web / packages ---
-pnpm --filter @fondealo/database db:generate   # generate Prisma client
-pnpm --filter @fondealo/database db:deploy     # apply migrations to the database in .env
-pnpm dev                        # run the web app
-pnpm lint && pnpm typecheck     # what CI runs
+pnpm install
+pnpm --filter @fondealo/database db:generate
+pnpm --filter @fondealo/database db:validate
+pnpm dev
 ```
 
-Deploy the Passport contract to Testnet:
+Validation before a PR:
 
 ```bash
-NETWORK=testnet SOURCE=deployer ./scripts/deploy_testnet.sh
-# then set NEXT_PUBLIC_PASSPORT_CONTRACT_ID in apps/web/.env.local
+pnpm run format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm contracts:test
+pnpm contracts:build
 ```
 
-## Status · Estado
+Migration commands change the target database and are intentionally outside the quickstart. Confirm the target and review the migration before using `db:deploy`. Never run a production migration as part of local setup.
 
-Phase-gated: each phase ends with ADRs and review before the next begins.
+## Documentation
 
-| Phase | Name              | Status                            |
-| ----- | ----------------- | --------------------------------- |
-| 1     | Research          | ✅ merged                         |
-| 2     | Architecture      | ✅ merged                         |
-| 3     | Scaffolding       | ✅ merged                         |
-| 4     | Business Passport | 🟡 contract done; app wiring next |
-| 5     | Credit Engine     | ✅ contract + spec                |
-| 6     | Funding Flow      | 🟡 backend + `loan_escrow` done; not deployed |
-| 7     | Reputation System | ⏳                                |
-| 8     | Demo Day          | ⏳                                |
-
-See [docs/roadmap.md](docs/roadmap.md#calendar-roadmap--next-4-months) for the
-month-by-month plan (next 4 months) behind this table.
-
-**Verified:** contracts pass **37/37** unit tests with `soroban-sdk` 27 (`business_passport` 11,
-`credit_score` 9, `loan_escrow` 17), `cargo fmt` + `clippy -D warnings` clean, including the
-cross-contract reputation write, collateral-ratio enforcement, pro-rata payout on repay/default, and
-the on-chain-derived (not asserted) anti-gaming rule. TypeScript packages typecheck and lint clean.
-(`pnpm run format:check` has pre-existing, repo-wide failures unrelated to this work — see
-`docs/backlog.md`.)
-
-## Deploy to Testnet
-
-The cloud sandbox has no Testnet egress, so run the deploy on a machine with internet:
-
-```bash
-rustup target add wasm32v1-none
-curl -sSf https://stellar.org/install.sh | sh   # Stellar CLI
-./scripts/deploy_testnet.sh                       # funds a key, deploys, wires, writes .env.local
-```
-
-## Docs
-
-[research](docs/research.md) ·
-[architecture](docs/architecture.md) ·
-[ADRs](docs/adr/) ·
-[score-spec](docs/score-spec.md) ·
-[roadmap](docs/roadmap.md) ·
-[risks](docs/risks.md) ·
-[backlog](docs/backlog.md)
-
-## Target programs
-
-Stellar Community Fund · InstaAwards · Soroban Ecosystem · Stellar acceleration.
+- [Operating model](docs/operating-model.md): current truth, trust boundaries and release gates.
+- [Roadmap](docs/roadmap.md): ordered delivery stages and acceptance criteria.
+- [Business approval strategy](docs/strategy/business-onboarding-underwriting-agentic-payments.md): Peru KYB, underwriting, Passport and agentic verification pilot.
+- [Deployment and database](docs/deployment-and-database.md): environment and Prisma runbook.
+- [Risk register](docs/risks.md) and [architecture decisions](docs/adr/): security and design history.
+- [Documentation index](docs/README.md): which documents are current and which are historical.
 
 ## License
 
