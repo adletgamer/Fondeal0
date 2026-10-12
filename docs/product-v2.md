@@ -1,5 +1,10 @@
 # Fondealo — Product v2: Research, Refined Model, Flows & Build Prompts
 
+> Historical product proposal. Market figures and competitor claims were not
+> refreshed for this documentation update. In particular, the illustrative
+> starting score and KYB acceptance flow below are **not** the policy for new
+> businesses after merged PR #13. See [the operating model](operating-model.md).
+
 > Purpose: mature the product — split the Business vs Investor experiences, define the
 > full flow, and introduce **working capital as collateral**. Grounded in an
 > exhaustive review of on-chain private-credit projects. Ends with **precise,

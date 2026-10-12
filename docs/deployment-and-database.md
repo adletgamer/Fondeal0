@@ -1,5 +1,10 @@
 # Deployment & database runbook
 
+> Updated 2026-10-11. This runbook records a previous incident and the current
+> deployment sequence. It does not authorize a Production migration or deploy.
+> Read the [operating model](operating-model.md) and the Stage 1 release checklist
+> in [the roadmap](roadmap.md) before acting.
+
 How environment variables, Prisma and the Vercel deploy fit together — and the
 incident that broke login in production.
 
@@ -48,23 +53,29 @@ pnpm --filter @fondealo/database db:status   # what is pending
 pnpm --filter @fondealo/database db:deploy   # apply pending migrations
 ```
 
-**If the shell cannot reach port 5432** (`P1001` even though credentials are fine), Neon also
-accepts SQL over HTTPS (port 443). The `20260921000000_kyb_and_ledger` migration was applied
-that way: the committed `migration.sql` was sent in one transaction to
-`https://<pooler-host>/sql` (header `Neon-Connection-String`), then a row was inserted into
-`_prisma_migrations` with `checksum = sha256(migration.sql with LF line endings)` — the same
-value `prisma migrate deploy` would store, so `db:status` stays consistent. Verify afterwards
-by querying `_prisma_migrations` and `information_schema`. Only do this for reviewed,
-additive migrations.
+**Historical exception:** when this machine could not reach PostgreSQL on port 5432,
+the `20260921000000_kyb_and_ledger` migration was applied through Neon's HTTPS SQL
+interface and its Prisma migration history was reconciled. Do not use that path
+to bypass a network restriction. For new migrations, first establish approved
+PostgreSQL connectivity, verify the database target and use the reviewed Prisma
+procedure. Any manual migration-history change requires a separate incident
+record, database review and independent verification.
 
 Prisma selects every column of a model, so deploying code whose schema adds columns
 (e.g. `Business.taxId`) **before** the migration is applied breaks existing queries.
-Order: migrate first, then `npx vercel deploy --prod`.
+Order after an approved release decision: target verification → migration preflight
+and isolated test → Production migration → app deployment → health and
+trust/money smoke tests → monitor or rollback. Never deploy code requiring a
+new table ahead of its migration.
 
 Also applied: `20260921120000_passport_theme` (three nullable theme columns on `Business`).
 
-Latest: `20260921000000_kyb_and_ledger` — additive only: KYB profile columns on `Business`,
-verifier columns on `KybSubmission`, and the `LedgerEntry` table.
+The repository also contains the pending
+`20261011000000_underwriting_decisions` migration from merged PR #13. It adds
+`UnderwritingDecision` and a partial unique index for active KYB intake.
+Its Production application status is **unverified** here. Check existing `Processing` rows
+for duplicates, then test it on the isolated Development database before
+considering any wider rollout.
 
 ## Health check
 
@@ -73,13 +84,14 @@ verifier columns on `KybSubmission`, and the `LedgerEntry` table.
 After any deploy or env change:
 
 ```bash
-curl https://fondealo.vercel.app/api/health
+curl https://fondealo.xyz/api/health
 ```
 
 ## Deploying
 
-Production is deployed with the Vercel CLI from `main` (pushes to `main` do not
-auto-deploy this project):
+Historically, Production has been deployed with the Vercel CLI from `main`
+(a push to `main` does not itself deploy this project). Run this only after
+the release gates above are signed off:
 
 ```bash
 git checkout main && git pull
@@ -117,8 +129,12 @@ Verified with `/api/health` returning `ok: true` on production.
 
 ## Known follow-ups
 
-- Vercel still holds the Neon-integration variables (`FONDEALO_*`, `POSTGRES_*`,
-  `PG*`). Prisma does not read them; remove them once you are sure nothing else does.
-- `@privy-io/server-auth` is deprecated upstream in favour of `@privy-io/node`.
-- Preview and Development environments do not have the database variables yet.
-- `pnpm format:check` reports files with CRLF line endings on Windows checkouts.
+- Audit any legacy Neon-integration variables (`FONDEALO_*`, `POSTGRES_*`,
+  `PG*`) before removal; Prisma's current datasource uses `DATABASE_URL` and
+  `DATABASE_URL_UNPOOLED`.
+- Review the installed Privy server SDK and its migration path in a separate
+  dependency change; do not bundle it with database or underwriting releases.
+- Development database variables were connected to the isolated Neon
+  `fondealo-development` database in the earlier environment setup. Verify
+  their current assignment before use; Preview has not been changed as part of
+  PR #13, and Production must remain isolated.

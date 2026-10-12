@@ -1,7 +1,9 @@
 # Fondealo — Proposed Architecture (Phase 2 draft)
 
-**Status:** Proposed · pending approval to proceed to Phase 3 (Scaffolding)
-**Baseline:** Protocol 27 · soroban-sdk 27.x · JS Stellar SDK 16.2.0 · Stellar CLI 27.1.0 · Stellar Testnet first.
+> Historical design proposal. For the implemented state and current release gates, see [Operating model](operating-model.md) and [Business approval strategy](strategy/business-onboarding-underwriting-agentic-payments.md).
+
+**Status:** Historical Phase 2 proposal; not a current implementation inventory.
+**Baseline at writing:** Protocol 27 · soroban-sdk 27.x · JS Stellar SDK 16.2.0 · Stellar CLI 27.1.0 · Stellar Testnet first.
 
 This document translates `research.md` into a concrete system design. It is intentionally opinionated. Decisions with trade-offs are captured as ADRs under `docs/adr/`.
 

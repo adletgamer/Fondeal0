@@ -1,100 +1,50 @@
-# Fondealo — Technical Roadmap
+# Fondealo roadmap
 
-Phases map to the product plan and to the SCF Build Award's three-tranche structure (final tranche = mainnet with on-chain metrics). Each phase ends at a **gate**: decisions explained, ADRs written, approval before proceeding.
+**Snapshot:** 2026-10-11. This replaces the original phase/calendar proposal as the active engineering sequence. Dates, funding milestones and production launch commitments are intentionally unset until prerequisites are evidenced. See the [operating model](operating-model.md) for current capability claims.
 
-| Phase | Name | Goal | Key deliverables | Exit gate |
-|---|---|---|---|---|
-| 1 | Research | Ground every decision in official docs + SCF signals | `docs/research.md` | ✅ this PR |
-| 2 | Architecture | Opinionated system design + trade-offs | `architecture.md`, ADR-0001..0006 | ✅ this PR — **awaiting approval** |
-| 3 | Scaffolding | Monorepo + tooling + CI + empty contract crates | pnpm/Turborepo, ESLint/Prettier/Husky/Commitlint, GH Actions, `packages/soroban` skeleton, testnet deploy script | CI green; `stellar contract build` passes |
-| 4 | Business Passport | On-chain Passport + KYB (SEP-12 shape) + issue flow | `business_passport` contract + tests, KYB intake, Passport UI | Passport issuable & readable on testnet |
-| 5 | Credit Engine | Deterministic score contract + score spec | score spec doc + ADR, `credit_score` contract + property tests | Score transitions verified by tests |
-| 6 | Funding Flow | USDC escrow, opportunity, fund, release, repay | `loan_escrow` + SAC integration, investor/business dashboards | End-to-end loop on testnet with real USDC (faucet) |
-| 7 | Reputation System | Score updates persist across loans; TTL subsystem; Blend/DeFindex integration path | cross-loan persistence, TTL bumper, Blend pool spike | Reputation survives loan #1 → loan #2 demo |
-| 8 | Demo Day | Polished vertical demo + metrics + pitch | landing, recorded demo, metrics dashboard, bilingual pitch | SCF-ready submission |
+## Delivery order
 
-## Milestone → tranche mapping (Build Award)
-- **Tranche 1 (planning + testnet core):** Phases 3–5. Deliverable: Passport + score live on testnet, open-source contracts, threat-model draft.
-- **Tranche 2 (integration + security):** Phases 6–7. Deliverable: full funding+repayment loop, cross-loan reputation, **threat model + monitoring plan** (SCF-required), Blend integration spike.
-- **Tranche 3 (mainnet):** Phase 8 hardening → audit → mainnet launch with committed on-chain metrics (NAV / tx volume / repayment rate).
+| Stage | Outcome | Current state | Exit evidence |
+| --- | --- | --- | --- |
+| 0. Baseline | Reproducible web and Soroban CI; protected auth, roles and ledger behavior | Implemented; CI green for [merged PR #13](https://github.com/adletgamer/Fondeal0/pull/13) | Node format/lint/types/tests/build and Soroban fmt/clippy/tests/WASM green on the release commit |
+| 1. Trust containment | Sandbox KYB cannot create a verified Passport or finance a new opportunity | Code merged to `main`; database and Production rollout unverified | Migration tested in isolated Development, legacy data inspected, existing obligations reconciled, security review complete |
+| 2. Peru KYB and underwriting | Evidence-backed identity decision and explainable, versioned risk decision | Design only | Authorized data source, consent/retention and legal review; reviewer authorization; adverse/review reasons; expiry and limits; negative tests |
+| 3. Passport lifecycle on Testnet | Issue, revoke, renew and read a nontransferable credential with durable event reconciliation | Contract code exists; application issuance/indexer pending | Contract auth review, compatible toolchain, Testnet IDs, idempotent issuance, event cursor, TTL restoration, independent verification |
+| 4. Financing integration | Reconciled new funding and repayment linked to current eligibility | Test ledger and server actions exist; live settlement pending | End-to-end synthetic Testnet flow, money conservation, ownership and rollback tests, no orphaned funds |
+| 5. Agentic verification pilot | One bounded paid data check for underwriting | Concept only | One approved provider, synthetic data, Testnet budget, allowlists, idempotent receipt and evidence review; no automatic approval |
+| 6. Live readiness | Operate with real businesses or money | Not approved | Independent security/contract review, legal/vendor approvals, incident runbooks, reconciled metrics and explicit release authorization |
 
-## Sequencing rationale
-Passport (Phase 4) precedes Score (Phase 5) because the score needs an identity to attach to. Escrow-first funding (Phase 6) precedes Blend migration (Phase 7) so we control the first clean metric. TTL and Blend both land in Phase 7 because both concern reputation *durability and composability*, the product's core claim.
+Stages 2–5 may have small parallel research tasks, but a later stage cannot be called live because an earlier trust or money gate is missing. Do not upgrade dependencies, deploy contracts, apply Production migrations or move real value as a side effect of this roadmap.
 
-## Definition of Done (per phase)
-Tests pass in CI · contracts build reproducibly · ADR(s) written for contested calls · docs updated · demo-able on testnet · security notes captured.
+## Stage 1 release checklist
 
----
+- [x] Sandbox intake stays `Processing`; no automatic Passport projection or starting score.
+- [x] New opportunity creation and funding require real reviewed KYB, current underwriting approval and a matching Passport projection.
+- [x] Existing repayment access remains available.
+- [x] Local regression checks and PR CI pass.
+- [ ] Count legacy `Processing` submissions per business; resolve duplicates before the partial unique index.
+- [ ] Apply and verify the additive migration on the isolated Development database; confirm Prisma migration history.
+- [ ] Inventory `Open` and partially funded opportunities; approve a ledger-reconciled cancel/refund or grandfathering plan.
+- [ ] Review the failure mode when the new table is absent and the order of migration then application deployment.
+- [ ] Review security, product messaging and rollback; decide separately whether to merge/deploy.
 
-## Calendar roadmap — next 4 months
+A green CI build is evidence for code quality, not for database compatibility, production identity decisions or safe treatment of existing investor funds.
 
-Where the phase table above maps work to the SCF tranche structure, this maps
-the *same* work to a calendar so it's obvious what ships when. Baseline: the
-web MVP is live (`fondealo.vercel.app`), both Soroban contracts are built and
-tested (Phases 3–5 done), and the funding-flow backend (Prisma + Server
-Actions for create/list/fund an opportunity) has just landed behind a
-DB-unreachable-safe fallback — no production Postgres is provisioned yet.
+## Stage 2 design decisions to record
 
-### Month 1 — Make it real (finish Phase 6, start Phase 7)
-- Provision a real Postgres (Neon/Vercel Postgres), run `prisma migrate deploy`,
-  retire the demo-data fallback on the investor dashboard.
-- Deploy `business_passport` + `credit_score` + `loan_escrow` to Testnet
-  (`scripts/deploy_testnet.sh` — needs a real `USDC_SAC_ADDRESS`; the contract
-  itself is done: 37/37 tests, `cargo clippy -D warnings` clean) and wire the
-  read side: dashboards read the real Passport/score instead of the hardcoded
-  demo passport.
-- SEP-10 wallet auth: replace the "paste your Stellar address" form fields
-  with a real signed session, so Business/Investor identity comes from the
-  connected wallet, not free text.
-- Wire the frontend to `loan_escrow`: `fundOpportunity`/`repay` Server Actions
-  currently write straight to Postgres; point them at the deployed contract
-  (via `@fondealo/sdk`'s `EscrowClient`) once Testnet ids exist, and index its
-  events back into Postgres as a projection.
-- **Exit gate:** a business can connect a wallet, get a real on-chain
-  Passport, open an opportunity, and an investor can fund it in testnet
-  USDC — end to end, no demo data.
+1. Define the first Peru operating product and applicable legal obligations with qualified local review.
+2. Select authorized RUC, representative and ownership evidence sources; document permitted use, freshness and outage behavior.
+3. Define a proportionate KYB policy and a separate underwriting policy with version, exposure/term caps and reason codes.
+4. Design least-privilege reviewer actions, four-eyes control for exceptions, immutable audit events and appeal/re-review.
+5. Specify the migration from legacy sandbox records without automatic promotion.
+6. Define measurable decision quality before using a score as a financial claim.
 
-### Month 2 — Close the loop (finish Phase 7)
-- Wire repayment: `repayOpportunity` Server Action + on-chain settlement via
-  `loan_escrow`, feeding the `credit_score` contract so a repayment actually
-  moves the score and risk band.
-- Cross-loan persistence: confirm reputation survives loan #1 → loan #2 with
-  a scripted demo (this is the product's core differentiator claim — it needs
-  a recorded proof, not just a claim).
-- TTL bumper job for Soroban storage (contract state expiry) so long-lived
-  Passports don't silently disappear.
-- Threat model + monitoring plan draft (SCF-required for Tranche 2).
-- **Exit gate:** a scripted demo shows one business completing two loan
-  cycles with a visibly improving score/risk band.
+## Stage 3–5 technical gates
 
-### Month 3 — Composability + hardening
-- Blend integration spike: route funded USDC into a Blend pool instead of
-  idle escrow, or accept Blend as a funding source — whichever the spike from
-  ADR-0003 recommends.
-- DeFindex yield spike for idle investor USDC between fundings.
-- Security pass: fix findings from the Month 2 threat model, add contract
-  fuzz/property tests beyond the current unit tests, external review if
-  budget allows.
-- Basic ops: error tracking + uptime monitoring on the Vercel app, structured
-  logs on Server Actions, an on-call-readable runbook for "DB down" /
-  "Soroban RPC down" (the two single points of failure today).
-- **Exit gate:** at least one money-lego integration live on testnet; no
-  open Sev-1/Sev-2 findings from the security pass.
+- Passport: no transfer/approval path; authorized issuer/admin; freeze/revoke; KYB status checked by consumers; storage TTL and restoration; event replay and reorg-safe reconciliation.
+- Financing: server and contract enforce the same eligibility and ownership; no client-first value transfer; exact monetary units; idempotent transaction and payout; ledger-to-chain reconciliation.
+- Agentic payments: approved provider and evidence schema, minimal data, consent, per-call/daily caps, allowlisted asset/network/recipient, replay store and verified settlement. A paid response routes to underwriting review.
 
-### Month 4 — Demo Day readiness (Phase 8)
-- Polish the landing/dashboards with real usage data instead of the current
-  hero copy assumptions; bilingual (EN/ES) pass on every screen, not just the
-  landing page.
-- Record the demo video / live walkthrough for SCF submission.
-- Metrics dashboard: opportunities created, USDC funded, repayment rate,
-  average score delta — the "committed on-chain metrics" Tranche 3 needs.
-- Freeze scope, triage `docs/backlog.md`, and submit the SCF Build Award
-  application with the recorded metrics.
-- **Exit gate:** SCF-ready submission package (demo video, live app, metrics,
-  audited contracts or audit-in-progress note).
+## Planning discipline
 
-### What's explicitly out of scope for the first 4 months
-Mainnet launch, a full KYB provider integration (SEP-12 shape is modeled, a
-real vendor is not wired), and non-USDC assets. These are Tranche 3 /
-post-SCF concerns and pulling them forward would slow down the Month 1–2
-exit gates above.
+Each stage gets an owner, issue/ADR, test evidence and rollback before release. Report status as **concept**, **sandbox**, **Testnet** or **live**. Publish metrics only after their source and reconciliation are documented. Historical research and earlier phase assumptions remain in Git history and the [documentation index](README.md).

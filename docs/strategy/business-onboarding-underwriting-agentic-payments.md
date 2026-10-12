@@ -1,6 +1,6 @@
 # Fondealo: business approval, Passport and agentic verification market
 
-**Status:** staged backend implementation, 2026-10-11. No migration has been applied to Production and no contract has been deployed.
+**Status:** Stage 1 code merged via [PR #13](https://github.com/adletgamer/Fondeal0/pull/13), 2026-10-11. CI passed. Production migration and deployment status must be verified separately; this work did not perform either. No contract was deployed as part of the PR.
 
 ## 1. Verified baseline before Stage 1
 
@@ -15,7 +15,7 @@
 
 New sandbox applications stay `Processing` and create no Passport. A salted, domain-separated KYB commitment replaces the predictable unsalted hash for new submissions. The schema adds versioned, evidence-linked underwriting decisions and an additive migration, but that migration has **not** been applied. Business pages, new opportunity creation and new investor funding fail closed without real KYB, current underwriting approval and a matching Passport projection. Repayment of existing obligations remains available. The client-first Testnet funding attempt is temporarily disabled because it could transfer tokens before the server checked eligibility. There is not yet a real KYB provider, reviewer workflow, on-chain issuer or approved decision, so no new business can reach `PassportActive` through this stage alone.
 
-Deployment order matters: apply and verify the additive migration in an isolated environment before testing this code against it. Production migration requires separate authorization and a preflight count of existing `Processing` KYB rows per business for the partial unique index. Deploying this application code before its new table exists would break database reads. Existing `Open` opportunities from sandbox businesses remain visible, but new funding is blocked until their trust status is reviewed; repayments remain available. Before rollout, identify any partially funded `Open` opportunity and agree on a ledger-reconciled cancellation/refund path so investor balances are not stranded. Do not merge or publish this stage as an automatic production deployment.
+Deployment order matters: apply and verify the additive migration in an isolated environment before testing this code against it. Production migration requires separate authorization and a preflight count of existing `Processing` KYB rows per business for the partial unique index. Deploying this application code before its new table exists would break database reads. Existing `Open` opportunities from sandbox businesses remain visible, but new funding is blocked until their trust status is reviewed; repayments remain available. Before rollout, identify any partially funded `Open` opportunity and agree on a ledger-reconciled cancellation/refund path so investor balances are not stranded. The code is already merged into `main`; do not deploy it to Production until these gates are satisfied.
 
 ## 2. Product meaning and state machine
 
