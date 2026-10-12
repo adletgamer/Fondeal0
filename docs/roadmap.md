@@ -26,7 +26,7 @@ Stages 2–5 may have small parallel research tasks, but a later stage cannot be
 - [ ] Apply and verify the additive migration on the isolated Development database; confirm Prisma migration history.
 - [ ] Inventory `Open` and partially funded opportunities; approve a ledger-reconciled cancel/refund or grandfathering plan.
 - [ ] Review the failure mode when the new table is absent and the order of migration then application deployment.
-- [ ] Review security, product messaging and rollback; decide separately whether to merge/deploy.
+- [ ] Review security, product messaging and rollback; decide separately whether to deploy.
 
 A green CI build is evidence for code quality, not for database compatibility, production identity decisions or safe treatment of existing investor funds.
 
