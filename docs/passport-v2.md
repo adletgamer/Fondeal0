@@ -1,5 +1,9 @@
 # Business Passport V2 — design note
 
+> Visual design note. A rendered Passport card is not proof of verified KYB,
+> underwriting approval or on-chain issuance. See
+> [the operating model](operating-model.md) for current product status.
+
 **Goal:** make the Business Passport the single most memorable object in the product —
 "identidad financiera premium / credencial verificable / activo digital", not a form.
 
