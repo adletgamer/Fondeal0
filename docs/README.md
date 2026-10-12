@@ -12,6 +12,7 @@ Start here when reviewing the project. A document's existence is not evidence th
 | [Deployment and database](deployment-and-database.md) | Environment precedence, migrations and health checks |
 | [Risk register](risks.md) | Threats to trust, money and operations |
 | [ADRs](adr/) | Durable architecture decisions and trade-offs |
+| [KYB evidence boundary](adr/0010-kyb-evidence-boundary.md) | Declaration-only intake, provider failure handling and upload gate |
 
 ## Historical proposals and research
 

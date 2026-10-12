@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
-import { Badge, Button, Card, Field, SelectField } from '@fondealo/ui';
+import { Button, Card, Field, SelectField } from '@fondealo/ui';
 import { submitKyb, type KybResult } from '@/lib/actions/kyb';
 import {
   KYB_COUNTRIES,
@@ -14,7 +14,7 @@ import {
 } from '@/lib/providers/kyb';
 import { Check, ShieldCheck } from './icons';
 
-const STEPS = ['Business', 'Verifier', 'Documents', 'Review'] as const;
+const STEPS = ['Business identity', 'Representative', 'Evidence & consent', 'Review'] as const;
 const PROGRESS_LABELS = [
   'Checking your tax ID format',
   'Recording the sandbox signal',
@@ -29,9 +29,13 @@ interface Draft {
   foundedYear: string;
   revenueBand: string;
   email: string;
+  representativeName: string;
+  representativeRelationship: string;
+  idempotencyKey: string;
   verifierId: string;
   docs: string[];
   accept: boolean;
+  evidenceConsent: boolean;
 }
 
 const EMPTY: Draft = {
@@ -42,18 +46,20 @@ const EMPTY: Draft = {
   foundedYear: '',
   revenueBand: '',
   email: '',
+  representativeName: '',
+  representativeRelationship: '',
+  idempotencyKey: '',
   verifierId: 'sandbox',
   docs: [],
   accept: false,
+  evidenceConsent: false,
 };
 
 const initialState: KybResult | null = null;
 
 /**
  * Four-step business registration (KYB). The verifier is a sandbox: it checks
- * formats and returns a deterministic decision, so every path is testable
- * without real documents. The catalog also lists the planned verifier network
- * (docs/strategy/verifier-network.md) so the flow is already shaped for it.
+ * formats without real documents. Evidence is declared, not uploaded.
  */
 export function KybWizard({
   initial,
@@ -71,6 +77,10 @@ export function KybWizard({
   const country = findCountry(draft.country);
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
+
+  useEffect(() => {
+    setDraft((d) => ({ ...d, idempotencyKey: d.idempotencyKey || crypto.randomUUID() }));
+  }, []);
 
   // Cosmetic progress while the server action runs, so the (fast) sandbox still feels like a review.
   useEffect(() => {
@@ -98,9 +108,18 @@ export function KybWizard({
       if (!draft.revenueBand) return 'Select your monthly revenue range.';
       if (!/^\S+@\S+\.\S+$/.test(draft.email)) return 'Enter a valid contact email.';
     }
+    if (current === 1) {
+      if (draft.representativeName.trim().length < 2) return 'Enter the representative name.';
+      if (!['Owner', 'Director', 'Authorized agent'].includes(draft.representativeRelationship)) {
+        return 'Select your relationship to the business.';
+      }
+    }
     if (current === 2) {
-      if (draft.docs.length < KYB_DOCUMENTS.length) return 'Confirm every document to continue.';
+      if (!draft.docs.includes('registration') || !draft.docs.includes('tax-id')) {
+        return 'Confirm business and tax registration evidence.';
+      }
       if (!draft.accept) return 'Accept the declaration to continue.';
+      if (!draft.evidenceConsent) return 'Consent to evidence processing is required.';
     }
     return null;
   }
@@ -152,9 +171,16 @@ export function KybWizard({
         </p>
       ) : null}
 
-      <ol className="mb-6 flex items-center gap-2 text-xs font-medium">
+      <ol
+        aria-label="Application steps"
+        className="mb-6 grid grid-cols-2 gap-3 text-xs font-medium sm:flex sm:items-center"
+      >
         {STEPS.map((label, i) => (
-          <li key={label} className="flex flex-1 items-center gap-2">
+          <li
+            key={label}
+            aria-current={i === step ? 'step' : undefined}
+            className="flex flex-1 items-center gap-2"
+          >
             <span
               className={[
                 'grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold',
@@ -185,11 +211,19 @@ export function KybWizard({
           <input type="hidden" name="foundedYear" value={draft.foundedYear} />
           <input type="hidden" name="revenueBand" value={draft.revenueBand} />
           <input type="hidden" name="email" value={draft.email} />
+          <input type="hidden" name="representativeName" value={draft.representativeName} />
+          <input
+            type="hidden"
+            name="representativeRelationship"
+            value={draft.representativeRelationship}
+          />
+          <input type="hidden" name="idempotencyKey" value={draft.idempotencyKey} />
           <input type="hidden" name="verifierId" value={draft.verifierId} />
           {draft.docs.map((d) => (
             <input key={d} type="hidden" name="docs" value={d} />
           ))}
           {draft.accept ? <input type="hidden" name="accept" value="on" /> : null}
+          {draft.evidenceConsent ? <input type="hidden" name="evidenceConsent" value="on" /> : null}
 
           {step === 0 ? (
             <div className="space-y-4">
@@ -281,54 +315,24 @@ export function KybWizard({
 
           {step === 1 ? (
             <div className="space-y-4">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Choose a verifier</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Verifiers check that your business is real. More will join the network; today the
-                  sandbox records a format check for review.
-                </p>
-              </div>
-              <div className="space-y-2">
-                {KYB_VERIFIERS.map((v) => {
-                  const available = v.status === 'available';
-                  return (
-                    <label
-                      key={v.id}
-                      className={[
-                        'flex items-start gap-3 rounded-xl border p-4 transition-colors',
-                        available ? 'cursor-pointer' : 'cursor-not-allowed opacity-60',
-                        draft.verifierId === v.id
-                          ? 'border-brand-400 bg-brand-50/60'
-                          : 'border-slate-200 bg-white',
-                      ].join(' ')}
-                    >
-                      <input
-                        type="radio"
-                        name="verifier-choice"
-                        className="mt-1"
-                        checked={draft.verifierId === v.id}
-                        disabled={!available}
-                        onChange={() => set('verifierId', v.id)}
-                      />
-                      <span className="flex-1">
-                        <span className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                          {v.name}
-                          <Badge variant={available ? 'brand' : 'neutral'}>
-                            {available ? 'Available' : 'Planned'}
-                          </Badge>
-                        </span>
-                        <span className="mt-1 block text-xs text-slate-500">{v.description}</span>
-                        <span className="mt-1 block text-[11px] text-slate-400">
-                          Typical turnaround: {v.turnaround}
-                        </span>
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-              <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                Sandbox rule: a tax ID ending in <code>0000</code> is rejected so you can test the
-                failure path. This signal does not verify a real business or approve financing.
+              <h2 className="text-lg font-semibold text-slate-900">Authorized representative</h2>
+              <Field
+                label="Full name"
+                value={draft.representativeName}
+                onChange={(e) => set('representativeName', e.target.value)}
+              />
+              <SelectField
+                label="Relationship to the business"
+                value={draft.representativeRelationship}
+                onChange={(e) => set('representativeRelationship', e.target.value)}
+              >
+                <option value="">Select…</option>
+                <option value="Owner">Owner</option>
+                <option value="Director">Director</option>
+                <option value="Authorized agent">Authorized agent</option>
+              </SelectField>
+              <p className="text-sm text-slate-500">
+                Your relationship is self-declared. Authority is not verified at this stage.
               </p>
             </div>
           ) : null}
@@ -336,10 +340,11 @@ export function KybWizard({
           {step === 2 ? (
             <div className="space-y-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Documents</h2>
+                <h2 className="text-lg font-semibold text-slate-900">Evidence and consent</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  A real verifier would ask for these. In the sandbox nothing is uploaded — confirm
-                  you could provide each one.
+                  Confirm which evidence you can provide. Business and tax registration are required
+                  for this intake; ownership and address evidence are requested only if review
+                  requires them. Do not upload documents here.
                 </p>
               </div>
               <ul className="space-y-2">
@@ -371,6 +376,16 @@ export function KybWizard({
                 />
                 I declare the information is accurate and I am authorised to register this business.
               </label>
+              <label className="flex cursor-pointer items-start gap-3 text-sm text-slate-600">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={draft.evidenceConsent}
+                  onChange={(e) => set('evidenceConsent', e.target.checked)}
+                />
+                I consent to Fondealo storing this application and evidence declarations for KYB
+                review under intake policy v1. No documents are uploaded in this sandbox.
+              </label>
             </div>
           ) : null}
 
@@ -386,6 +401,8 @@ export function KybWizard({
                   ['Founded', draft.foundedYear],
                   ['Monthly revenue', draft.revenueBand],
                   ['Contact', draft.email],
+                  ['Representative', draft.representativeName],
+                  ['Relationship', draft.representativeRelationship],
                   ['Verifier', KYB_VERIFIERS.find((v) => v.id === draft.verifierId)?.name ?? ''],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between gap-4 px-4 py-2.5">
@@ -416,11 +433,19 @@ export function KybWizard({
                 </ul>
               ) : null}
 
-              {state && !state.ok ? <p className="text-sm text-red-600">{state.error}</p> : null}
+              {state && !state.ok ? (
+                <p role="alert" className="text-sm text-red-600">
+                  {state.error}
+                </p>
+              ) : null}
             </div>
           ) : null}
 
-          {stepError ? <p className="text-sm text-red-600">{stepError}</p> : null}
+          {stepError ? (
+            <p role="alert" className="text-sm text-red-600">
+              {stepError}
+            </p>
+          ) : null}
 
           <div className="flex items-center justify-between pt-1">
             <Button
@@ -439,7 +464,7 @@ export function KybWizard({
                 Continue
               </Button>
             ) : (
-              <Button type="submit" disabled={pending}>
+              <Button type="submit" disabled={pending || !draft.idempotencyKey}>
                 {pending ? 'Submitting…' : 'Submit for review'}
               </Button>
             )}
