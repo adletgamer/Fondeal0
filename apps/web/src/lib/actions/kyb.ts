@@ -4,10 +4,8 @@ import { createHash, randomBytes } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@fondealo/database';
-import { bandForScore } from '@fondealo/types';
 import { describeError, getSession } from '@/lib/auth/session';
 import {
-  INITIAL_SCORE_AFTER_KYB,
   KYB_DOCUMENTS,
   REVENUE_BANDS,
   SECTORS,
@@ -17,7 +15,7 @@ import {
 } from '@/lib/providers/kyb';
 
 export type KybResult =
-  | { ok: true; accepted: boolean; reasons: string[]; providerRef: string }
+  | { ok: true; status: 'Processing'; reasons: string[]; providerRef: string }
   | { ok: false; error: string };
 
 const kybSchema = z.object({
@@ -38,10 +36,9 @@ const kybSchema = z.object({
 });
 
 /**
- * Registers a business and runs it through the (sandbox) verifier. Identity
- * comes from the verified session, never from the form. An accepted business
- * gets a Passport projection at the starting score; a rejected one can
- * resubmit with corrected data.
+ * Records a business application. The sandbox checks input format only; it
+ * cannot approve KYB, underwriting or Passport issuance. Identity comes from
+ * the verified session, never from the form.
  */
 export async function submitKyb(_prev: KybResult | null, formData: FormData): Promise<KybResult> {
   const session = await getSession();
@@ -74,25 +71,36 @@ export async function submitKyb(_prev: KybResult | null, formData: FormData): Pr
 
   try {
     const alreadyVerified = await prisma.kybSubmission.findFirst({
-      where: { status: 'Accepted', business: { stellarAddress: address } },
+      where: {
+        business: { stellarAddress: address },
+        OR: [{ status: 'Processing' }, { status: 'Accepted', provider: { not: 'sandbox' } }],
+      },
       select: { id: true },
     });
-    if (alreadyVerified) return { ok: false, error: 'Your business is already verified.' };
+    if (alreadyVerified)
+      return { ok: false, error: 'Your business already has a verification in progress.' };
   } catch (err) {
     console.error('[submitKyb] lookup failed:', describeError(err));
     return { ok: false, error: 'We could not reach the database. Try again in a moment.' };
   }
 
   const decision = sandboxDecision(d.taxId);
-  const status = decision.accepted ? 'Accepted' : 'Rejected';
   const providerRef = `sbx_${randomBytes(6).toString('hex')}`;
-  const now = new Date();
-  // Commitment to the off-chain KYB bundle (mirrored on-chain as `data_hash`); PII itself stays off-chain.
+  // A random salt prevents offline guessing of predictable tax IDs if this
+  // commitment is eventually published on-chain. The salt stays off-chain.
+  const commitmentSalt = randomBytes(32).toString('hex');
   const dataHash =
     '0x' +
     createHash('sha256')
       .update(
-        JSON.stringify({ address, legalName: d.legalName, country: d.country, taxId: d.taxId }),
+        JSON.stringify({
+          domain: 'fondealo:kyb:v2',
+          commitmentSalt,
+          address,
+          legalName: d.legalName,
+          country: d.country,
+          taxId: d.taxId,
+        }),
       )
       .digest('hex');
 
@@ -124,36 +132,26 @@ export async function submitKyb(_prev: KybResult | null, formData: FormData): Pr
       await tx.kybSubmission.create({
         data: {
           businessId: business.id,
-          status,
+          status: 'Processing',
           provider: d.verifierId,
           providerRef,
-          fields: { documents: d.docs, reasons: decision.reasons, verifier: d.verifierId },
+          fields: {
+            documentsDeclared: d.docs,
+            sandboxSignals: decision.reasons,
+            sandboxFormatPass: decision.accepted,
+            commitmentSalt,
+            commitmentVersion: 2,
+          },
           dataHash,
-          reviewedAt: now,
+          reviewedAt: null,
         },
       });
-
-      if (decision.accepted) {
-        await tx.passportProjection.upsert({
-          where: { businessId: business.id },
-          create: {
-            businessId: business.id,
-            kybStatus: 'Accepted',
-            score: INITIAL_SCORE_AFTER_KYB,
-            riskBand: bandForScore(INITIAL_SCORE_AFTER_KYB),
-            issuedAt: now,
-            updatedAt: now,
-            dataHash,
-          },
-          update: { kybStatus: 'Accepted', updatedAt: now, dataHash },
-        });
-      }
     });
   } catch (err) {
     if ((err as { code?: string }).code === 'P2002') {
       return {
         ok: false,
-        error: `That ${country.taxIdLabel} is already registered to another account.`,
+        error: `An application is already in progress, or that ${country.taxIdLabel} is registered to another account.`,
       };
     }
     console.error('[submitKyb] persist failed:', describeError(err));
@@ -161,5 +159,5 @@ export async function submitKyb(_prev: KybResult | null, formData: FormData): Pr
   }
 
   revalidatePath('/business', 'layout');
-  return { ok: true, accepted: decision.accepted, reasons: decision.reasons, providerRef };
+  return { ok: true, status: 'Processing', reasons: decision.reasons, providerRef };
 }

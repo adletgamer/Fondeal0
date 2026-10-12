@@ -22,8 +22,6 @@ vi.mock('@fondealo/database', () => ({
   prisma: { kybSubmission: { findFirst: state.findFirst }, $transaction: state.transaction },
 }));
 vi.mock('next/cache', () => ({ revalidatePath: state.revalidate }));
-vi.mock('@fondealo/types', () => ({ bandForScore: () => 'C' }));
-
 const { submitKyb } = await import('./kyb');
 
 function form(taxId = '20123456781'): FormData {
@@ -73,8 +71,8 @@ describe('sandbox KYB', () => {
     expect(state.transaction).not.toHaveBeenCalled();
   });
 
-  it('binds accepted verification and Passport to the session address', async () => {
-    expect(await submitKyb(null, form())).toMatchObject({ ok: true, accepted: true });
+  it('binds a pending application to the session address without issuing a Passport', async () => {
+    expect(await submitKyb(null, form())).toMatchObject({ ok: true, status: 'Processing' });
     expect(state.businessUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { stellarAddress: 'GVERIFIED' },
@@ -83,19 +81,35 @@ describe('sandbox KYB', () => {
     );
     expect(state.submissionCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ status: 'Accepted', businessId: 'business-1' }),
-      }),
-    );
-    expect(state.passportUpsert).toHaveBeenCalledOnce();
-  });
-
-  it('records a sandbox rejection without issuing a Passport', async () => {
-    expect(await submitKyb(null, form('20123450000'))).toMatchObject({ ok: true, accepted: false });
-    expect(state.submissionCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ status: 'Rejected' }),
+        data: expect.objectContaining({
+          status: 'Processing',
+          businessId: 'business-1',
+          reviewedAt: null,
+        }),
       }),
     );
     expect(state.passportUpsert).not.toHaveBeenCalled();
+  });
+
+  it('does not turn a sandbox rejection signal into a real KYB rejection', async () => {
+    expect(await submitKyb(null, form('20123450000'))).toMatchObject({
+      ok: true,
+      status: 'Processing',
+    });
+    expect(state.submissionCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'Processing',
+          fields: expect.objectContaining({ sandboxFormatPass: false }),
+        }),
+      }),
+    );
+    expect(state.passportUpsert).not.toHaveBeenCalled();
+  });
+
+  it('rejects duplicate in-progress applications', async () => {
+    state.findFirst.mockResolvedValueOnce({ id: 'existing' });
+    expect(await submitKyb(null, form())).toMatchObject({ ok: false });
+    expect(state.transaction).not.toHaveBeenCalled();
   });
 });

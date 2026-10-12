@@ -18,7 +18,7 @@ export default async function BusinessPassportPage() {
   if (session.role !== 'Business')
     redirect(session.role === 'Investor' ? '/invest' : '/onboarding');
   const kyb = await getKybState(session.stellarAddress);
-  if (kyb && kyb.status !== 'Accepted') redirect('/business/verify');
+  if (!kyb?.eligible) redirect('/business/verify');
   const address = session.stellarAddress;
   const [{ source, passport }, theme] = await Promise.all([
     getBorrowerPassport(address),

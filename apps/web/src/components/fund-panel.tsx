@@ -2,24 +2,14 @@
 
 import { useMemo, useState, type FormEvent } from 'react';
 import { Button, Card, Field, TxStatus } from '@fondealo/ui';
-import {
-  EscrowClient,
-  getNetworkConfig,
-  submitSignedTransaction,
-  transactionHashHex,
-} from '@fondealo/sdk';
-import { useSignRawHash } from '@privy-io/react-auth/extended-chains';
 import { useStellarWallet } from '@/hooks/use-stellar-wallet';
 import { fundOpportunityOnChainAware, type ActionResult } from '@/lib/actions/opportunities';
 
 /**
- * Real funding, not a simulation dressed up as one: this tries to build,
- * sign (via Privy's raw-hash signer for Stellar), and submit an actual
- * `loan_escrow.fund` transaction to Testnet first. That only succeeds once
- * the contract is deployed *and* the investor's wallet holds enough
- * Testnet USDC — until then (or on any hiccup: no trustline, network error,
- * declined signature) it falls back to recording the funding in the
- * off-chain projection, which is what keeps the demo usable end to end.
+ * Funding currently uses the server's guarded demo ledger. The previous
+ * client-first chain attempt could move tokens before the server checked
+ * underwriting eligibility. Restore chain funding only after the escrow
+ * contract enforces the same gate and reconciliation is atomic/idempotent.
  */
 export function FundPanel({
   opportunityId,
@@ -37,7 +27,6 @@ export function FundPanel({
   balanceUsdc: number | null;
 }) {
   const { stellarAddress } = useStellarWallet();
-  const { signRawHash } = useSignRawHash();
   const [amount, setAmount] = useState(remaining > 0 ? Math.min(remaining, 500) : 0);
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<ActionResult | null>(null);
@@ -47,38 +36,11 @@ export function FundPanel({
     return amount + interest;
   }, [amount, aprBps, termDays]);
 
-  async function tryOnChainFund(investor: string): Promise<string | null> {
-    try {
-      const cfg = getNetworkConfig();
-      const escrow = new EscrowClient();
-      const { xdr } = await escrow.fund(opportunityId, investor, String(Math.round(amount)));
-      const hash = transactionHashHex(xdr, cfg.networkPassphrase);
-      const { signature } = await signRawHash({ address: investor, chainType: 'stellar', hash });
-      const submitted = await submitSignedTransaction(
-        xdr,
-        signature,
-        investor,
-        cfg.networkPassphrase,
-        cfg.sorobanRpcUrl,
-      );
-      if (submitted.status === 'SUCCESS') {
-        return `Funded on-chain — tx ${submitted.hash.slice(0, 10)}…`;
-      }
-      return null;
-    } catch {
-      // Expected today (no Testnet contract id yet); also the honest
-      // outcome for "no USDC trustline/balance" or a declined signature.
-      return null;
-    }
-  }
-
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!stellarAddress || amount <= 0) return;
     setPending(true);
     setResult(null);
-
-    const onChainMessage = await tryOnChainFund(stellarAddress);
 
     const formData = new FormData();
     formData.set('opportunityId', opportunityId);
@@ -86,7 +48,7 @@ export function FundPanel({
     const dbResult = await fundOpportunityOnChainAware(null, formData);
 
     setPending(false);
-    setResult(dbResult.ok ? { ok: true, message: onChainMessage ?? dbResult.message } : dbResult);
+    setResult(dbResult);
   }
 
   const insufficient = balanceUsdc !== null && amount > balanceUsdc;
@@ -193,14 +155,11 @@ export function FundPanel({
         </Button>
 
         {pending ? (
-          <TxStatus state="pending" label="Signing & submitting" meta="Approve in your wallet" />
+          <TxStatus state="pending" label="Recording test funding" />
         ) : result ? (
           <TxStatus
             state={result.ok ? 'confirmed' : 'failed'}
-            // "Confirmed" only for a submitted Soroban tx; a demo-mode DB write is "Recorded".
-            label={
-              result.ok && !result.message.startsWith('Funded on-chain') ? 'Recorded' : undefined
-            }
+            label={result.ok ? 'Recorded' : undefined}
             meta={result.ok ? result.message : result.error}
           />
         ) : null}

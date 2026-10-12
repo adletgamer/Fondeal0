@@ -27,6 +27,12 @@ enum KybStatus {
   Rejected
 }
 
+enum UnderwritingStatus {
+  Review
+  Approved
+  Declined
+}
+
 enum RiskBand {
   A
   B
@@ -73,6 +79,7 @@ model Business {
   updatedAt       DateTime @updatedAt
 
   kybSubmissions KybSubmission[]
+  underwritingDecisions UnderwritingDecision[]
   opportunities  Opportunity[]
   passport       PassportProjection?
 
@@ -99,6 +106,7 @@ model KybSubmission {
   id          String    @id @default(cuid())
   businessId  String
   business    Business  @relation(fields: [businessId], references: [id])
+  underwritingDecisions UnderwritingDecision[]
   status      KybStatus @default(Processing)
   /// Which verifier issued the decision (`sandbox` until real KYB vendors are wired).
   provider    String    @default("sandbox")
@@ -112,6 +120,28 @@ model KybSubmission {
 
   @@index([businessId])
   @@index([status])
+}
+
+/// Immutable risk decisions. An approval is tied to one real KYB submission,
+/// evidence and a policy version; a newer decision supersedes it for new loans.
+model UnderwritingDecision {
+  id                   String             @id @default(cuid())
+  businessId           String
+  business             Business           @relation(fields: [businessId], references: [id])
+  kybSubmissionId      String
+  kybSubmission        KybSubmission      @relation(fields: [kybSubmissionId], references: [id])
+  status               UnderwritingStatus
+  policyVersion        String
+  reasonCodes          Json
+  evidenceRefs         Json
+  decidedBy            String?
+  maxPrincipalStroops  BigInt?
+  maxTermDays          Int?
+  expiresAt            DateTime?
+  createdAt            DateTime           @default(now())
+
+  @@index([businessId, createdAt])
+  @@index([kybSubmissionId])
 }
 
 /// Mirror of the on-chain Passport for fast reads/dashboards. Never authoritative.
