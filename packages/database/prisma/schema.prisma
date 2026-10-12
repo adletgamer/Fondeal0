@@ -79,6 +79,9 @@ model Business {
   updatedAt       DateTime @updatedAt
 
   kybSubmissions KybSubmission[]
+  evidenceReferences EvidenceReference[]
+  providerChecks ProviderCheck[]
+  verificationAuditEvents VerificationAuditEvent[]
   underwritingDecisions UnderwritingDecision[]
   opportunities  Opportunity[]
   passport       PassportProjection?
@@ -113,13 +116,82 @@ model KybSubmission {
   providerRef String?
   /// PII payload — encrypted at rest in production.
   fields      Json
+  /// Client-generated retry token. Unique across submissions; ownership is checked before reuse.
+  idempotencyKey String? @unique
+  consentAt   DateTime?
+  consentVersion String?
   /// 32-byte commitment (hex) mirrored on-chain as `data_hash`.
   dataHash    String?
   reviewedAt  DateTime?
   createdAt   DateTime  @default(now())
 
+  evidenceReferences EvidenceReference[]
+  providerChecks ProviderCheck[]
+  auditEvents VerificationAuditEvent[]
+
   @@index([businessId])
   @@index([status])
+}
+
+/// Metadata only. No document bytes or public object URL are stored here.
+model EvidenceReference {
+  id String @id @default(cuid())
+  businessId String
+  business Business @relation(fields: [businessId], references: [id])
+  kybSubmissionId String
+  kybSubmission KybSubmission @relation(fields: [kybSubmissionId], references: [id])
+  kind String
+  sourceType String
+  status String @default("Declared")
+  /// Reserved for a future private storage adapter; never a public URL.
+  privateObjectKey String?
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
+  providerChecks ProviderCheck[]
+
+  @@unique([kybSubmissionId, kind, sourceType])
+  @@index([businessId, createdAt])
+}
+
+/// One normalized provider result per idempotent check.
+model ProviderCheck {
+  id String @id @default(cuid())
+  businessId String
+  business Business @relation(fields: [businessId], references: [id])
+  kybSubmissionId String
+  kybSubmission KybSubmission @relation(fields: [kybSubmissionId], references: [id])
+  idempotencyKey String @unique
+  providerId String
+  sourceType String
+  checkType String
+  result String
+  evidenceReferenceId String?
+  evidenceReference EvidenceReference? @relation(fields: [evidenceReferenceId], references: [id])
+  checkedAt DateTime
+  expiresAt DateTime?
+  reasonCodes Json
+  failureCode String?
+  retryable Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([businessId, createdAt])
+  @@index([kybSubmissionId])
+}
+
+/// Append-only application and sensitive-access audit trail. No raw PII.
+model VerificationAuditEvent {
+  id String @id @default(cuid())
+  businessId String
+  business Business @relation(fields: [businessId], references: [id])
+  kybSubmissionId String
+  kybSubmission KybSubmission @relation(fields: [kybSubmissionId], references: [id])
+  actorPrivyUserId String
+  action String
+  metadata Json
+  createdAt DateTime @default(now())
+
+  @@index([businessId, createdAt])
+  @@index([kybSubmissionId, createdAt])
 }
 
 /// Immutable risk decisions. An approval is tied to one real KYB submission,

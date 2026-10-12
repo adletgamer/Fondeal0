@@ -77,6 +77,43 @@ Its Production application status is **unverified** here. Check existing `Proces
 for duplicates, then test it on the isolated Development database before
 considering any wider rollout.
 
+The KYB evidence intake PR adds `20261012000000_kyb_evidence_intake`: three
+append-only/reference tables and nullable consent/idempotency columns. Apply
+it only after the underwriting migration, first on isolated Development after
+confirming its Neon branch and reviewing duplicate active submissions. This
+PR does not apply either migration or authorize a Production deploy. A failed
+Prisma status or TCP connection is a blocked database gate, not a passed test.
+
+Read-only Development preflight after connectivity is restored (report counts,
+not business identifiers):
+
+```sql
+SELECT migration_name, finished_at IS NOT NULL AS applied
+FROM "_prisma_migrations"
+WHERE migration_name IN (
+  '20261011000000_underwriting_decisions',
+  '20261012000000_kyb_evidence_intake'
+);
+
+SELECT COUNT(*) AS businesses_with_duplicate_processing
+FROM (
+  SELECT "businessId"
+  FROM "KybSubmission"
+  WHERE status = 'Processing'
+  GROUP BY "businessId"
+  HAVING COUNT(*) > 1
+) AS duplicates;
+
+SELECT COUNT(*) AS partially_funded_open_opportunities
+FROM "Opportunity"
+WHERE status = 'Open' AND funded ~ '^[0-9]+$' AND funded::numeric > 0;
+```
+
+Do not apply either migration if the target branch is not proven to be isolated
+Development or the preflight reveals duplicate active applications. Inventory
+partially funded opportunities and agree a ledger-reconciled disposition before
+any wider rollout.
+
 ## Health check
 
 `GET /api/health` runs `SELECT 1` through Prisma and returns `{ ok, db, ms }`

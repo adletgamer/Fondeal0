@@ -22,6 +22,7 @@ Severity is a qualitative priority estimate. Assign a named owner and review dat
 | R-14 | **Schema/code mismatch** (new underwriting table queried before migration) | Medium | High | 🔴 Critical | Verify migration in isolated Development, check duplicates for the partial unique index, migrate before app deployment, retain rollback plan | Open — Stage 1 release blocker |
 | R-15 | **Agent overspend or false evidence** | Medium | High | 🔴 Critical | Testnet-only pilot; provider/asset/network allowlists, spend caps, scoped signer, replay store, signed evidence and human review | Planned — Stage 5 |
 | R-16 | **Sensitive KYB exposure** (raw documents, predictable commitments or broad reviewer access) | Medium | High | 🔴 Critical | Minimize collection, use salted commitments, off-chain encrypted evidence, access logs, retention and vendor review | Salted commitment merged; policy pending |
+| R-17 | **Premature document intake** (storage, scan or deletion gap) | Medium | High | 🔴 Critical | Keep upload disabled; require private storage, content/malware scan, owner-bound access, retention and deletion tests before enabling | Upload blocked in PR 1; production gate open |
 
 ## Monitoring plan
 
