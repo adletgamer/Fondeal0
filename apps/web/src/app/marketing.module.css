@@ -44,6 +44,18 @@
   top: 16px;
 }
 
+.scrollProgress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  width: 0%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--mint), var(--blue));
+  box-shadow: 0 0 16px rgba(63, 216, 202, 0.55);
+  transition: width 0.12s linear;
+}
+
 .header {
   position: sticky;
   top: 0;
@@ -146,6 +158,76 @@
     linear-gradient(90deg, rgba(140, 210, 224, 0.11) 1px, transparent 1px);
   background-size: 60px 60px;
   mask-image: linear-gradient(90deg, transparent 15%, black 75%);
+}
+.auroraLayer {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+}
+.auroraLayer span {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.55;
+  will-change: transform;
+}
+.auroraBlob1 {
+  top: -12%;
+  right: 6%;
+  width: 46vw;
+  height: 46vw;
+  max-width: 620px;
+  max-height: 620px;
+  background: radial-gradient(circle, rgba(63, 216, 202, 0.4), transparent 70%);
+  animation: auroraDrift1 22s ease-in-out infinite;
+}
+.auroraBlob2 {
+  bottom: -18%;
+  left: -8%;
+  width: 38vw;
+  height: 38vw;
+  max-width: 520px;
+  max-height: 520px;
+  background: radial-gradient(circle, rgba(90, 174, 245, 0.32), transparent 70%);
+  animation: auroraDrift2 26s ease-in-out infinite;
+}
+.auroraBlob3 {
+  top: 28%;
+  left: 36%;
+  width: 26vw;
+  height: 26vw;
+  max-width: 380px;
+  max-height: 380px;
+  background: radial-gradient(circle, rgba(63, 216, 202, 0.22), transparent 70%);
+  animation: auroraDrift3 18s ease-in-out infinite;
+}
+@keyframes auroraDrift1 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-5%, 6%, 0) scale(1.12);
+  }
+}
+@keyframes auroraDrift2 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6%, -5%, 0) scale(1.08);
+  }
+}
+@keyframes auroraDrift3 {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.95);
+  }
+  50% {
+    transform: translate3d(-4%, -8%, 0) scale(1.1);
+  }
 }
 .heroInner {
   display: grid;
@@ -272,6 +354,11 @@
   height: min(610px, 44vw);
   min-height: 500px;
   perspective: 1300px;
+  --tilt-rx: 0deg;
+  --tilt-ry: 0deg;
+  --glow-x: 50%;
+  --glow-y: 30%;
+  --glow-opacity: 0;
 }
 .heroHalo {
   position: absolute;
@@ -279,6 +366,7 @@
   border-radius: 50%;
   background: radial-gradient(circle, rgba(58, 207, 209, 0.16), transparent 58%);
   filter: blur(15px);
+  animation: floatDrift 9s ease-in-out infinite;
 }
 .heroOrbitBack,
 .heroOrbitFront {
@@ -287,6 +375,7 @@
   border: 1px solid rgba(86, 180, 211, 0.25);
   border-radius: 50%;
   transform: rotate(-21deg) translateY(var(--hero-back-shift, 0px));
+  animation: floatDrift 11s ease-in-out infinite;
 }
 .heroOrbitBack::before {
   content: '';
@@ -302,6 +391,16 @@
   transform: rotate(-18deg) translateY(var(--hero-front-shift, 0px));
   box-shadow: 0 13px 18px -23px #6eead9;
   pointer-events: none;
+  animation: floatDrift 8s ease-in-out infinite reverse;
+}
+@keyframes floatDrift {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 12px;
+  }
 }
 .heroOrbitFront::after {
   content: '';
@@ -330,7 +429,8 @@
     0 2px 1px rgba(210, 250, 255, 0.17) inset,
     0 32px 80px rgba(0, 4, 10, 0.68),
     0 0 70px rgba(35, 181, 189, 0.11);
-  transform: rotateY(-9deg) rotateX(5deg) rotateZ(4deg) translateY(var(--hero-card-shift, 0px));
+  transform: rotateY(calc(-9deg + var(--tilt-ry, 0deg))) rotateX(calc(5deg + var(--tilt-rx, 0deg)))
+    rotateZ(4deg) translateY(var(--hero-card-shift, 0px));
   transform-style: preserve-3d;
 }
 .heroPassport::after {
@@ -339,6 +439,20 @@
   inset: 9px;
   border: 1px solid rgba(171, 235, 231, 0.11);
   border-radius: 7px;
+  pointer-events: none;
+}
+.passportSheen {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at var(--glow-x, 50%) var(--glow-y, 30%),
+    rgba(255, 255, 255, 0.22),
+    transparent 55%
+  );
+  opacity: var(--glow-opacity, 0);
+  mix-blend-mode: screen;
   pointer-events: none;
 }
 .passportTopline,
@@ -352,11 +466,21 @@
   letter-spacing: 0.04em;
 }
 .passportEmblem {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   flex: 1;
   filter: drop-shadow(0 20px 20px rgba(0, 0, 0, 0.24));
+}
+.passportEmblem::before {
+  content: '';
+  position: absolute;
+  inset: -10%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(63, 216, 202, 0.35), transparent 72%);
+  animation: glowPulse 4.5s ease-in-out infinite;
 }
 .passportEmblem img {
   width: clamp(70px, 8vw, 110px);
@@ -420,11 +544,24 @@
   top: 20%;
   right: 0;
   transform: translateY(var(--hero-front-shift, 0px));
+  animation: floatDrift 7s ease-in-out infinite;
 }
 .heroSignalBottom {
   bottom: 23%;
   left: 0;
   transform: translateY(var(--hero-back-shift, 0px));
+  animation: floatDrift 9.5s ease-in-out infinite reverse;
+}
+@keyframes glowPulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    scale: 1;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.15;
+  }
 }
 .signalDot {
   width: 6px;
@@ -518,6 +655,7 @@
   justify-content: center;
   gap: 28px;
   min-height: 510px;
+  perspective: 1200px;
 }
 .fragment {
   position: relative;
@@ -529,6 +667,14 @@
   border: 1px solid #beced0;
   background: #f8fbfa;
   box-shadow: 14px 18px 36px rgba(22, 63, 72, 0.06);
+  transition:
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.45s ease;
+}
+.fragment:hover {
+  z-index: 2;
+  box-shadow: 20px 30px 54px rgba(22, 63, 72, 0.14);
+  transform: translateY(-8px) translateZ(20px) rotateX(6deg);
 }
 .fragment > span {
   color: #44727b;
@@ -547,15 +693,15 @@
   font-size: 13px;
 }
 .fragment1 {
-  transform: rotate(-4deg);
+  rotate: -4deg;
 }
 .fragment2 {
   align-self: flex-end;
-  transform: rotate(3deg);
+  rotate: 3deg;
 }
 .fragment3 {
   margin-left: 10%;
-  transform: rotate(-2deg);
+  rotate: -2deg;
 }
 .fragmentAxis {
   position: absolute;
@@ -641,6 +787,7 @@
 .specimenWrap {
   position: relative;
   padding: 10% 4% 0 7%;
+  perspective: 1400px;
 }
 .specimenShadow {
   position: absolute;
@@ -657,7 +804,14 @@
   background: #e5edeb;
   box-shadow: 0 35px 70px rgba(0, 0, 0, 0.4);
   color: #122937;
-  transform: rotate(-3deg);
+  rotate: -3deg;
+  transition:
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.5s ease;
+}
+.specimen:hover {
+  box-shadow: 0 45px 90px rgba(0, 0, 0, 0.48);
+  transform: translateY(-10px) rotateX(5deg) rotateY(-4deg) scale(1.015);
 }
 .specimenHead,
 .specimenFoot {
@@ -804,6 +958,12 @@
   box-shadow:
     0 0 0 35px rgba(106, 208, 213, 0.025),
     0 0 0 70px rgba(106, 208, 213, 0.025);
+  animation: ringSpin 48s linear infinite;
+}
+@keyframes ringSpin {
+  to {
+    rotate: 360deg;
+  }
 }
 .sequenceRing::before {
   content: '';
@@ -860,6 +1020,16 @@
   opacity: 0.35;
   transform: scale(0.84);
   will-change: transform, opacity;
+}
+.sequenceCard::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -22px;
+  border-radius: 10px;
+  background: radial-gradient(circle, rgba(63, 216, 202, 0.28), transparent 70%);
+  filter: blur(22px);
+  animation: glowPulse 5s ease-in-out infinite;
 }
 .sequenceCardHead,
 .sequenceCardFoot {
@@ -941,6 +1111,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  perspective: 1600px;
 }
 .pathway {
   display: flex;
@@ -949,6 +1120,13 @@
   padding: clamp(30px, 4vw, 56px);
   background: #102b3b;
   color: white;
+  transition:
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.4s ease;
+}
+.pathway:hover {
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+  transform: translateY(-8px) rotateX(3deg);
 }
 .pathwayAlt {
   border: 1px solid #bacaca;
@@ -1162,14 +1340,29 @@
 
 .site[data-motion-ready='true'] [data-reveal] {
   opacity: 0;
-  translate: 0 24px;
+  translate: 0 46px;
+  scale: 0.94;
+  filter: blur(8px);
   transition:
-    opacity 0.8s ease,
-    translate 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    translate 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    scale 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.7s ease;
 }
 .site[data-motion-ready='true'] [data-reveal][data-visible='true'] {
   opacity: 1;
   translate: 0 0;
+  scale: 1;
+  filter: blur(0);
+}
+.fragmentField [data-reveal]:nth-child(2) {
+  transition-delay: 0.1s;
+}
+.fragmentField [data-reveal]:nth-child(3) {
+  transition-delay: 0.2s;
+}
+.pathways [data-reveal]:nth-child(2) {
+  transition-delay: 0.14s;
 }
 
 @media (max-width: 1100px) {
