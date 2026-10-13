@@ -85,6 +85,7 @@ function HeroObject() {
       className={styles.heroObject}
       role="img"
       aria-label="Illustrative Business Passport surrounded by verified business signals"
+      data-tilt-card
     >
       <div className={styles.heroOrbitBack} aria-hidden="true" />
       <div className={styles.heroOrbitFront} aria-hidden="true" />
@@ -98,6 +99,7 @@ function HeroObject() {
         PORTABLE IDENTITY
       </div>
       <div className={styles.heroPassport} aria-hidden="true">
+        <div className={styles.passportSheen} aria-hidden="true" />
         <div className={styles.passportTopline}>
           <span>FONDEALO / BUSINESS PASSPORT</span>
           <span>SPECIMEN</span>
@@ -138,6 +140,11 @@ function Hero() {
   return (
     <section className={styles.hero} id="top" data-hero>
       <div className={styles.heroGrid} aria-hidden="true" />
+      <div className={styles.auroraLayer} aria-hidden="true">
+        <span className={styles.auroraBlob1} />
+        <span className={styles.auroraBlob2} />
+        <span className={styles.auroraBlob3} />
+      </div>
       <div className={styles.heroInner}>
         <div className={styles.heroCopy}>
           <p className={styles.eyebrow}>
@@ -506,6 +513,7 @@ function Closing() {
 export default function Home() {
   return (
     <div className={styles.site} data-marketing-root>
+      <div className={styles.scrollProgress} aria-hidden="true" data-scroll-progress />
       <a className={styles.skipLink} href="#main">
         Skip to content
       </a>
