@@ -8,8 +8,9 @@ import {
 import { cn } from './cn';
 
 // line-strong borders meet 3:1 on every surface; focus is the solid ring.
+// 16px text on phones so iOS does not zoom into the field; 14px from sm up.
 const fieldControlClass =
-  'w-full rounded-lg border border-line-strong bg-surface-100 px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-focus-ring focus:outline-none focus:ring-2 focus:ring-focus-ring/40 aria-[invalid=true]:border-danger-text';
+  'w-full min-h-11 rounded-lg border border-line-strong bg-surface-100 px-3 py-2 text-base text-ink transition-colors duration-150 placeholder:text-ink-faint hover:border-ink-muted focus:border-focus-ring focus:outline-none focus:ring-2 focus:ring-focus-ring/40 aria-[invalid=true]:border-danger-text sm:text-sm motion-reduce:transition-none';
 
 interface FieldShellProps {
   label: string;
@@ -29,14 +30,23 @@ function FieldShell({
 }: FieldShellProps & { hintId: string; children: ReactNode }) {
   return (
     <label className={cn('flex flex-col gap-1.5', className)}>
-      <span className="text-xs font-medium text-ink-muted">{label}</span>
+      <span className="text-[13px] font-medium text-ink">{label}</span>
       {children}
       {error ? (
-        <span id={hintId} className="text-xs text-danger-text">
+        <span id={hintId} className="flex items-start gap-1.5 text-[13px] text-danger-text">
+          <svg aria-hidden viewBox="0 0 16 16" width="14" height="14" className="mt-px shrink-0">
+            <circle cx="8" cy="8" r="7" fill="currentColor" opacity="0.18" />
+            <path
+              d="M8 4.5v4.2M8 11.2v.3"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
           {error}
         </span>
       ) : hint ? (
-        <span id={hintId} className="text-xs text-ink-faint">
+        <span id={hintId} className="text-[13px] text-ink-muted">
           {hint}
         </span>
       ) : null}

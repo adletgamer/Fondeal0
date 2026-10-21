@@ -28,28 +28,26 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
-const title = 'Fondealo — Verifica tu empresa una vez y compártela con quien te financia';
+const title = 'Fondealo — El expediente de tu startup o MYPE, listo para compartir';
 const description =
-  'Un expediente reutilizable para MYPEs del Perú: registra tu empresa con su RUC, sigue tu verificación y decide qué financiadores pueden ver tu información. Construido sobre Stellar.';
+  'Prepara una vez el expediente de tu startup o MYPE y decide con quién compartirlo. Acceso anticipado gratuito. Fondealo no presta ni invierte.';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://fondealo.vercel.app'),
+  metadataBase: new URL('https://www.fondealo.xyz'),
   title,
   description,
   keywords: [
-    'Stellar',
-    'Soroban',
-    'USDC',
+    'startups Perú',
     'MYPE',
-    'Perú',
+    'expediente de empresa',
+    'due diligence',
     'financiamiento para empresas',
-    'verificación de empresas',
     'Pasaporte de Empresa',
   ],
   openGraph: {
     title,
     description,
-    url: 'https://fondealo.vercel.app',
+    url: 'https://www.fondealo.xyz',
     siteName: 'Fondealo',
     locale: 'es_PE',
     type: 'website',

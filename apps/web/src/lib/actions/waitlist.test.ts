@@ -143,6 +143,14 @@ describe('joinWaitlist', () => {
     expect(state.count).not.toHaveBeenCalled();
   });
 
+  it('answers in English and stores the English consent version for locale=en', async () => {
+    const bad = await joinWaitlist(null, form({ ...valid, email: 'nope', locale: 'en' }));
+    expect(bad).toMatchObject({ ok: false, error: 'Check the highlighted fields.' });
+    expect(bad.ok === false && bad.fieldErrors?.email).toMatch(/Check your email/);
+    await joinWaitlist(null, form({ ...valid, locale: 'en' }));
+    expect(state.create.mock.calls[0]![0].data.consentVersion).toBe('waitlist-v1-en');
+  });
+
   it('fails visibly, without leaking details, when the database is down', async () => {
     state.findUnique.mockRejectedValue(new Error('connect ECONNREFUSED'));
     const result = await joinWaitlist(null, form(valid));
