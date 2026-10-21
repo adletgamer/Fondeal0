@@ -219,8 +219,16 @@
   border-radius: 16px;
   padding: 0.95rem 1.1rem 1.15rem;
   background:
-    radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--t-a) 34%, transparent), transparent 58%),
-    radial-gradient(100% 100% at 100% 100%, color-mix(in srgb, var(--t-b) 40%, transparent), transparent 62%),
+    radial-gradient(
+      120% 100% at 0% 0%,
+      color-mix(in srgb, var(--t-a) 34%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      100% 100% at 100% 100%,
+      color-mix(in srgb, var(--t-b) 40%, transparent),
+      transparent 62%
+    ),
     linear-gradient(135deg, var(--t-c), #0a1020 85%);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.12),
@@ -234,7 +242,11 @@
   pointer-events: none;
 }
 .fdo-id--lines::before {
-  background: repeating-linear-gradient(118deg, rgba(255, 255, 255, 0.075) 0 1px, transparent 1px 11px);
+  background: repeating-linear-gradient(
+    118deg,
+    rgba(255, 255, 255, 0.075) 0 1px,
+    transparent 1px 11px
+  );
 }
 .fdo-id--dots::before {
   background: radial-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1.3px) 0 0 / 12px 12px;
@@ -392,6 +404,108 @@
   }
   .fdo-passport__card {
     opacity: 1;
+    transform: none !important;
+  }
+}
+
+/* Landing (app/page.tsx): visible focus for plain links and FAQ toggles,
+   on every surface. Controls from @fondealo/ui bring their own ring. */
+.landing a:focus-visible,
+.landing summary:focus-visible {
+  outline: 2px solid rgb(var(--focus-ring));
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ---- Landing motion (components/landing). Every rule degrades to static,
+   visible content: without JS, with reduced motion and when printing. ---- */
+html {
+  scroll-padding-top: 5.5rem;
+}
+
+/* Signature move: headline lines rise from behind their baseline on load. */
+@keyframes landing-rise {
+  from {
+    transform: translateY(105%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes landing-fade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.landing-rise {
+  animation: landing-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 110ms);
+}
+.landing-fade {
+  animation: landing-fade 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(240ms + var(--i, 0) * 80ms);
+}
+
+/* Scroll entrances, armed only once reveal-motion.tsx runs. */
+.reveal-ready .landing [data-reveal].is-visible {
+  transition:
+    opacity 0.6s ease-out,
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+.reveal-ready .landing [data-reveal]:not(.is-visible) {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+/* Reading progress: a thin brand line driven by scroll, where supported. */
+.landing-progress {
+  display: none;
+}
+@keyframes landing-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@supports (animation-timeline: scroll()) {
+  .landing-progress {
+    display: block;
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 50;
+    height: 3px;
+    background: rgb(var(--brand-fill));
+    transform-origin: 0 50%;
+    animation: landing-progress linear both;
+    animation-timeline: scroll(root);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-rise,
+  .landing-fade {
+    animation: none !important;
+  }
+  .landing-progress {
+    display: none !important;
+  }
+  .reveal-ready .landing [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+@media print {
+  .landing [data-reveal] {
+    opacity: 1 !important;
     transform: none !important;
   }
 }

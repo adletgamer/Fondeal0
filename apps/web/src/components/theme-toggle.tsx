@@ -22,7 +22,7 @@ export function ThemeToggle() {
     setTheme(next);
   }
 
-  const label = theme === 'dark' ? 'Switch to Day theme' : 'Switch to Night theme';
+  const label = theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
   return (
     <button
       type="button"
