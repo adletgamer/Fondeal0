@@ -15,7 +15,7 @@
 }
 
 .site :is(h1, h2, h3) {
-  font-family: var(--font-display), system-ui, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
   letter-spacing: -0.055em;
 }
 .site :is(a, button) {
@@ -489,7 +489,7 @@
 .passportTitle {
   max-width: 18ch;
   color: #edf9f8;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-sans), sans-serif;
   font-size: clamp(25px, 2.6vw, 38px);
   line-height: 1.07;
   letter-spacing: -0.04em;
@@ -683,7 +683,7 @@
   letter-spacing: 0.08em;
 }
 .fragment strong {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-sans), sans-serif;
   font-size: 21px;
   font-weight: 500;
   letter-spacing: -0.025em;
@@ -843,7 +843,7 @@
   border: 1px solid #507a85;
   border-radius: 2px;
   color: #0c5563;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-sans), sans-serif;
   font-size: 40px;
   font-weight: 600;
 }
@@ -863,7 +863,7 @@
   letter-spacing: 0.09em;
 }
 .specimenIdentity strong {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-sans), sans-serif;
   font-size: clamp(19px, 2vw, 28px);
   font-weight: 500;
   letter-spacing: -0.035em;
@@ -1045,7 +1045,7 @@
   height: 84px;
   border: 1px solid #70ccd0;
   color: #d7f5ef;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-sans), sans-serif;
   font-size: 58px;
 }
 .sequenceCardMark img {
