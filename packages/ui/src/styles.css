@@ -95,6 +95,9 @@
   --danger-soft: 254 242 242;
   --focus-ring: 4 120 87;
   --bg-white: 255 255 255;
+  /* Identity: the orbit ring and passport body of the Fondealo mark. */
+  --orbit: 8 145 178;
+  --mark-body: 14 42 92;
 }
 
 /* Night: the primary theme. */
@@ -181,6 +184,8 @@
   --danger-soft: 42 17 21;
   --focus-ring: 52 211 153;
   --bg-white: 11 17 32;
+  --orbit: 34 211 238;
+  --mark-body: 37 78 166;
 }
 
 /*
@@ -216,4 +221,6 @@
   --danger-soft: 42 17 21;
   --focus-ring: 52 211 153;
   --bg-white: 255 255 255;
+  --orbit: 34 211 238;
+  --mark-body: 37 78 166;
 }

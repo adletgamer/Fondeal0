@@ -17,6 +17,7 @@ import {
   TxStatus,
 } from '@fondealo/ui';
 import { Navbar } from '@/components/navbar';
+import { IdentitySpecimen } from './identity';
 
 /**
  * Living style guide for the Fondealo design system: every shared component in
@@ -61,6 +62,8 @@ export default function DesignSystemPage() {
             and Day.
           </p>
         </header>
+
+        <IdentitySpecimen />
 
         <Section id="tokens" title="Colour tokens">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">

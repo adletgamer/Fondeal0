@@ -1,11 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#10b981"/>
-      <stop offset="1" stop-color="#047857"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="16" fill="url(#g)"/>
-  <path d="M22 46V18h21v7H30.5v6H41v7H30.5v8H22Z" fill="white"/>
-  <circle cx="45" cy="40" r="5" fill="#fbbf24"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Fondealo mark, small-size cut (src/components/brand/mark.tsx), Night palette. -->
+  <rect width="32" height="32" rx="7" fill="#070b16"/>
+  <g transform="translate(2 2) scale(1.75)">
+    <defs>
+      <mask id="m-feet" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
+        <rect width="16" height="16" fill="white"/>
+        <path d="M1.15 10.15A6.75 3 -12 0 0 8.37 11.68A6.75 3 -12 0 0 14.35 7.35" stroke="black" stroke-width="4"/>
+      </mask>
+      <mask id="m-body" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
+        <rect width="16" height="16" fill="white"/>
+        <path d="M1.15 10.15A6.75 3 -12 0 0 8.37 11.68A6.75 3 -12 0 0 14.35 7.35" stroke="black" stroke-width="3"/>
+      </mask>
+      <mask id="m-ring" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
+        <rect width="16" height="16" fill="white"/>
+        <rect x="3.25" y="0.25" width="9.5" height="15.5" rx="2.25" fill="black"/>
+        <circle cx="14.35" cy="7.35" r="2.15" fill="black"/>
+      </mask>
+      <mask id="m-node" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
+        <rect width="16" height="16" fill="white"/>
+        <circle cx="14.35" cy="7.35" r="2.15" fill="black"/>
+      </mask>
+    </defs>
+    <!-- orbit, back half and ends -->
+    <ellipse cx="7.75" cy="8.75" rx="6.75" ry="3" transform="rotate(-12 7.75 8.75)" stroke="#22d3ee" stroke-width="1.5" mask="url(#m-ring)"/>
+    <!-- passport -->
+    <rect x="4" y="1" width="8" height="14" rx="1.5" fill="#254ea6" mask="url(#m-body)"/>
+    <!-- bars -->
+    <g fill="#34d399" mask="url(#m-feet)">
+      <rect x="6" y="6" width="2" height="6.41" rx="0.5"/>
+      <rect x="9" y="3" width="2" height="8.74" rx="0.5"/>
+    </g>
+    <!-- orbit, front half -->
+    <path d="M1.15 10.15A6.75 3 -12 0 0 8.37 11.68A6.75 3 -12 0 0 14.35 7.35" stroke="#22d3ee" stroke-width="1.5" mask="url(#m-node)"/>
+    <!-- node -->
+    <circle cx="14.35" cy="7.35" r="1.4" fill="#34d399"/>
+  </g>
 </svg>

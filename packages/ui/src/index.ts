@@ -7,3 +7,4 @@ export * from './field';
 export * from './risk-badge';
 export * from './address-chip';
 export * from './tx-status';
+export * from './icons';
