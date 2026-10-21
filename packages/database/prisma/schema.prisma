@@ -323,3 +323,45 @@ model LedgerEntry {
   @@unique([stellarAddress, idempotencyKey])
   @@index([stellarAddress])
 }
+
+/// Who joined the early-access list (docs/strategy/2026-10-20-landing-refactor-plan.md §7).
+enum WaitlistProfile {
+  StartupPreSeed
+  StartupRevenue
+  Mype
+  Funder
+  Other
+}
+
+/// Where the company is incorporated — decides whether today's registry rules fit it.
+enum WaitlistCountry {
+  Peru
+  UnitedStates
+  OtherCountry
+  NotIncorporated
+}
+
+/// Early-access waitlist. Deliberately separate from Business/UserWallet:
+/// joining creates no account, wallet or KYB record, and stores only the
+/// minimum personal data (Ley 29733). Rows are never overwritten by a later
+/// submission, because anyone can type any email address.
+model WaitlistEntry {
+  id             String          @id @default(cuid())
+  /// Trimmed and lower-cased; one row per address.
+  email          String          @unique
+  profile        WaitlistProfile
+  country        WaitlistCountry
+  companyName    String?
+  interviewOptIn Boolean         @default(false)
+  consentVersion String
+  consentAt      DateTime
+  /// HMAC of the client IP (never the raw IP), used only for rate limiting.
+  /// Null when WAITLIST_IP_SECRET is not configured.
+  ipHash         String?
+  unsubscribedAt DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([ipHash, createdAt])
+  @@index([profile])
+}
