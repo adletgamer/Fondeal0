@@ -6,11 +6,14 @@ import { z } from 'zod';
 import { prisma } from '@fondealo/database';
 import { describeError } from '@/lib/auth/session';
 import {
-  WAITLIST_CONSENT_VERSION,
   WAITLIST_COUNTRIES,
   WAITLIST_HONEYPOT_FIELD,
+  WAITLIST_MESSAGES,
   WAITLIST_PROFILES,
+  waitlistConsentVersion,
   type WaitlistField,
+  type WaitlistLocale,
+  type WaitlistMessageKey,
 } from '@/lib/waitlist';
 
 export type WaitlistResult =
@@ -26,21 +29,19 @@ const waitlistSchema = z.object({
     .string()
     .trim()
     .toLowerCase()
-    .min(1, 'Escribe tu correo.')
-    .max(254, 'Revisa tu correo. Parece demasiado largo.')
-    .email('Revisa tu correo. Parece que le falta algo, por ejemplo la @.'),
-  profile: z.enum(WAITLIST_PROFILES, { message: 'Elige la opción que mejor te describe.' }),
-  country: z.enum(WAITLIST_COUNTRIES, {
-    message: 'Elige dónde está constituida tu empresa.',
-  }),
+    .min(1, 'email.required')
+    .max(254, 'email.long')
+    .email('email.invalid'),
+  profile: z.enum(WAITLIST_PROFILES, { message: 'profile' }),
+  country: z.enum(WAITLIST_COUNTRIES, { message: 'country' }),
   companyName: z
     .string()
     .trim()
-    .max(120, 'Usa como máximo 120 caracteres.')
+    .max(120, 'companyName.long')
     .optional()
     .transform((v) => (v ? v : undefined)),
   interviewOptIn: z.literal('on').optional(),
-  consent: z.literal('on', { message: 'Para unirte, marca la casilla de consentimiento.' }),
+  consent: z.literal('on', { message: 'consent' }),
 });
 
 /**
@@ -79,6 +80,9 @@ export async function joinWaitlist(
     };
   }
 
+  const locale: WaitlistLocale = formData.get('locale') === 'en' ? 'en' : 'es';
+  const t = WAITLIST_MESSAGES[locale];
+
   const parsed = waitlistSchema.safeParse({
     email: formData.get('email') ?? '',
     profile: formData.get('profile') ?? undefined,
@@ -91,9 +95,9 @@ export async function joinWaitlist(
     const fieldErrors: Partial<Record<WaitlistField, string>> = {};
     for (const issue of parsed.error.issues) {
       const field = issue.path[0] as WaitlistField;
-      fieldErrors[field] ??= issue.message;
+      fieldErrors[field] ??= t[issue.message as WaitlistMessageKey] ?? t.summary;
     }
-    return { ok: false, error: 'Revisa los campos marcados.', fieldErrors };
+    return { ok: false, error: t.summary, fieldErrors };
   }
   const d = parsed.data;
 
@@ -104,10 +108,7 @@ export async function joinWaitlist(
         where: { ipHash, createdAt: { gte: new Date(Date.now() - RATE_WINDOW_MS) } },
       });
       if (recent >= RATE_LIMIT) {
-        return {
-          ok: false,
-          error: 'Recibimos varios intentos seguidos. Espera unos minutos e inténtalo otra vez.',
-        };
+        return { ok: false, error: t.rateLimited };
       }
     }
 
@@ -123,7 +124,7 @@ export async function joinWaitlist(
           country: d.country,
           companyName: d.companyName ?? null,
           interviewOptIn: d.interviewOptIn === 'on',
-          consentVersion: WAITLIST_CONSENT_VERSION,
+          consentVersion: waitlistConsentVersion(locale),
           consentAt: new Date(),
           ipHash,
         },
@@ -135,9 +136,6 @@ export async function joinWaitlist(
     if ((err as { code?: string }).code === 'P2002') return { ok: true, email: d.email };
     // Never log the address itself.
     console.error('[joinWaitlist] failed:', describeError(err));
-    return {
-      ok: false,
-      error: 'No pudimos guardar tus datos. Revisa tu conexión e inténtalo de nuevo.',
-    };
+    return { ok: false, error: t.unavailable };
   }
 }
