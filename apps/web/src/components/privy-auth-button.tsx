@@ -26,7 +26,7 @@ export function PrivyAuthButton({
         }}
       >
         <Wallet width={16} height={16} />
-        Log in
+        Entrar
       </Button>
     );
   }
@@ -65,14 +65,14 @@ function PrivyAuthButtonInner({
     if (enterAppOnLogin) {
       return (
         <Button variant="dark" size={size} onClick={() => router.push('/onboarding')}>
-          Open app
+          Abrir app
         </Button>
       );
     }
     if (!stellarAddress) {
       return (
         <Button variant="secondary" size={size} disabled>
-          Setting up…
+          Preparando…
         </Button>
       );
     }
@@ -80,8 +80,8 @@ function PrivyAuthButtonInner({
       <AddressChip
         address={stellarAddress}
         onClick={logout}
-        title={`${stellarAddress} — click to log out`}
-        aria-label={`Log out of ${stellarAddress}`}
+        title={`${stellarAddress} — clic para cerrar sesión`}
+        aria-label={`Cerrar sesión de ${stellarAddress}`}
       />
     );
   }
@@ -96,7 +96,7 @@ function PrivyAuthButtonInner({
       }}
     >
       <Wallet width={16} height={16} />
-      Log in
+      Entrar
     </Button>
   );
 }

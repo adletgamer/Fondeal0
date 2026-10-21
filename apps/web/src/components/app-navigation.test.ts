@@ -8,6 +8,7 @@ describe('authenticated navigation', () => {
       '/business/new',
       '/business/passport',
       '/business/verify',
+      '/business/datos',
     ]);
     expect(APP_NAVIGATION.Investor.map(({ href }) => href)).toEqual([
       '/invest',

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { prisma } from '@fondealo/database';
 import { getSession } from '@/lib/auth/session';
 import {
+  REPRESENTATIVE_RELATIONSHIPS,
   REVENUE_BANDS,
   SECTORS,
   findCountry,
@@ -21,24 +22,28 @@ export type KybResult =
   | { ok: false; error: string };
 
 const kybSchema = z.object({
-  legalName: z.string().trim().min(2, 'Legal name is required').max(120),
-  country: z.string().refine((c) => Boolean(findCountry(c)), 'Select a country'),
+  legalName: z.string().trim().min(2, 'Ingresa la razón social').max(120),
+  country: z.string().refine((c) => Boolean(findCountry(c)), 'Selecciona un país'),
   taxId: z.string().transform(normalizeTaxId),
-  sector: z.enum(SECTORS, { message: 'Select a sector' }),
+  sector: z.enum(SECTORS, { message: 'Selecciona un sector' }),
   foundedYear: z.coerce
     .number()
     .int()
-    .min(1900, 'Enter a valid year')
-    .max(new Date().getFullYear(), 'Founding year cannot be in the future'),
-  revenueBand: z.enum(REVENUE_BANDS, { message: 'Select a revenue range' }),
-  email: z.string().trim().email('Enter a valid contact email'),
-  representativeName: z.string().trim().min(2, 'Enter the representative name').max(120),
-  representativeRelationship: z.enum(['Owner', 'Director', 'Authorized agent']),
+    .min(1900, 'Ingresa un año válido')
+    .max(new Date().getFullYear(), 'El año de fundación no puede ser futuro'),
+  revenueBand: z.enum(REVENUE_BANDS, { message: 'Selecciona un rango de ingresos' }),
+  email: z.string().trim().email('Ingresa un correo de contacto válido'),
+  representativeName: z.string().trim().min(2, 'Ingresa el nombre del representante').max(120),
+  representativeRelationship: z.enum(REPRESENTATIVE_RELATIONSHIPS, {
+    message: 'Selecciona tu relación con la empresa',
+  }),
   idempotencyKey: z.string().uuid(),
-  verifierId: z.literal('sandbox', { message: 'That verifier is not available yet' }),
+  verifierId: z.literal('sandbox', { message: 'Ese verificador aún no está disponible' }),
   docs: z.array(z.enum(['registration', 'tax-id', 'ownership', 'address'])).max(4),
-  accept: z.literal('on', { message: 'Accept the declaration to continue' }),
-  evidenceConsent: z.literal('on', { message: 'Consent to evidence processing is required' }),
+  accept: z.literal('on', { message: 'Acepta la declaración para continuar' }),
+  evidenceConsent: z.literal('on', {
+    message: 'Necesitamos tu consentimiento para tratar estos datos',
+  }),
 });
 
 /**
@@ -49,10 +54,10 @@ const kybSchema = z.object({
 export async function submitKyb(_prev: KybResult | null, formData: FormData): Promise<KybResult> {
   const session = await getSession();
   if (!session?.stellarAddress) {
-    return { ok: false, error: 'Your session expired. Refresh the page and log in again.' };
+    return { ok: false, error: 'Tu sesión expiró. Recarga la página e inicia sesión de nuevo.' };
   }
   if (session.role !== 'Business') {
-    return { ok: false, error: 'Only business accounts can register a business.' };
+    return { ok: false, error: 'Solo las cuentas de empresa pueden registrar una empresa.' };
   }
 
   // The intake accepts declarations, never document bytes. Bound the payload
@@ -62,7 +67,7 @@ export async function submitKyb(_prev: KybResult | null, formData: FormData): Pr
     entries.length > 30 ||
     entries.some(([, value]) => typeof value !== 'string' || value.length > 5000)
   ) {
-    return { ok: false, error: 'Documents cannot be uploaded in this application.' };
+    return { ok: false, error: 'En esta solicitud no se pueden subir documentos.' };
   }
 
   const parsed = kybSchema.safeParse({
@@ -70,18 +75,21 @@ export async function submitKyb(_prev: KybResult | null, formData: FormData): Pr
     docs: formData.getAll('docs').map(String),
   });
   if (!parsed.success)
-    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid data' };
+    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Datos no válidos' };
   const d = parsed.data;
 
   const country = findCountry(d.country)!;
   if (!country.pattern.test(d.taxId)) {
     return {
       ok: false,
-      error: `Enter a valid ${country.taxIdLabel} for ${country.name} (${country.taxIdHint}).`,
+      error: `Ingresa un ${country.taxIdLabel} válido para ${country.label} (${country.taxIdHint}).`,
     };
   }
   if (!d.docs.includes('registration') || !d.docs.includes('tax-id')) {
-    return { ok: false, error: 'Confirm business and tax registration evidence.' };
+    return {
+      ok: false,
+      error: 'Confirma que cuentas con la constancia de inscripción y el documento tributario.',
+    };
   }
 
   const address = session.stellarAddress;
@@ -90,7 +98,7 @@ export async function submitKyb(_prev: KybResult | null, formData: FormData): Pr
   const check = await runProviderCheck(SandboxVerifier, { country: d.country, taxId: d.taxId });
   const reasons = check.result.startsWith('Synthetic')
     ? decision.reasons
-    : ['The sandbox check was unavailable. Your application remains pending review.'];
+    : ['La revisión de prueba no estuvo disponible. Tu solicitud sigue pendiente de revisión.'];
   const providerRef = `sbx_${randomBytes(6).toString('hex')}`;
   // A random salt prevents offline guessing of predictable tax IDs if this
   // commitment is eventually published on-chain. The salt stays off-chain.
@@ -233,13 +241,13 @@ export async function submitKyb(_prev: KybResult | null, formData: FormData): Pr
     };
   } catch (err) {
     if (err instanceof Error && err.message === 'ACTIVE_APPLICATION') {
-      return { ok: false, error: 'Your business already has a verification in progress.' };
+      return { ok: false, error: 'Tu empresa ya tiene una verificación en curso.' };
     }
     if (err instanceof Error && err.message === 'IDEMPOTENCY_CONFLICT') {
-      return { ok: false, error: 'This submission reference belongs to another application.' };
+      return { ok: false, error: 'Esta referencia pertenece a otra solicitud.' };
     }
     if (err instanceof Error && err.message === 'STALE_APPLICATION') {
-      return { ok: false, error: 'This application has changed. Refresh its status.' };
+      return { ok: false, error: 'Esta solicitud cambió. Actualiza su estado.' };
     }
     if ((err as { code?: string }).code === 'P2002') {
       // Two identical requests may race across the unique index. Return the
@@ -266,13 +274,16 @@ export async function submitKyb(_prev: KybResult | null, formData: FormData): Pr
       }
       return {
         ok: false,
-        error: `An application is already in progress, or that ${country.taxIdLabel} is registered to another account.`,
+        error: `Ya hay una solicitud en curso, o ese ${country.taxIdLabel} está registrado en otra cuenta.`,
       };
     }
     const code = (err as { code?: unknown }).code;
     console.error('[submitKyb] persistence unavailable', {
       code: typeof code === 'string' && /^P\d{4}$/.test(code) ? code : 'UNKNOWN',
     });
-    return { ok: false, error: 'We could not save your verification. Try again in a moment.' };
+    return {
+      ok: false,
+      error: 'No pudimos guardar tu solicitud. Inténtalo de nuevo en un momento.',
+    };
   }
 }

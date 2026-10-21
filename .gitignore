@@ -62,3 +62,6 @@ _transfer*
 .impeccable/live/pending-manual-edits.json
 .impeccable/live/deferred-svelte-component-accepts.json
 .impeccable/live/*.png
+
+# taste-skill working files (screenshots, direction sheets)
+.taste-skill/

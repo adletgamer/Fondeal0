@@ -37,18 +37,26 @@ describe('onboarding role choice', () => {
     const html = renderToStaticMarkup(
       createElement(OnboardingFlow, { hasServerSession: session, hasServerWallet: wallet }),
     );
-    expect(html).toContain('Verifying your account');
-    expect(html).not.toContain('Continue as Business');
-    expect(html).not.toContain('Continue as Investor');
+    expect(html).toContain('Confirmando tu cuenta');
+    expect(html).not.toContain('Continuar como');
   });
 
-  it('shows both roles but requires a separate confirmation when the server is ready', () => {
+  it('offers only the business role and requires a separate confirmation', () => {
     const html = renderToStaticMarkup(
       createElement(OnboardingFlow, { hasServerSession: true, hasServerWallet: true }),
     );
-    expect(html).toContain('I am a Business');
-    expect(html).toContain('I am an Investor');
-    expect(html).toMatch(/disabled=""[^>]*>Choose a role to continue/);
+    expect(html).toContain('Soy una empresa');
+    expect(html).not.toContain('inversionista');
+    expect(html).toMatch(/disabled=""[^>]*>Elige una opción para continuar/);
+  });
+
+  it('never promises returns or vetted borrowers', () => {
+    const html = renderToStaticMarkup(
+      createElement(OnboardingFlow, { hasServerSession: true, hasServerWallet: true }),
+    ).toLowerCase();
+    for (const phrase of ['earn', 'returns', 'vetted', 'retorno', 'rentabilidad', 'gana']) {
+      expect(html).not.toContain(phrase);
+    }
   });
 
   it('shows a recoverable error when the verified login cannot reach the database', () => {
@@ -59,8 +67,8 @@ describe('onboarding role choice', () => {
         accountServiceUnavailable: true,
       }),
     );
-    expect(html).toContain('Account setup is paused');
-    expect(html).toContain('Try again');
-    expect(html).not.toContain('Continue as Business');
+    expect(html).toContain('No pudimos terminar de crear tu cuenta');
+    expect(html).toContain('Intentar de nuevo');
+    expect(html).not.toContain('Continuar como');
   });
 });

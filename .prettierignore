@@ -6,3 +6,5 @@ target
 **/test_snapshots/**
 pnpm-lock.yaml
 *.md
+# Vendored third-party agent skills: keep byte-identical to the reviewed source
+.claude/skills/

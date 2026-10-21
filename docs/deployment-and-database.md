@@ -114,6 +114,15 @@ Development or the preflight reveals duplicate active applications. Inventory
 partially funded opportunities and agree a ledger-reconciled disposition before
 any wider rollout.
 
+The waitlist PR adds `20261020000000_waitlist_entry`: two new enums and one
+new `WaitlistEntry` table, with no change to existing tables or rows. It must be
+applied after the two migrations above, only on a database proven to be the
+isolated Development branch. The repo-root `.env` and `apps/web/.env.local`
+currently point at a Neon database named `neondb`; that is **not** proof of
+Development, so this PR did not apply the migration. Code that calls
+`joinWaitlist` must not reach Production before the migration does. The action
+reads the optional server secret `WAITLIST_IP_SECRET`.
+
 ## Health check
 
 `GET /api/health` runs `SELECT 1` through Prisma and returns `{ ok, db, ms }`

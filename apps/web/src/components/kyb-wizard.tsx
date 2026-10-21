@@ -7,18 +7,22 @@ import {
   KYB_COUNTRIES,
   KYB_DOCUMENTS,
   KYB_VERIFIERS,
+  RELATIONSHIP_LABELS,
+  REPRESENTATIVE_RELATIONSHIPS,
+  REVENUE_BAND_LABELS,
   REVENUE_BANDS,
+  SECTOR_LABELS,
   SECTORS,
   findCountry,
   normalizeTaxId,
 } from '@/lib/providers/kyb';
 import { Check, ShieldCheck } from './icons';
 
-const STEPS = ['Business identity', 'Representative', 'Evidence & consent', 'Review'] as const;
+const STEPS = ['Tu empresa', 'Representante', 'Evidencia y consentimiento', 'Revisión'] as const;
 const PROGRESS_LABELS = [
-  'Checking your tax ID format',
-  'Recording the sandbox signal',
-  'Saving your application for review',
+  'Revisando el formato de tu número tributario',
+  'Registrando la revisión de prueba',
+  'Guardando tu solicitud para revisión',
 ];
 
 interface Draft {
@@ -57,9 +61,13 @@ const EMPTY: Draft = {
 
 const initialState: KybResult | null = null;
 
+const label = <T extends string>(labels: Record<T, string>, value: string) =>
+  (labels as Record<string, string>)[value] ?? value;
+
 /**
  * Four-step business registration (KYB). The verifier is a sandbox: it checks
  * formats without real documents. Evidence is declared, not uploaded.
+ * Option values stay in English (they are stored); only labels are Spanish.
  */
 export function KybWizard({
   initial,
@@ -95,31 +103,35 @@ export function KybWizard({
 
   function validate(current: number): string | null {
     if (current === 0) {
-      if (draft.legalName.trim().length < 2) return 'Enter the legal name of your business.';
-      if (!country) return 'Select the country where the business is registered.';
+      if (draft.legalName.trim().length < 2) return 'Ingresa la razón social de tu empresa.';
+      if (!country) return 'Selecciona el país donde está registrada la empresa.';
       if (!country.pattern.test(normalizeTaxId(draft.taxId))) {
-        return `Enter a valid ${country.taxIdLabel} (${country.taxIdHint}).`;
+        return `Ingresa un ${country.taxIdLabel} válido (${country.taxIdHint}).`;
       }
-      if (!draft.sector) return 'Select your sector.';
+      if (!draft.sector) return 'Selecciona el sector de tu empresa.';
       const year = Number(draft.foundedYear);
       if (!Number.isInteger(year) || year < 1900 || year > new Date().getFullYear()) {
-        return 'Enter a valid founding year.';
+        return 'Ingresa un año de fundación válido.';
       }
-      if (!draft.revenueBand) return 'Select your monthly revenue range.';
-      if (!/^\S+@\S+\.\S+$/.test(draft.email)) return 'Enter a valid contact email.';
+      if (!draft.revenueBand) return 'Selecciona tu rango de ventas mensuales.';
+      if (!/^\S+@\S+\.\S+$/.test(draft.email)) return 'Ingresa un correo de contacto válido.';
     }
     if (current === 1) {
-      if (draft.representativeName.trim().length < 2) return 'Enter the representative name.';
-      if (!['Owner', 'Director', 'Authorized agent'].includes(draft.representativeRelationship)) {
-        return 'Select your relationship to the business.';
+      if (draft.representativeName.trim().length < 2) return 'Ingresa el nombre del representante.';
+      if (
+        !(REPRESENTATIVE_RELATIONSHIPS as readonly string[]).includes(
+          draft.representativeRelationship,
+        )
+      ) {
+        return 'Selecciona tu relación con la empresa.';
       }
     }
     if (current === 2) {
       if (!draft.docs.includes('registration') || !draft.docs.includes('tax-id')) {
-        return 'Confirm business and tax registration evidence.';
+        return 'Confirma que cuentas con la constancia de inscripción y el documento tributario.';
       }
-      if (!draft.accept) return 'Accept the declaration to continue.';
-      if (!draft.evidenceConsent) return 'Consent to evidence processing is required.';
+      if (!draft.accept) return 'Acepta la declaración para continuar.';
+      if (!draft.evidenceConsent) return 'Necesitamos tu consentimiento para continuar.';
     }
     return null;
   }
@@ -141,11 +153,12 @@ export function KybWizard({
           <ShieldCheck width={26} height={26} />
         </span>
         <h2 className="mt-4 font-display text-2xl font-bold text-slate-900">
-          Application received
+          Recibimos tu solicitud
         </h2>
         <p className="mt-2 text-sm text-slate-500">
-          The sandbox checked the format of your details. Business verification and underwriting are
-          pending; no Passport has been issued.
+          Revisamos el formato de tus datos en modo de prueba. La verificación de tu empresa sigue
+          pendiente y todavía no se ha emitido un Pasaporte. Verificar tu empresa no significa que
+          recibirás financiamiento.
         </p>
         <ul className="mx-auto mt-5 max-w-sm space-y-1.5 text-left text-xs text-slate-500">
           {state.reasons.map((r) => (
@@ -155,9 +168,9 @@ export function KybWizard({
             </li>
           ))}
         </ul>
-        <p className="mt-4 font-mono text-[11px] text-slate-400">Reference {state.providerRef}</p>
+        <p className="mt-4 font-mono text-[11px] text-slate-400">Referencia {state.providerRef}</p>
         <a href="/business/verify">
-          <Button className="mt-6">View application status</Button>
+          <Button className="mt-6">Ver el estado de mi solicitud</Button>
         </a>
       </Card>
     );
@@ -167,12 +180,12 @@ export function KybWizard({
     <div className="mx-auto max-w-2xl">
       {previouslyRejected && !state ? (
         <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Your previous verification was rejected. Correct your details and submit again.
+          Tu solicitud anterior no fue aprobada. Corrige tus datos y envíala de nuevo.
         </p>
       ) : null}
 
       <ol
-        aria-label="Application steps"
+        aria-label="Pasos de la solicitud"
         className="mb-6 grid grid-cols-2 gap-3 text-xs font-medium sm:flex sm:items-center"
       >
         {STEPS.map((label, i) => (
@@ -227,31 +240,39 @@ export function KybWizard({
 
           {step === 0 ? (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-slate-900">Tell us about your business</h2>
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">Cuéntanos sobre tu empresa</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Usamos estos datos para identificar a tu empresa. Te pediremos permiso antes de
+                  compartirlos con cualquier financiador.
+                </p>
+              </div>
               <Field
-                label="Legal name"
+                label="Razón social"
                 value={draft.legalName}
                 onChange={(e) => set('legalName', e.target.value)}
                 placeholder="Café Andino SAC"
               />
               <div className="grid gap-4 sm:grid-cols-2">
                 <SelectField
-                  label="Country of registration"
+                  label="País de registro"
                   value={draft.country}
                   onChange={(e) => set('country', e.target.value)}
                 >
-                  <option value="">Select…</option>
+                  <option value="">Selecciona…</option>
                   {KYB_COUNTRIES.map((c) => (
                     <option key={c.code} value={c.name}>
-                      {c.name}
+                      {c.label}
                     </option>
                   ))}
                 </SelectField>
                 <Field
-                  label={country ? `${country.taxIdLabel} (tax ID)` : 'Tax ID'}
+                  label={
+                    country ? `${country.taxIdLabel} (número tributario)` : 'Número tributario'
+                  }
                   value={draft.taxId}
                   onChange={(e) => set('taxId', e.target.value)}
-                  placeholder={country?.taxIdExample ?? 'Select a country first'}
+                  placeholder={country?.taxIdExample ?? 'Primero elige un país'}
                   hint={
                     country ? (
                       <>
@@ -261,7 +282,7 @@ export function KybWizard({
                           className="font-medium text-brand-600 hover:underline"
                           onClick={() => set('taxId', country.taxIdExample)}
                         >
-                          Use a test value
+                          Usar un valor de prueba
                         </button>
                       </>
                     ) : undefined
@@ -274,15 +295,15 @@ export function KybWizard({
                   value={draft.sector}
                   onChange={(e) => set('sector', e.target.value)}
                 >
-                  <option value="">Select…</option>
+                  <option value="">Selecciona…</option>
                   {SECTORS.map((s) => (
                     <option key={s} value={s}>
-                      {s}
+                      {SECTOR_LABELS[s]}
                     </option>
                   ))}
                 </SelectField>
                 <Field
-                  label="Year founded"
+                  label="Año de fundación"
                   type="number"
                   value={draft.foundedYear}
                   onChange={(e) => set('foundedYear', e.target.value)}
@@ -291,23 +312,23 @@ export function KybWizard({
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <SelectField
-                  label="Monthly revenue"
+                  label="Ventas mensuales (aprox.)"
                   value={draft.revenueBand}
                   onChange={(e) => set('revenueBand', e.target.value)}
                 >
-                  <option value="">Select…</option>
+                  <option value="">Selecciona…</option>
                   {REVENUE_BANDS.map((r) => (
                     <option key={r} value={r}>
-                      {r}
+                      {REVENUE_BAND_LABELS[r]}
                     </option>
                   ))}
                 </SelectField>
                 <Field
-                  label="Contact email"
+                  label="Correo de contacto"
                   type="email"
                   value={draft.email}
                   onChange={(e) => set('email', e.target.value)}
-                  placeholder="finance@yourbusiness.com"
+                  placeholder="finanzas@tuempresa.pe"
                 />
               </div>
             </div>
@@ -315,24 +336,31 @@ export function KybWizard({
 
           {step === 1 ? (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-slate-900">Authorized representative</h2>
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">Representante autorizado</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Es la persona que puede actuar en nombre de la empresa.
+                </p>
+              </div>
               <Field
-                label="Full name"
+                label="Nombre completo"
                 value={draft.representativeName}
                 onChange={(e) => set('representativeName', e.target.value)}
               />
               <SelectField
-                label="Relationship to the business"
+                label="Relación con la empresa"
                 value={draft.representativeRelationship}
                 onChange={(e) => set('representativeRelationship', e.target.value)}
               >
-                <option value="">Select…</option>
-                <option value="Owner">Owner</option>
-                <option value="Director">Director</option>
-                <option value="Authorized agent">Authorized agent</option>
+                <option value="">Selecciona…</option>
+                {REPRESENTATIVE_RELATIONSHIPS.map((r) => (
+                  <option key={r} value={r}>
+                    {RELATIONSHIP_LABELS[r]}
+                  </option>
+                ))}
               </SelectField>
               <p className="text-sm text-slate-500">
-                Your relationship is self-declared. Authority is not verified at this stage.
+                Esta relación es declarada por ti. En esta etapa no verificamos tus poderes.
               </p>
             </div>
           ) : null}
@@ -340,11 +368,11 @@ export function KybWizard({
           {step === 2 ? (
             <div className="space-y-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Evidence and consent</h2>
+                <h2 className="text-lg font-semibold text-slate-900">Evidencia y consentimiento</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Confirm which evidence you can provide. Business and tax registration are required
-                  for this intake; ownership and address evidence are requested only if review
-                  requires them. Do not upload documents here.
+                  Marca los documentos que puedes presentar. La constancia de inscripción y el
+                  documento tributario son obligatorios; los de propietarios y domicilio solo se
+                  pedirán si la revisión los necesita. No subas documentos aquí.
                 </p>
               </div>
               <ul className="space-y-2">
@@ -374,7 +402,8 @@ export function KybWizard({
                   checked={draft.accept}
                   onChange={(e) => set('accept', e.target.checked)}
                 />
-                I declare the information is accurate and I am authorised to register this business.
+                Declaro que la información es correcta y que estoy autorizado para registrar esta
+                empresa.
               </label>
               <label className="flex cursor-pointer items-start gap-3 text-sm text-slate-600">
                 <input
@@ -383,27 +412,31 @@ export function KybWizard({
                   checked={draft.evidenceConsent}
                   onChange={(e) => set('evidenceConsent', e.target.checked)}
                 />
-                I consent to Fondealo storing this application and evidence declarations for KYB
-                review under intake policy v1. No documents are uploaded in this sandbox.
+                Autorizo a Fondealo a guardar esta solicitud y mis declaraciones de evidencia para
+                verificar mi empresa (política de solicitud v1). No compartimos estos datos con
+                financiadores sin pedirte permiso. En este modo de prueba no se suben documentos.{' '}
+                <a href="/business/datos" className="font-medium text-brand-600 hover:underline">
+                  Qué datos guardamos
+                </a>
               </label>
             </div>
           ) : null}
 
           {step === 3 ? (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-slate-900">Review and submit</h2>
+              <h2 className="text-lg font-semibold text-slate-900">Revisa y envía</h2>
               <dl className="divide-y divide-slate-100 rounded-xl border border-slate-200 text-sm">
                 {[
-                  ['Legal name', draft.legalName],
-                  ['Country', draft.country],
-                  [country?.taxIdLabel ?? 'Tax ID', normalizeTaxId(draft.taxId)],
-                  ['Sector', draft.sector],
-                  ['Founded', draft.foundedYear],
-                  ['Monthly revenue', draft.revenueBand],
-                  ['Contact', draft.email],
-                  ['Representative', draft.representativeName],
-                  ['Relationship', draft.representativeRelationship],
-                  ['Verifier', KYB_VERIFIERS.find((v) => v.id === draft.verifierId)?.name ?? ''],
+                  ['Razón social', draft.legalName],
+                  ['País', country?.label ?? draft.country],
+                  [country?.taxIdLabel ?? 'Número tributario', normalizeTaxId(draft.taxId)],
+                  ['Sector', label(SECTOR_LABELS, draft.sector)],
+                  ['Fundación', draft.foundedYear],
+                  ['Ventas mensuales', label(REVENUE_BAND_LABELS, draft.revenueBand)],
+                  ['Contacto', draft.email],
+                  ['Representante', draft.representativeName],
+                  ['Relación', label(RELATIONSHIP_LABELS, draft.representativeRelationship)],
+                  ['Verificador', KYB_VERIFIERS.find((v) => v.id === draft.verifierId)?.name ?? ''],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between gap-4 px-4 py-2.5">
                     <dt className="text-slate-500">{k}</dt>
@@ -457,15 +490,15 @@ export function KybWizard({
                 setStep((s) => Math.max(0, s - 1));
               }}
             >
-              Back
+              Atrás
             </Button>
             {step < STEPS.length - 1 ? (
               <Button type="button" onClick={next}>
-                Continue
+                Continuar
               </Button>
             ) : (
               <Button type="submit" disabled={pending || !draft.idempotencyKey}>
-                {pending ? 'Submitting…' : 'Submit for review'}
+                {pending ? 'Enviando…' : 'Enviar para revisión'}
               </Button>
             )}
           </div>

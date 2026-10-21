@@ -6,9 +6,9 @@ import { PrivyAuthButton } from '@/components/privy-auth-button';
 import { MarketingMotion } from '@/components/marketing-motion';
 import styles from './marketing.module.css';
 
-const pageTitle = 'Fondealo — A Business Passport for a portable financial identity';
+const pageTitle = 'Fondealo — Verifica tu empresa una vez y compártela con quien te financia';
 const pageDescription =
-  'Explore the Fondealo web MVP and Business Passport. KYB runs in a sandbox; Soroban contracts await Testnet deployment.';
+  'Fondealo ayuda a las MYPEs del Perú a registrar y verificar su empresa una sola vez, y a decidir con qué financiadores compartir esa información. Versión de prueba: la verificación aún funciona en modo sandbox.';
 
 export const metadata: Metadata = {
   title: pageTitle,
@@ -18,16 +18,16 @@ export const metadata: Metadata = {
 };
 
 const signals = [
-  { number: '01', title: 'Business identity', detail: 'Who is behind the work' },
-  { number: '02', title: 'Verified activity', detail: 'What the business has done' },
-  { number: '03', title: 'Repayment history', detail: 'How commitments were met' },
+  { number: '01', title: 'Identidad de la empresa', detail: 'Quién está detrás del negocio' },
+  { number: '02', title: 'Actividad verificada', detail: 'Lo que la empresa ha hecho' },
+  { number: '03', title: 'Historial de pagos', detail: 'Cómo cumplió sus compromisos' },
 ] as const;
 
 const passportFields = [
-  ['Identity', 'Business profile'],
-  ['Verification', 'KYB status'],
-  ['Credit', 'Reputation record'],
-  ['History', 'Repayment events'],
+  ['Identidad', 'Perfil de la empresa'],
+  ['Verificación', 'Estado KYB'],
+  ['Crédito', 'Registro de reputación'],
+  ['Historial', 'Pagos registrados'],
 ] as const;
 
 function Arrow({ diagonal = false }: { diagonal?: boolean }) {
@@ -55,22 +55,22 @@ function MarketingHeader() {
   return (
     <header className={styles.header}>
       <div className={styles.headerInner}>
-        <Link href="/" aria-label="Fondealo home" className={styles.headerLogo}>
+        <Link href="/" aria-label="Fondealo, inicio" className={styles.headerLogo}>
           <Logo priority />
         </Link>
-        <nav aria-label="Main navigation" className={styles.headerNav}>
-          <a href="#idea">The idea</a>
-          <a href="#passport">Passport</a>
-          <a href="#reputation">Reputation</a>
-          <a href="#status">Status</a>
+        <nav aria-label="Navegación principal" className={styles.headerNav}>
+          <a href="#idea">La idea</a>
+          <a href="#passport">Pasaporte</a>
+          <a href="#reputation">Reputación</a>
+          <a href="#status">Estado</a>
         </nav>
         <div className={styles.headerActions}>
           <span className={styles.loginControl}>
             <PrivyAuthButton enterAppOnLogin />
           </span>
           <Link href="/onboarding?intent=business" className={styles.headerCta}>
-            <span className={styles.headerCtaLong}>Create account</span>
-            <span className={styles.headerCtaShort}>Sign up</span>
+            <span className={styles.headerCtaLong}>Crear cuenta</span>
+            <span className={styles.headerCtaShort}>Empezar</span>
             <Arrow diagonal />
           </Link>
         </div>
@@ -84,7 +84,7 @@ function HeroObject() {
     <div
       className={styles.heroObject}
       role="img"
-      aria-label="Illustrative Business Passport surrounded by verified business signals"
+      aria-label="Pasaporte de empresa ilustrativo rodeado de señales verificadas del negocio"
       data-tilt-card
     >
       <div className={styles.heroOrbitBack} aria-hidden="true" />
@@ -92,45 +92,45 @@ function HeroObject() {
       <div className={styles.heroHalo} aria-hidden="true" />
       <div className={styles.heroSignalTop} aria-hidden="true">
         <span className={styles.signalDot} />
-        VERIFIED ACTIVITY
+        ACTIVIDAD VERIFICADA
       </div>
       <div className={styles.heroSignalBottom} aria-hidden="true">
         <span className={styles.signalDot} />
-        PORTABLE IDENTITY
+        IDENTIDAD PORTABLE
       </div>
       <div className={styles.heroPassport} aria-hidden="true">
         <div className={styles.passportSheen} aria-hidden="true" />
         <div className={styles.passportTopline}>
-          <span>FONDEALO / BUSINESS PASSPORT</span>
-          <span>SPECIMEN</span>
+          <span>FONDEALO / PASAPORTE DE EMPRESA</span>
+          <span>MUESTRA</span>
         </div>
         <div className={styles.passportEmblem}>
           <Image src="/orbital-badge.png" alt="" width={88} height={88} sizes="88px" priority />
         </div>
-        <div className={styles.passportTitle}>A record that moves with you.</div>
+        <div className={styles.passportTitle}>Un expediente que va contigo.</div>
         <div className={styles.passportRule} />
         <div className={styles.passportGrid}>
           <div>
-            <span>IDENTITY</span>
-            <strong>Business</strong>
+            <span>IDENTIDAD</span>
+            <strong>Empresa</strong>
           </div>
           <div>
-            <span>VERIFICATION</span>
+            <span>VERIFICACIÓN</span>
             <strong>KYB</strong>
           </div>
           <div>
-            <span>REPUTATION</span>
-            <strong>History</strong>
+            <span>REPUTACIÓN</span>
+            <strong>Historial</strong>
           </div>
         </div>
         <div className={styles.passportFoot}>
-          <span>Illustrative product concept</span>
+          <span>Concepto ilustrativo</span>
           <span>01 / 01</span>
         </div>
       </div>
       <div className={styles.heroObjectCaption} aria-hidden="true">
         <span>FIG. 01</span>
-        <span>ONE IDENTITY · MANY OPPORTUNITIES</span>
+        <span>UNA IDENTIDAD · MUCHAS OPORTUNIDADES</span>
       </div>
     </div>
   );
@@ -149,33 +149,33 @@ function Hero() {
         <div className={styles.heroCopy}>
           <p className={styles.eyebrow}>
             <span className={styles.liveDot} />
-            CREDIT IDENTITY, REIMAGINED
+            PARA MYPES DEL PERÚ
           </p>
           <h1>
-            A business deserves a financial identity <span>that travels.</span>
+            Verifica tu empresa una vez. <span>Compártela con quien te financia.</span>
           </h1>
           <p className={styles.heroLead}>
-            Fondealo brings business identity and activity into a reusable Business Passport — a
-            clearer way to build trust and approach funding on Stellar.
+            Registra tu empresa con su RUC, sigue el estado de tu verificación y decide qué
+            financiadores pueden ver tu información. Gratis para empresas.
           </p>
           <div className={styles.heroActions}>
             <Link href="/onboarding?intent=business" className={styles.primaryButton}>
-              Explore the web MVP <Arrow />
+              Empezar con mi RUC <Arrow />
             </Link>
             <a href="#idea" className={styles.textLink}>
-              See how it works <span aria-hidden="true">↓</span>
+              Cómo funciona <span aria-hidden="true">↓</span>
             </a>
           </div>
           <p className={styles.heroTruth}>
-            Web MVP live <span>·</span> KYB sandbox <span>·</span> Soroban contracts awaiting
-            Testnet deployment
+            Versión de prueba <span>·</span> Verificación en modo sandbox <span>·</span> Verificar
+            tu empresa no garantiza financiamiento
           </p>
         </div>
         <HeroObject />
       </div>
       <div className={styles.heroBottom}>
-        <span>IDENTITY IS INFRASTRUCTURE</span>
-        <span>SCROLL TO FOLLOW THE RECORD</span>
+        <span>LA IDENTIDAD ES INFRAESTRUCTURA</span>
+        <span>DESLIZA PARA SEGUIR EL EXPEDIENTE</span>
         <span>01 / 06</span>
       </div>
     </section>
@@ -186,20 +186,21 @@ function Problem() {
   return (
     <section className={styles.problem} id="idea" aria-labelledby="problem-title">
       <div className={styles.sectionShell}>
-        <SectionIndex number="01 / THE PROBLEM">A record in fragments</SectionIndex>
+        <SectionIndex number="01 / EL PROBLEMA">Un expediente en pedazos</SectionIndex>
         <div className={styles.problemLayout}>
           <div className={styles.problemIntro} data-reveal>
             <h2 id="problem-title">
-              The work is real. <span>The record is scattered.</span>
+              El trabajo es real. <span>La información está dispersa.</span>
             </h2>
             <p>
-              A business can prove who it is, show what it has done, and repay what it owes. Those
-              signals often live in different places. A new funder has to start the story again.
+              Una empresa puede demostrar quién es, qué ha hecho y cómo ha pagado. Pero esa
+              información suele estar en lugares distintos, y cada nuevo financiador vuelve a pedir
+              los mismos documentos.
             </p>
           </div>
           <div
             className={styles.fragmentField}
-            aria-label="Three signals that form a business record"
+            aria-label="Tres señales que forman el expediente de una empresa"
           >
             {signals.map((signal, index) => (
               <div
@@ -207,7 +208,7 @@ function Problem() {
                 key={signal.number}
                 data-reveal
               >
-                <span>{signal.number} / SIGNAL</span>
+                <span>{signal.number} / SEÑAL</span>
                 <strong>{signal.title}</strong>
                 <small>{signal.detail}</small>
               </div>
@@ -216,8 +217,8 @@ function Problem() {
           </div>
         </div>
         <p className={styles.sectionEndnote}>
-          <span>THE GAP</span>
-          <span>Evidence exists. Continuity does not.</span>
+          <span>LA BRECHA</span>
+          <span>La evidencia existe. La continuidad, no.</span>
         </p>
       </div>
     </section>
@@ -228,46 +229,46 @@ function Passport() {
   return (
     <section className={styles.passportSection} id="passport" aria-labelledby="passport-title">
       <div className={styles.sectionShell}>
-        <SectionIndex number="02 / THE PRODUCT">One identity to carry forward</SectionIndex>
+        <SectionIndex number="02 / EL PRODUCTO">Una identidad que te acompaña</SectionIndex>
         <div className={styles.passportLayout}>
           <div className={styles.passportCopy} data-reveal>
             <h2 id="passport-title">
-              Meet the <span>Business Passport.</span>
+              Conoce el <span>Pasaporte de Empresa.</span>
             </h2>
             <p>
-              A reusable view of a business, designed around verification status and a credit
-              record. The business can shape how it presents itself. Evidence stays distinct from
-              presentation.
+              Un expediente reutilizable de tu empresa, con su estado de verificación y su
+              historial. Tú eliges cómo se ve; la evidencia y su origen se mantienen separados de la
+              presentación.
             </p>
             <div className={styles.passportPrinciples}>
               <div>
                 <span className={styles.principleNum}>A</span>
                 <div>
-                  <h3>Your identity</h3>
-                  <p>Business details and presentation travel together.</p>
+                  <h3>Tu identidad</h3>
+                  <p>Los datos de tu empresa y su presentación van juntos.</p>
                 </div>
               </div>
               <div>
                 <span className={styles.principleNum}>B</span>
                 <div>
-                  <h3>Verified standing</h3>
-                  <p>KYB status and repayment evidence have their own provenance.</p>
+                  <h3>Lo que está verificado</h3>
+                  <p>Cada dato verificado indicará quién lo revisó y cuándo.</p>
                 </div>
               </div>
             </div>
             <Link href="/onboarding?intent=business" className={styles.inlineLink}>
-              Explore the Business Passport <Arrow />
+              Ver cómo funciona el Pasaporte <Arrow />
             </Link>
           </div>
           <div className={styles.specimenWrap} data-reveal>
             <div className={styles.specimenShadow} aria-hidden="true" />
             <article
               className={styles.specimen}
-              aria-label="Illustrative Business Passport specimen"
+              aria-label="Muestra ilustrativa del Pasaporte de Empresa"
             >
               <div className={styles.specimenHead}>
                 <span>FONDEALO</span>
-                <span>BUSINESS PASSPORT / SPECIMEN</span>
+                <span>PASAPORTE DE EMPRESA / MUESTRA</span>
               </div>
               <div className={styles.specimenBody}>
                 <div className={styles.specimenIdentity}>
@@ -275,8 +276,8 @@ function Passport() {
                     <Image src="/orbital-badge.png" alt="" width={52} height={52} sizes="52px" />
                   </span>
                   <div>
-                    <span>PORTABLE BUSINESS IDENTITY</span>
-                    <strong>Your record, in context.</strong>
+                    <span>IDENTIDAD PORTABLE DE EMPRESA</span>
+                    <strong>Tu expediente, en contexto.</strong>
                   </div>
                 </div>
                 <dl>
@@ -289,13 +290,13 @@ function Passport() {
                 </dl>
               </div>
               <div className={styles.specimenFoot}>
-                <span>NO CUSTOMER DATA SHOWN</span>
-                <span>DESIGN SPECIMEN</span>
+                <span>SIN DATOS DE CLIENTES</span>
+                <span>MUESTRA DE DISEÑO</span>
               </div>
             </article>
             <p className={styles.specimenCaption}>
-              A visual specimen based on the product structure. No customer, score, or loan data is
-              represented.
+              Muestra visual basada en la estructura del producto. No representa datos de clientes,
+              puntajes ni préstamos.
             </p>
           </div>
         </div>
@@ -314,36 +315,36 @@ function Reputation() {
     >
       <div className={styles.reputationSticky}>
         <div className={styles.sectionShell}>
-          <SectionIndex number="03 / THE CONTINUITY">
-            Reputation is a history, not a headline
+          <SectionIndex number="03 / LA CONTINUIDAD">
+            La reputación es una historia, no un titular
           </SectionIndex>
           <div className={styles.reputationLayout}>
             <div className={styles.reputationCopy}>
               <h2 id="reputation-title">
-                Every verified step deserves <span>a place in the story.</span>
+                Cada paso verificado merece <span>un lugar en la historia.</span>
               </h2>
               <p>
-                Fondealo&apos;s reputation model connects identity, activity, and repayment events.
-                The contract logic is implemented and tested; the continuous production update flow
-                is still being built.
+                El modelo de reputación de Fondealo conecta identidad, actividad y pagos. La lógica
+                de los contratos está implementada y probada; la actualización continua en
+                producción todavía está en construcción.
               </p>
               <p className={styles.reputationQualifier}>
-                Illustration of the product vision · not live account data
+                Ilustración de la visión del producto · no son datos reales de cuentas
               </p>
             </div>
             <div className={styles.sequenceScene} aria-hidden="true">
               <div className={styles.sequenceRing} />
               <div className={styles.sequenceSignal} data-sequence-signal="0">
-                <span>01</span> IDENTITY
+                <span>01</span> IDENTIDAD
               </div>
               <div className={styles.sequenceSignal} data-sequence-signal="1">
-                <span>02</span> ACTIVITY
+                <span>02</span> ACTIVIDAD
               </div>
               <div className={styles.sequenceSignal} data-sequence-signal="2">
-                <span>03</span> REPAYMENT
+                <span>03</span> PAGOS
               </div>
               <div className={styles.sequenceCard} data-sequence-card>
-                <div className={styles.sequenceCardHead}>BUSINESS PASSPORT</div>
+                <div className={styles.sequenceCardHead}>PASAPORTE DE EMPRESA</div>
                 <div className={styles.sequenceCardMark}>
                   <Image src="/orbital-badge.png" alt="" width={66} height={66} sizes="66px" />
                 </div>
@@ -352,7 +353,7 @@ function Reputation() {
                   <span />
                   <span />
                 </div>
-                <div className={styles.sequenceCardFoot}>ONE PORTABLE RECORD</div>
+                <div className={styles.sequenceCardFoot}>UN EXPEDIENTE PORTABLE</div>
               </div>
               <div className={styles.sequenceGround} />
             </div>
@@ -370,42 +371,47 @@ function Opportunity() {
   return (
     <section className={styles.opportunity} id="opportunity" aria-labelledby="opportunity-title">
       <div className={styles.sectionShell}>
-        <SectionIndex number="04 / THE PATH FORWARD">From identity to opportunity</SectionIndex>
+        <SectionIndex number="04 / EL CAMINO">De la identidad a la oportunidad</SectionIndex>
         <div className={styles.opportunityHeading} data-reveal>
-          <h2 id="opportunity-title">A clearer record can open a better conversation.</h2>
+          <h2 id="opportunity-title">Un expediente claro abre una mejor conversación.</h2>
           <p>
-            Businesses and funders see the same context, while ownership, authorization, and money
-            movement stay governed by the product&apos;s actual flows.
+            Tú decides qué financiador ve tu información. La decisión de financiarte siempre es del
+            financiador, nunca de Fondealo.
           </p>
         </div>
         <div className={styles.pathways}>
           <article className={styles.pathway} data-reveal>
             <div className={styles.pathwayTop}>
-              <span>01 / FOR BUSINESSES</span>
+              <span>01 / PARA EMPRESAS</span>
               <Arrow diagonal />
             </div>
-            <h3>Bring your business into focus.</h3>
+            <h3>Registra tu empresa una sola vez.</h3>
             <p>
-              Complete the sandbox verification journey, view your Passport, and explore the
-              opportunity flow.
+              Completa tu solicitud con tu RUC, revisa en qué estado está y conoce qué datos
+              guardamos y por qué.
             </p>
             <Link href="/onboarding?intent=business" className={styles.pathwayLink}>
-              Explore the business flow <Arrow />
+              Empezar mi solicitud <Arrow />
             </Link>
           </article>
           <article className={`${styles.pathway} ${styles.pathwayAlt}`} data-reveal>
             <div className={styles.pathwayTop}>
-              <span>02 / FOR FUNDERS</span>
+              <span>02 / PARA FINANCIADORES</span>
               <Arrow diagonal />
             </div>
-            <h3>Read the context behind an opportunity.</h3>
+            <h3>Recibe expedientes de empresas, con su permiso.</h3>
             <p>
-              Explore the investor experience. Funding and on-chain settlement remain subject to
-              Testnet readiness.
+              Estamos preparando un piloto con entidades autorizadas (factoring, cajas y fintechs).
+              Fondealo no ofrece inversiones ni retornos al público.
             </p>
-            <Link href="/onboarding?intent=invest" className={styles.pathwayLink}>
-              Explore the investor flow <Arrow />
-            </Link>
+            <a
+              href="https://github.com/adletgamer/Fondeal0"
+              target="_blank"
+              rel="noreferrer"
+              className={styles.pathwayLink}
+            >
+              Ver el proyecto <Arrow diagonal />
+            </a>
           </article>
         </div>
       </div>
@@ -417,62 +423,64 @@ function Status() {
   return (
     <section className={styles.status} id="status" aria-labelledby="status-title">
       <div className={styles.sectionShell}>
-        <SectionIndex number="05 / PRODUCT TRUTH">Built in the open</SectionIndex>
+        <SectionIndex number="05 / LO QUE FUNCIONA HOY">Construido a la vista</SectionIndex>
         <div className={styles.statusIntro} data-reveal>
-          <h2 id="status-title">Know what runs today.</h2>
+          <h2 id="status-title">Lo que funciona hoy.</h2>
           <p>
-            Fondealo is an evolving dApp. The web experience is available now; contract deployment
-            and end-to-end reputation updates are separate milestones.
+            Fondealo está en desarrollo. La experiencia web ya está disponible; el despliegue de
+            contratos y la actualización de reputación de punta a punta son etapas separadas.
           </p>
         </div>
         <div className={styles.statusTableWrap} data-reveal>
           <table className={styles.statusTable}>
-            <caption>Current capability status</caption>
+            <caption>Estado actual de cada parte</caption>
             <thead>
               <tr>
-                <th scope="col">Capability</th>
-                <th scope="col">Environment</th>
-                <th scope="col">Current state</th>
+                <th scope="col">Parte</th>
+                <th scope="col">Entorno</th>
+                <th scope="col">Estado actual</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <th scope="row">Web app and onboarding</th>
+                <th scope="row">App web y registro</th>
                 <td>Vercel</td>
                 <td>
-                  <span className={styles.statusLive}>Live MVP</span>
+                  <span className={styles.statusLive}>MVP en línea</span>
                 </td>
               </tr>
               <tr>
-                <th scope="row">Business verification</th>
-                <td>Web app</td>
+                <th scope="row">Verificación de empresas</th>
+                <td>App web</td>
                 <td>
-                  <span className={styles.statusSandbox}>KYB sandbox</span>
+                  <span className={styles.statusSandbox}>KYB en modo sandbox</span>
                 </td>
               </tr>
               <tr>
-                <th scope="row">Passport, score, and escrow contracts</th>
+                <th scope="row">Contratos de pasaporte, puntaje y escrow</th>
                 <td>Soroban</td>
                 <td>
                   <span className={styles.statusPending}>
-                    Implemented; Testnet deployment pending
+                    Implementados; despliegue en Testnet pendiente
                   </span>
                 </td>
               </tr>
               <tr>
-                <th scope="row">Score update after repayment</th>
-                <td>End-to-end flow</td>
+                <th scope="row">Actualización de puntaje tras un pago</th>
+                <td>Flujo completo</td>
                 <td>
-                  <span className={styles.statusPlanned}>In progress</span>
+                  <span className={styles.statusPlanned}>En progreso</span>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
         <p className={styles.statusSource}>
-          Status follows the repository&apos;s{' '}
-          <a href="https://github.com/adletgamer/Fondeal0#deployments">deployment record</a>. No
-          live contract address or production return is implied.
+          El estado sigue el{' '}
+          <a href="https://github.com/adletgamer/Fondeal0#deployments">
+            registro de despliegues del repositorio
+          </a>
+          . No implica ningún contrato en producción ni rentabilidad.
         </p>
       </div>
     </section>
@@ -483,26 +491,29 @@ function Closing() {
   return (
     <footer className={styles.closing}>
       <div className={styles.sectionShell}>
-        <SectionIndex number="06 / THE NEXT CHAPTER">The future of business credit</SectionIndex>
+        <SectionIndex number="06 / EL SIGUIENTE CAPÍTULO">
+          El futuro del crédito empresarial
+        </SectionIndex>
         <div className={styles.closingMain} data-reveal>
-          <h2>Good work should leave a record that can move forward.</h2>
+          <h2>El buen trabajo debería dejar un historial que avance contigo.</h2>
           <div className={styles.closingAside}>
             <p>
-              Start with the web MVP. See the Passport. Follow the infrastructure as it comes
-              online.
+              Registra tu empresa, sigue tu verificación y decide quién puede ver tu información.
             </p>
             <Link href="/onboarding?intent=business" className={styles.primaryButton}>
-              Explore Fondealo <Arrow />
+              Empezar con mi RUC <Arrow />
             </Link>
           </div>
         </div>
         <div className={styles.closingBottom}>
-          <Link href="/" aria-label="Fondealo home" className={styles.footerLogo}>
+          <Link href="/" aria-label="Fondealo, inicio" className={styles.footerLogo}>
             <Logo />
           </Link>
-          <span>Credit identity for Latin American businesses, built on Stellar.</span>
+          <span>
+            Identidad crediticia para empresas de Latinoamérica, construida sobre Stellar.
+          </span>
           <a href="https://github.com/adletgamer/Fondeal0" target="_blank" rel="noreferrer">
-            View the source <Arrow diagonal />
+            Ver el código <Arrow diagonal />
           </a>
         </div>
       </div>
@@ -515,7 +526,7 @@ export default function Home() {
     <div className={styles.site} data-marketing-root>
       <div className={styles.scrollProgress} aria-hidden="true" data-scroll-progress />
       <a className={styles.skipLink} href="#main">
-        Skip to content
+        Saltar al contenido
       </a>
       <MarketingHeader />
       <main id="main" tabIndex={-1}>

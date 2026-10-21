@@ -32,9 +32,9 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
-const title = 'Fondealo — Portable credit infrastructure for Latin American businesses';
+const title = 'Fondealo — Verifica tu empresa una vez y compártela con quien te financia';
 const description =
-  'A reusable Business Passport and a portable, on-chain credit reputation that grows with every repayment. Credit infrastructure for Latin American businesses, built on Stellar, Soroban and USDC.';
+  'Un expediente reutilizable para MYPEs del Perú: registra tu empresa con su RUC, sigue tu verificación y decide qué financiadores pueden ver tu información. Construido sobre Stellar.';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://fondealo.vercel.app'),
@@ -44,17 +44,18 @@ export const metadata: Metadata = {
     'Stellar',
     'Soroban',
     'USDC',
-    'SME credit',
-    'Latin America',
-    'on-chain reputation',
-    'DeFi',
-    'Business Passport',
+    'MYPE',
+    'Perú',
+    'financiamiento para empresas',
+    'verificación de empresas',
+    'Pasaporte de Empresa',
   ],
   openGraph: {
     title,
     description,
     url: 'https://fondealo.vercel.app',
     siteName: 'Fondealo',
+    locale: 'es_PE',
     type: 'website',
   },
   twitter: { card: 'summary_large_image', title, description },
@@ -69,7 +70,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     // Night is the default theme; the init script swaps in a saved choice
     // before first paint, hence suppressHydrationWarning on <html>.
     <html
-      lang="en"
+      lang="es-PE"
       data-theme="dark"
       suppressHydrationWarning
       className={`${instrumentSans.variable} ${spaceGrotesk.variable} ${fraunces.variable} ${jetbrainsMono.variable}`}
