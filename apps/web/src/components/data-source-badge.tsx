@@ -2,9 +2,9 @@ import { Badge } from '@fondealo/ui';
 import type { DataSource } from '@/lib/data/opportunities';
 
 const LABEL: Record<DataSource, string> = {
-  chain: 'Live — Testnet',
-  database: 'Live — Phase 6 backend',
-  demo: 'Demo data',
+  chain: 'En vivo — Testnet',
+  database: 'Datos de prueba guardados',
+  demo: 'Datos de demostración',
 };
 
 const VARIANT: Record<DataSource, 'brand' | 'gold' | 'neutral'> = {

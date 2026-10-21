@@ -80,12 +80,23 @@ describe('onboarding role', () => {
   it('uses a conditional write and preserves the role that won a concurrent request', async () => {
     state.session = { privyUserId: 'user', stellarAddress: 'GBUSINESS', role: null };
     state.updateMany.mockResolvedValue({ count: 0 });
-    state.findUnique.mockResolvedValue({ role: 'Business' });
-    await expect(chooseRole('Investor')).rejects.toThrow('REDIRECT:/business');
+    state.findUnique.mockResolvedValue({ role: 'Investor' });
+    await expect(chooseRole('Business')).rejects.toThrow('REDIRECT:/invest');
     expect(state.updateMany).toHaveBeenCalledWith({
       where: { privyUserId: 'user', role: null },
-      data: { role: 'Investor' },
+      data: { role: 'Business' },
     });
+  });
+
+  it('refuses new investor sign-ups unless the Testnet demo flag is on', async () => {
+    state.session = { privyUserId: 'user', stellarAddress: 'GNEW', role: null };
+    expect(await chooseRole('Investor')).toHaveProperty('error');
+    expect(state.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('keeps existing investor accounts reachable', async () => {
+    state.session = { privyUserId: 'user', stellarAddress: 'GINVESTOR', role: 'Investor' };
+    await expect(chooseRole('Investor')).rejects.toThrow('REDIRECT:/invest');
   });
 
   it('does not permit a user to replace an established role', async () => {

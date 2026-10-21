@@ -4,10 +4,10 @@ import { ThemeToggle } from './theme-toggle';
 import styles from './navbar.module.css';
 
 const NAV_LINKS = [
-  ['/#idea', 'The idea'],
-  ['/#passport', 'Passport'],
-  ['/#reputation', 'Reputation'],
-  ['/#status', 'Status'],
+  ['/#idea', 'La idea'],
+  ['/#passport', 'Pasaporte'],
+  ['/#reputation', 'Reputación'],
+  ['/#status', 'Estado'],
 ] as const;
 
 /** Public navigation for onboarding and reference pages; the landing has its own editorial header. */
@@ -15,10 +15,10 @@ export function Navbar() {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <Link href="/" aria-label="Fondealo home" className={styles.brand}>
+        <Link href="/" aria-label="Fondealo, inicio" className={styles.brand}>
           <Logo priority />
         </Link>
-        <nav aria-label="Explore Fondealo" className={styles.desktopNav}>
+        <nav aria-label="Explorar Fondealo" className={styles.desktopNav}>
           {NAV_LINKS.map(([href, label]) => (
             <Link key={href} href={href} className={styles.link}>
               {label}
@@ -30,10 +30,10 @@ export function Navbar() {
             <ThemeToggle />
           </span>
           <details className={styles.mobileMenu}>
-            <summary aria-label="Open public navigation" className={styles.menuTrigger}>
+            <summary aria-label="Abrir navegación" className={styles.menuTrigger}>
               <span aria-hidden="true">☰</span>
             </summary>
-            <nav aria-label="Explore Fondealo on mobile" className={styles.mobileNav}>
+            <nav aria-label="Explorar Fondealo en móvil" className={styles.mobileNav}>
               {NAV_LINKS.map(([href, label]) => (
                 <Link key={href} href={href} className={styles.link}>
                   {label}

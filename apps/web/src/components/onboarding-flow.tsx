@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, Container } from '@fondealo/ui';
 import { useStellarWallet, type StellarWalletState } from '@/hooks/use-stellar-wallet';
 import { chooseRole } from '@/lib/actions/onboarding';
+import { INVESTOR_SIGNUP_ENABLED } from '@/lib/features';
 import { ArrowRight, Building, Landmark, ShieldCheck, Sparkle } from './icons';
 
 const PRIVY_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_PRIVY_APP_ID);
@@ -47,14 +48,14 @@ export function OnboardingFlow({
       <Shell>
         <Card className="mx-auto max-w-lg border-white/10 bg-white/5 p-8 text-center backdrop-blur">
           <h1 className="font-display text-xl font-bold text-white">
-            Sign-in is unavailable in this preview
+            El inicio de sesión no está disponible en esta vista previa
           </h1>
           <p className="mt-2 text-sm text-slate-300">
-            Account creation and login need a configured Privy app and database. This local preview
-            does not have a safe test environment connected yet.
+            Crear cuentas e iniciar sesión requiere una app de Privy y una base de datos
+            configuradas. Esta vista previa local aún no tiene un entorno de prueba seguro.
           </p>
           <Button variant="ghost-light" className="mt-6" onClick={() => router.push('/')}>
-            Go back
+            Volver
           </Button>
         </Card>
       </Shell>
@@ -83,7 +84,8 @@ function ConnectedOnboarding({
 }) {
   const wallet = useStellarWallet();
   const searchParams = useSearchParams();
-  const intent = searchParams.get('intent') === 'invest' ? 'Investor' : 'Business';
+  const intent =
+    INVESTOR_SIGNUP_ENABLED && searchParams.get('intent') === 'invest' ? 'Investor' : 'Business';
   return (
     <OnboardingContent
       wallet={wallet}
@@ -140,17 +142,22 @@ function OnboardingContent({
           <span className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-brand-500/15 text-brand-400">
             <Sparkle width={24} height={24} />
           </span>
-          <h1 className="font-display text-2xl font-bold text-white">Get started with Fondealo</h1>
+          <h1 className="font-display text-2xl font-bold text-white">
+            Verifica tu empresa una vez
+          </h1>
           <p className="mt-2 text-sm text-slate-300">
-            One login creates a real Stellar wallet for you — no seed phrase, no extension. It takes
-            about ten seconds.
+            Entra con tu correo. Después registras tu empresa con su RUC y decides quién puede ver
+            tu información. No necesitas billetera, extensión ni frase semilla.
           </p>
           <Button onClick={login} size="lg" className="mt-6 w-full">
-            Log in &amp; create my wallet
+            Entrar con mi correo
           </Button>
-          <div className="mt-5 flex items-center justify-center gap-2 text-xs text-slate-400">
+          <p className="mt-4 text-xs text-slate-400">
+            Gratis para empresas. Verificar tu empresa no garantiza financiamiento.
+          </p>
+          <div className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-400">
             <ShieldCheck width={14} height={14} />
-            Powered by Privy · Stellar Testnet
+            Acceso con Privy · entorno de prueba (Stellar Testnet)
           </div>
         </Card>
       </Shell>
@@ -162,9 +169,9 @@ function OnboardingContent({
       <Shell>
         <div className="mx-auto max-w-lg text-center">
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-brand-400" />
-          <p className="text-sm font-medium text-slate-200">Setting up your Stellar wallet…</p>
+          <p className="text-sm font-medium text-slate-200">Preparando tu cuenta…</p>
           {walletError ? (
-            <p className="mt-2 text-xs text-red-400">{walletError} Try refreshing the page.</p>
+            <p className="mt-2 text-xs text-red-400">{walletError} Intenta recargar la página.</p>
           ) : null}
         </div>
       </Shell>
@@ -175,13 +182,15 @@ function OnboardingContent({
     return (
       <Shell>
         <Card className="mx-auto max-w-lg border-white/10 bg-white/5 p-8 text-center backdrop-blur">
-          <h1 className="font-display text-xl font-bold text-white">Account setup is paused</h1>
+          <h1 className="font-display text-xl font-bold text-white">
+            No pudimos terminar de crear tu cuenta
+          </h1>
           <p className="mt-2 text-sm text-slate-300">
-            Your login succeeded, but we could not finish setting up your account right now. Your
-            role has not been saved. Please try again shortly.
+            Entraste correctamente, pero no pudimos completar la configuración de tu cuenta en este
+            momento. Todavía no guardamos tu tipo de cuenta. Inténtalo de nuevo en unos minutos.
           </p>
           <Button variant="ghost-light" className="mt-6" onClick={() => router.refresh()}>
-            Try again
+            Intentar de nuevo
           </Button>
         </Card>
       </Shell>
@@ -193,13 +202,12 @@ function OnboardingContent({
       <Shell>
         <div className="mx-auto max-w-lg text-center" aria-live="polite">
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-brand-400 motion-reduce:animate-none" />
-          <h1 className="font-display text-xl font-semibold text-white">Verifying your account</h1>
+          <h1 className="font-display text-xl font-semibold text-white">Confirmando tu cuenta</h1>
           <p className="mt-2 text-sm text-slate-300">
-            Your Stellar wallet is ready. We are confirming your secure session before you choose a
-            role.
+            Estamos confirmando tu sesión segura antes de que elijas tu tipo de cuenta.
           </p>
           <Button variant="ghost-light" className="mt-6" onClick={() => router.refresh()}>
-            Check again
+            Revisar de nuevo
           </Button>
         </div>
       </Shell>
@@ -214,31 +222,40 @@ function OnboardingContent({
     });
   }
 
+  const roleLabel = { Business: 'empresa', Investor: 'inversionista de prueba' } as const;
   const cards = [
     {
       role: 'Business' as const,
       icon: Building,
-      title: 'I am a Business',
-      body: 'Get your Passport, request USDC financing, and build a portable credit reputation.',
+      title: 'Soy una empresa',
+      body: 'Registra tu empresa, sigue el estado de tu verificación y decide con quién compartir tu información.',
     },
-    {
-      role: 'Investor' as const,
-      icon: Landmark,
-      title: 'I am an Investor',
-      body: 'Fund vetted SMEs scored by on-chain reputation and earn USDC returns.',
-    },
+    // Testnet demo only: no returns are offered and no real money moves.
+    ...(INVESTOR_SIGNUP_ENABLED
+      ? [
+          {
+            role: 'Investor' as const,
+            icon: Landmark,
+            title: 'Cuenta de prueba de inversionista',
+            body: 'Solo para demostraciones en Testnet, con saldo de prueba. No es una oferta de inversión.',
+          },
+        ]
+      : []),
   ];
 
   return (
     <Shell>
       <div className="mx-auto max-w-2xl text-center">
-        <h1 className="font-display text-3xl font-bold text-white">One more step</h1>
+        <h1 className="font-display text-3xl font-bold text-white">Un paso más</h1>
         <p className="mt-2 text-slate-300">
-          How do you want to use Fondealo? This decides which dashboard you land on — you can&apos;t
-          switch later, so pick the one that matches you.
+          {cards.length > 1
+            ? 'Elige el tipo de cuenta. No podrás cambiarlo después.'
+            : 'Confirma que usarás Fondealo como empresa. No podrás cambiarlo después.'}
         </p>
       </div>
-      <div className="mx-auto mt-10 grid max-w-2xl gap-5 sm:grid-cols-2">
+      <div
+        className={`mx-auto mt-10 grid gap-5 ${cards.length > 1 ? 'max-w-2xl sm:grid-cols-2' : 'max-w-md'}`}
+      >
         {cards
           .slice()
           .sort((a, b) => (a.role === intent ? -1 : b.role === intent ? 1 : 0))
@@ -260,7 +277,7 @@ function OnboardingContent({
               <h2 className="mt-4 text-lg font-semibold text-white">{c.title}</h2>
               <p className="mt-1.5 text-sm text-slate-300">{c.body}</p>
               <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-400">
-                {selectedRole === c.role ? 'Selected' : 'Select role'}
+                {selectedRole === c.role ? 'Seleccionado' : 'Seleccionar'}
                 <ArrowRight width={16} height={16} />
               </span>
             </button>
@@ -273,13 +290,13 @@ function OnboardingContent({
           onClick={() => selectedRole && pick(selectedRole)}
         >
           {isPending
-            ? 'Saving your role…'
+            ? 'Guardando…'
             : selectedRole
-              ? `Continue as ${selectedRole}`
-              : 'Choose a role to continue'}
+              ? `Continuar como ${roleLabel[selectedRole]}`
+              : 'Elige una opción para continuar'}
         </Button>
         <p className="mt-3 text-xs text-slate-400">
-          Your role cannot be changed after confirmation.
+          El tipo de cuenta no se puede cambiar después de confirmarlo.
         </p>
       </div>
       {roleError ? (

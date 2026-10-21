@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { prisma } from '@fondealo/database';
 import { describeError, getSession } from '@/lib/auth/session';
+import { INVESTOR_SIGNUP_ENABLED } from '@/lib/features';
 
 const SECTION_FOR_ROLE = { Business: '/business', Investor: '/invest' } as const;
 
@@ -24,16 +25,21 @@ export type ChooseRoleResult = { error: string } | void;
  */
 export async function chooseRole(role: 'Business' | 'Investor'): Promise<ChooseRoleResult> {
   if (role !== 'Business' && role !== 'Investor') {
-    return { error: 'Invalid role.' };
+    return { error: 'Tipo de cuenta no válido.' };
   }
 
   const session = await getSession();
   if (!session) {
-    return { error: 'Your session expired. Refresh the page and log in again.' };
+    return { error: 'Tu sesión expiró. Recarga la página e inicia sesión de nuevo.' };
   }
 
   if (session.role) {
     redirect(SECTION_FOR_ROLE[session.role]);
+  }
+
+  // Existing Investor accounts are redirected above; only new ones are refused.
+  if (role === 'Investor' && !INVESTOR_SIGNUP_ENABLED) {
+    return { error: 'Por ahora Fondealo solo acepta cuentas de empresa.' };
   }
 
   if (!session.stellarAddress) {
@@ -43,7 +49,7 @@ export async function chooseRole(role: 'Business' | 'Investor'): Promise<ChooseR
     // refreshUser() is meant to prevent, kept as a clear message rather
     // than a silent bounce in case it still happens.
     return {
-      error: 'Your wallet is still finishing setup. Wait a few seconds and try again.',
+      error: 'Tu cuenta aún se está configurando. Espera unos segundos e inténtalo de nuevo.',
     };
   }
 
@@ -60,7 +66,7 @@ export async function chooseRole(role: 'Business' | 'Investor'): Promise<ChooseR
     updatedCount = result.count;
   } catch (err) {
     console.error('[chooseRole] could not persist role:', describeError(err));
-    return { error: "Couldn't save your role — the database may be unreachable. Try again." };
+    return { error: 'No pudimos guardar tu tipo de cuenta. Inténtalo de nuevo.' };
   }
 
   if (updatedCount === 0) {
@@ -70,7 +76,9 @@ export async function chooseRole(role: 'Business' | 'Investor'): Promise<ChooseR
       where: { privyUserId: session.privyUserId },
     });
     if (fresh?.role) redirect(SECTION_FOR_ROLE[fresh.role]);
-    return { error: "Couldn't save your role. Refresh the page and try again." };
+    return {
+      error: 'No pudimos guardar tu tipo de cuenta. Recarga la página e inténtalo de nuevo.',
+    };
   }
 
   redirect(SECTION_FOR_ROLE[role]);
