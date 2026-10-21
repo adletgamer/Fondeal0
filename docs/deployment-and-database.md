@@ -123,6 +123,41 @@ Development, so this PR did not apply the migration. Code that calls
 `joinWaitlist` must not reach Production before the migration does. The action
 reads the optional server secret `WAITLIST_IP_SECRET`.
 
+### Production migration and deploy record (2026-10-21)
+
+Approved by the product owner on 2026-10-21.
+
+- **Target verified first.** Production's `DATABASE_URL` / `DATABASE_URL_UNPOOLED`
+  were pulled from Vercel into a temporary file (never printed) and compared by
+  hashed endpoint id: Production uses a different Neon endpoint from
+  `fondealo-development`. A guard aborted any run whose host matched the
+  development endpoint. The temporary file was deleted afterwards.
+- **State found.** The Production deployment created ~22 minutes earlier was
+  already serving the code from PR #17 (Spanish landing), while the database
+  had only `init`, `kyb_and_ledger` and `passport_theme` applied, so KYB-backed
+  pages could fail on missing tables and columns. `/api/health` still passed
+  because it only runs `SELECT 1`.
+- **Preflight (read-only, counts only):** none of the pending tables or columns
+  existed; duplicate `Processing` KYB per business: 0; partially funded `Open`
+  opportunities: 0; 1 business, 1 KYB submission, 3 wallets, 0 opportunities.
+- **Point-in-time reference before migrating:** `2026-10-21T04:15:22Z` (for a
+  Neon restore if needed).
+- **Applied with `prisma migrate deploy`:** `20261011000000_underwriting_decisions`,
+  `20261012000000_kyb_evidence_intake`, `20261020000000_waitlist_entry`.
+- **Verified:** `migrate status` up to date; `migrate diff` live database vs
+  `schema.prisma` reports no difference; `WaitlistEntry` insert and unique
+  email work inside a rolled-back transaction (0 rows left).
+- **Deployed** a clean `git archive` of `main` at `e76b008` with
+  `vercel deploy --prod` (no untracked local files). Aliased to
+  `www.fondealo.xyz`. Smoke test: `/api/health` 200 with `db: up`, `/` serves
+  `lang="es-PE"`, `/onboarding` 200, `/business`, `/business/datos`,
+  `/business/verify` and `/invest` redirect to `/onboarding` without a session;
+  no errors in the deployment log at check time.
+- **Follow-ups:** `WAITLIST_IP_SECRET` is not set in Production (no waitlist
+  rate limit until it is); Preview still has no `DATABASE_URL`; production
+  deployments are created from the CLI, so a deployment's source commit is not
+  recorded by Vercel. Note the commit in this runbook for each release.
+
 ## Health check
 
 `GET /api/health` runs `SELECT 1` through Prisma and returns `{ ok, db, ms }`
