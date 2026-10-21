@@ -115,13 +115,34 @@ partially funded opportunities and agree a ledger-reconciled disposition before
 any wider rollout.
 
 The waitlist PR adds `20261020000000_waitlist_entry`: two new enums and one
-new `WaitlistEntry` table, with no change to existing tables or rows. It must be
-applied after the two migrations above, only on a database proven to be the
-isolated Development branch. The repo-root `.env` and `apps/web/.env.local`
-currently point at a Neon database named `neondb`; that is **not** proof of
-Development, so this PR did not apply the migration. Code that calls
-`joinWaitlist` must not reach Production before the migration does. The action
-reads the optional server secret `WAITLIST_IP_SECRET`.
+new `WaitlistEntry` table, with no change to existing tables or rows. The action
+reads the optional server secret `WAITLIST_IP_SECRET`. Code that calls
+`joinWaitlist` must not reach Production before this migration does.
+
+### Development migration record (2026-10-20)
+
+- **Target verified first.** The repo-root `.env`, `apps/web/.env.local` and
+  Vercel's Development environment all point at the Neon project
+  `fondealo-development` (database `neondb`). Vercel Production uses a
+  different endpoint. Vercel Preview has **no** `DATABASE_URL`, so Preview
+  deployments cannot reach a database. Checked by comparing hashed endpoint
+  ids; no connection string was printed or stored.
+- **Preflight (read-only, counts only):** migrations applied before this run
+  were `init`, `kyb_and_ledger` and `passport_theme`. None of the tables or
+  columns from the pending migrations existed. Duplicate `Processing` KYB per
+  business: 0. Partially funded `Open` opportunities: 0. All business, KYB,
+  wallet and opportunity tables were empty.
+- **Applied with `prisma migrate deploy`:** `20261011000000_underwriting_decisions`,
+  `20261012000000_kyb_evidence_intake` and `20261020000000_waitlist_entry`.
+- **Verified:** `migrate status` reports up to date; `migrate diff` between the
+  live database and `schema.prisma` reports no difference; a `WaitlistEntry`
+  insert and the unique-email constraint work inside a rolled-back
+  transaction (0 rows left).
+- **Production was not touched.** Its migration state is still unverified and
+  needs its own target check, preflight and explicit approval.
+- **Connectivity note:** with Proton VPN connected, TCP to Neon on 5432 opens
+  but the Postgres protocol never answers (Prisma reports P1001). Disconnect
+  the VPN, or exclude the terminal from its tunnel, before running Prisma.
 
 ## Health check
 
