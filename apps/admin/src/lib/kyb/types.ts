@@ -4,7 +4,10 @@ export type CaseStatus =
 
 export type DecisionKind = 'Claim' | 'RequestInformation' | 'Approve' | 'Reject' | 'Reopen';
 
-export type StaffRole = 'Reviewer' | 'Approver';
+/** A person may hold several roles; the database decides which (docs/adr/0011). */
+export type StaffRole = 'Reviewer' | 'Approver' | 'Admin';
+
+export type StaffStatus = 'Active' | 'Suspended' | 'Revoked';
 
 /** Where a checked fact came from. Only the first three can confirm a policy item. */
 export type EvidenceSource =
@@ -22,7 +25,16 @@ export interface ChecklistAnswer {
   note: string;
 }
 
-export interface Reviewer {
+/** Who acts. Identity comes from the verified session, roles from `StaffMember`. */
+export interface Actor {
   id: string;
-  role: StaffRole;
+  roles: readonly StaffRole[];
+  status: StaffStatus;
 }
+
+/**
+ * Maker-checker for approvals and rejections. `solo` lets the person who
+ * prepared a case also decide it; it exists for a single operator on Testnet
+ * and is never available in production.
+ */
+export type SeparationMode = 'enforced' | 'solo';

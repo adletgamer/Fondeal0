@@ -3,8 +3,8 @@ import { validateDecision, type DecisionInput } from './decision';
 import { REQUIRED_ITEM_IDS } from './policy';
 import type { ChecklistAnswer, EvidenceSource } from './types';
 
-const approver = { id: 'a1', role: 'Approver' as const };
-const reviewer = { id: 'r1', role: 'Reviewer' as const };
+const approver = { id: 'a1', roles: ['Approver'] as const, status: 'Active' as const };
+const reviewer = { id: 'r1', roles: ['Reviewer'] as const, status: 'Active' as const };
 const NOTE = 'Consulté la ficha RUC en el portal tributario el 22/10.';
 
 const confirmed = (source: EvidenceSource, note = NOTE): ChecklistAnswer[] =>
@@ -13,7 +13,9 @@ const confirmed = (source: EvidenceSource, note = NOTE): ChecklistAnswer[] =>
 const base = (over: Partial<DecisionInput>): DecisionInput => ({
   kind: 'Approve',
   from: 'InReview',
-  reviewer: approver,
+  actor: approver,
+  preparedBy: 'r1',
+  separation: 'enforced',
   checklist: confirmed('official-registry'),
   reasonCodes: [],
   note: '',
@@ -74,9 +76,10 @@ describe('approving', () => {
   });
 
   it('only an Approver may approve or reject', () => {
-    expect(validateDecision(base({ reviewer })).ok).toBe(false);
+    expect(validateDecision(base({ actor: reviewer })).ok).toBe(false);
     expect(
-      validateDecision(base({ kind: 'Reject', reviewer, reasonCodes: ['TAX_ID_INACTIVE'] })).ok,
+      validateDecision(base({ kind: 'Reject', actor: reviewer, reasonCodes: ['TAX_ID_INACTIVE'] }))
+        .ok,
     ).toBe(false);
   });
 
@@ -153,7 +156,8 @@ describe('asking for information and rejecting', () => {
 describe('claiming and reopening', () => {
   it('claim needs nothing else, but only on a received case', () => {
     expect(
-      validateDecision(base({ kind: 'Claim', from: 'Received', reviewer, checklist: [] })).ok,
+      validateDecision(base({ kind: 'Claim', from: 'Received', actor: reviewer, checklist: [] }))
+        .ok,
     ).toBe(true);
     expect(validateDecision(base({ kind: 'Claim', from: 'InReview' })).ok).toBe(false);
   });
@@ -165,5 +169,52 @@ describe('claiming and reopening', () => {
         base({ kind: 'Reopen', from: 'Rejected', note: 'La empresa envió el poder vigente.' }),
       ),
     ).toMatchObject({ ok: true, to: 'InReview' });
+  });
+});
+
+describe('roles and separation of duties', () => {
+  it('a suspended or revoked approver can do nothing', () => {
+    for (const status of ['Suspended', 'Revoked'] as const) {
+      expect(validateDecision(base({ actor: { ...approver, status } })).ok).toBe(false);
+      expect(
+        validateDecision(base({ kind: 'Claim', from: 'Received', actor: { ...reviewer, status } }))
+          .ok,
+      ).toBe(false);
+    }
+  });
+
+  it('an Admin alone cannot touch cases', () => {
+    const admin = { id: 'x', roles: ['Admin'] as const, status: 'Active' as const };
+    expect(validateDecision(base({ actor: admin })).ok).toBe(false);
+    expect(validateDecision(base({ kind: 'Claim', from: 'Received', actor: admin })).ok).toBe(
+      false,
+    );
+  });
+
+  it('whoever prepared the case cannot approve or reject it when enforced', () => {
+    const r = validateDecision(base({ preparedBy: approver.id }));
+    expect(r.ok).toBe(false);
+    expect(errors(r).join(' ')).toContain('otra persona');
+    expect(
+      validateDecision(
+        base({ kind: 'Reject', preparedBy: approver.id, reasonCodes: ['TAX_ID_INACTIVE'] }),
+      ).ok,
+    ).toBe(false);
+  });
+
+  it('allows the same person in solo mode', () => {
+    expect(validateDecision(base({ preparedBy: approver.id, separation: 'solo' })).ok).toBe(true);
+  });
+
+  it('separation does not block asking for information', () => {
+    expect(
+      validateDecision(
+        base({
+          kind: 'RequestInformation',
+          preparedBy: approver.id,
+          reasonCodes: ['MISSING_OWNERSHIP'],
+        }),
+      ).ok,
+    ).toBe(true);
   });
 });

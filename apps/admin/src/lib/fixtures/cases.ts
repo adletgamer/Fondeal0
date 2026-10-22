@@ -182,6 +182,7 @@ function build(seed: Seed, now: Date): CaseView {
     submittedAt,
     status: seed.status,
     assignedTo: seed.assignedTo,
+    preparedBy: seed.assignedTo ? 'preview-approver' : null,
     representative: { name: seed.rep[0], role: seed.rep[1], documentTail: seed.rep[2] },
     consentVersion: 'waitlist-2026-10',
     evidence,

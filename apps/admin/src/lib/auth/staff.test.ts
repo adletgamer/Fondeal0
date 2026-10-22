@@ -13,7 +13,11 @@ describe('staff session', () => {
   it('opens the preview in development without any setup', async () => {
     env({ NODE_ENV: 'development' });
     expect(previewEnabled()).toBe(true);
-    expect(await getStaffSession()).toMatchObject({ preview: true, role: 'Approver' });
+    expect(await getStaffSession()).toMatchObject({
+      preview: true,
+      roles: ['Approver'],
+      status: 'Active',
+    });
   });
 
   it('opens the preview on Vercel preview deployments', async () => {

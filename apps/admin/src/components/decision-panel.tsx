@@ -12,7 +12,8 @@ import type {
   ChecklistAnswer,
   DecisionKind,
   EvidenceSource,
-  Reviewer,
+  Actor,
+  SeparationMode,
 } from '@/lib/kyb/types';
 
 const ACTION_LABEL: Record<DecisionKind, string> = {
@@ -44,13 +45,17 @@ const blank = (): Record<string, ChecklistAnswer> =>
 export function DecisionPanel({
   legalName,
   status,
-  reviewer,
+  actor,
+  preparedBy,
+  separation,
   env,
   capabilities,
 }: {
   legalName: string;
   status: CaseStatus;
-  reviewer: Reviewer;
+  actor: Actor;
+  preparedBy: string | null;
+  separation: SeparationMode;
   env: AdminEnv;
   capabilities: { persistsDecisions: boolean; queuesPassportIssuance: boolean };
 }) {
@@ -72,14 +77,16 @@ export function DecisionPanel({
         ? validateDecision({
             kind,
             from: status,
-            reviewer,
+            actor,
+            preparedBy,
+            separation,
             checklist: Object.values(answers),
             reasonCodes: reasons,
             note,
             env,
           })
         : null,
-    [kind, status, reviewer, answers, reasons, note, env],
+    [kind, status, actor, preparedBy, separation, answers, reasons, note, env],
   );
 
   function go(next: Stage) {
@@ -124,6 +131,12 @@ export function DecisionPanel({
       <p className="mt-1 text-[13px] text-ink-muted">
         Estado actual: {STATUS_LABEL[status]} · Política {POLICY_VERSION}
       </p>
+      {separation === 'solo' && preparedBy === actor.id ? (
+        <p className="mt-3 rounded-xl bg-gold-soft p-3 text-[13px] text-gold-text">
+          Modo de un solo operador (Testnet): preparaste este caso y también puedes decidirlo. En
+          producción debe decidirlo otra persona.
+        </p>
+      ) : null}
 
       {stage === 'edit' ? (
         <div className="mt-5 space-y-6">

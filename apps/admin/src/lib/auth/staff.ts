@@ -1,11 +1,12 @@
 import { redirect } from 'next/navigation';
 import { adminEnv } from '../env';
-import type { StaffRole } from '../kyb/types';
+import type { StaffRole, StaffStatus } from '../kyb/types';
 
 export interface StaffSession {
   id: string;
   name: string;
-  role: StaffRole;
+  roles: readonly StaffRole[];
+  status: StaffStatus;
   /** True only for the fixture identity used to review the design. */
   preview: boolean;
 }
@@ -25,7 +26,8 @@ export function previewEnabled(): boolean {
 const PREVIEW_STAFF: StaffSession = {
   id: 'preview-approver',
   name: 'Vista previa',
-  role: 'Approver',
+  roles: ['Approver'],
+  status: 'Active',
   preview: true,
 };
 
