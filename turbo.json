@@ -16,7 +16,9 @@
     "WAITLIST_IP_SECRET",
     "PRIVY_APP_SECRET",
     "DATABASE_URL",
-    "DATABASE_URL_UNPOOLED"
+    "DATABASE_URL_UNPOOLED",
+    "ADMIN_ENV",
+    "ADMIN_PREVIEW_FIXTURES"
   ],
   "tasks": {
     "build": {

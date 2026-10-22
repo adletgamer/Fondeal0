@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme tokens (Night / Day) live in packages/ui/src/styles.css. The
+   back-office is Night only for now. */
+@layer base {
+  * {
+    border-color: rgb(var(--line));
+  }
+
+  body {
+    color: rgb(var(--ink));
+    background: rgb(var(--surface-0));
+    font-feature-settings: 'cv11', 'ss01';
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.01em;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--focus-ring));
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
