@@ -10,11 +10,11 @@ Someone has to approve KYB cases, and eventually something has to sign on-chain 
 
 Three privilege planes, each with its own surface and keys.
 
-| Plane | Does | Lives in | Never |
-| --- | --- | --- | --- |
-| **Contract admin** | Rotate roles, pause, transfer admin | Stellar multisig account (target 2 of 3), operated by CLI or hardware key | In any web app |
+| Plane                         | Does                                               | Lives in                                                                     | Never                                                |
+| ----------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------- |
+| **Contract admin**            | Rotate roles, pause, transfer admin                | Stellar multisig account (target 2 of 3), operated by CLI or hardware key    | In any web app                                       |
 | **Issuer and keeper signers** | `issue`, `freeze`, `revoke`; `default` after grace | A signing worker, one key per role and environment, secrets outside the repo | In the browser, the public app or the back-office UI |
-| **Back-office** | Review KYB cases, record decisions | `apps/admin`: its own app, deployment, domain and secrets | Linked from the public site; sharing cookies with it |
+| **Back-office**               | Review KYB cases, record decisions                 | `apps/admin`: its own app, deployment, domain and secrets                    | Linked from the public site; sharing cookies with it |
 
 `apps/admin` shares `@fondealo/database` and the design tokens with the public app and nothing else at runtime. Its only path to the chain is a queue of approved actions (below).
 
@@ -29,7 +29,7 @@ Three privilege planes, each with its own surface and keys.
 
 ## Staff access
 
-Allowlist table (`StaffMember`: identity, role, active), mandatory second factor, short sessions, re-authentication to approve, `__Host-` cookie, per-request nonce CSP, `no-store`, `noindex`, no framing. Every read of a full tax number and every decision writes a `VerificationAuditEvent`. Until staff authentication ships, access fails closed: no session means redirect to `/sign-in`, and the example-data preview cannot be enabled in a production build.
+Allowlist table (`StaffMember`: identity, role, active), mandatory second factor, short sessions, re-authentication to approve, `__Host-` cookie, per-request nonce CSP, `no-store`, `noindex`, no framing. Every read of a full tax number and every decision writes a `VerificationAuditEvent`. Until staff authentication ships, the example-data preview is the way in: it is on in local development, in Vercel preview deployments and wherever `ADMIN_ENV=testnet`, serves only fictional fixtures and stores nothing. On a production deployment it is off and access fails closed: no session means redirect to `/sign-in`. Increment 2 must keep the preview from ever reading real data.
 
 ## Approved decision to chain
 
@@ -37,13 +37,13 @@ An approval creates an `OnchainAction` row (kind, business, decision, idempotenc
 
 ## Increments
 
-| # | Scope | Exit evidence |
-| --- | --- | --- |
-| 1 | Design, case queue and detail, decision panel on example data, state machine, reason codes, fail-closed access, security headers. **Implemented.** | Unit tests for every decision rule, middleware and CSP; typecheck, lint, build |
-| 2 | Staff authentication and allowlist, additive migration (`StaffMember`, `KybDecision`), database-backed reader, masked tax ID with audited reveal | Migration applied to isolated Development; negative tests for unauthenticated and wrong-role access |
-| 3 | Persist decisions through server actions that re-run `validateDecision`; audit events; applicant-facing status updates | Decision history immutable; a rejected or stale input never changes state |
-| 4 | `OnchainAction` queue, signing worker, cooling-off, reconciliation and alerts | Testnet issue and revoke reconciled; killing the worker mid-flight leaves no duplicate or orphan |
-| 5 | Underwriting decision screen, expiry and review-due handling, second-approver option | Expired approval returns to review; financing gate unchanged |
+| #   | Scope                                                                                                                                              | Exit evidence                                                                                       |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 1   | Design, case queue and detail, decision panel on example data, state machine, reason codes, fail-closed access, security headers. **Implemented.** | Unit tests for every decision rule, middleware and CSP; typecheck, lint, build                      |
+| 2   | Staff authentication and allowlist, additive migration (`StaffMember`, `KybDecision`), database-backed reader, masked tax ID with audited reveal   | Migration applied to isolated Development; negative tests for unauthenticated and wrong-role access |
+| 3   | Persist decisions through server actions that re-run `validateDecision`; audit events; applicant-facing status updates                             | Decision history immutable; a rejected or stale input never changes state                           |
+| 4   | `OnchainAction` queue, signing worker, cooling-off, reconciliation and alerts                                                                      | Testnet issue and revoke reconciled; killing the worker mid-flight leaves no duplicate or orphan    |
+| 5   | Underwriting decision screen, expiry and review-due handling, second-approver option                                                               | Expired approval returns to review; financing gate unchanged                                        |
 
 ## Consequences
 

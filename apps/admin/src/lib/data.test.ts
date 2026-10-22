@@ -5,22 +5,22 @@ afterEach(() => vi.unstubAllEnvs());
 const now = new Date('2026-10-22T15:00:00Z');
 
 describe('case data', () => {
-  it('serves nothing unless preview mode is on', async () => {
+  it('serves nothing when preview mode is off', async () => {
     vi.stubEnv('NODE_ENV', 'development');
-    vi.stubEnv('ADMIN_PREVIEW_FIXTURES', '');
+    vi.stubEnv('ADMIN_PREVIEW_FIXTURES', '0');
     expect(await listCases(now)).toEqual([]);
     expect(await getCase('case-kallpa', now)).toBeNull();
   });
 
-  it('serves nothing in production even with the preview flag', async () => {
+  it('serves nothing on a production deployment, even with the old flag', async () => {
     vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('ADMIN_ENV', 'production');
     vi.stubEnv('ADMIN_PREVIEW_FIXTURES', '1');
     expect(await listCases(now)).toEqual([]);
   });
 
   it('lists the oldest case first in preview', async () => {
     vi.stubEnv('NODE_ENV', 'development');
-    vi.stubEnv('ADMIN_PREVIEW_FIXTURES', '1');
     const cases = await listCases(now);
     expect(cases.length).toBeGreaterThan(4);
     const times = cases.map((c) => c.submittedAt);
@@ -31,7 +31,6 @@ describe('case data', () => {
 
   it('example cases never carry a verified source that no human could have given', async () => {
     vi.stubEnv('NODE_ENV', 'development');
-    vi.stubEnv('ADMIN_PREVIEW_FIXTURES', '1');
     for (const c of await listCases(now)) {
       for (const e of c.evidence) {
         if (e.state === 'Verified')

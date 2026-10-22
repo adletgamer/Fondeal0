@@ -12,7 +12,7 @@ const req = (path: string, cookie?: string) =>
 
 describe('middleware', () => {
   it('sends a visitor without a session cookie to /sign-in', () => {
-    vi.stubEnv('ADMIN_PREVIEW_FIXTURES', '');
+    vi.stubEnv('ADMIN_PREVIEW_FIXTURES', '0');
     const res = middleware(req('/cases/anything'));
     expect(res.status).toBe(307);
     expect(new URL(res.headers.get('location')!).pathname).toBe('/sign-in');
@@ -23,13 +23,26 @@ describe('middleware', () => {
     expect(res.headers.get('location')).toBeNull();
   });
 
+  it('lets everyone in while the preview is on', () => {
+    vi.stubEnv('ADMIN_PREVIEW_FIXTURES', '');
+    vi.stubEnv('NODE_ENV', 'development');
+    expect(middleware(req('/cases/anything')).headers.get('location')).toBeNull();
+  });
+
+  it('keeps production closed to everyone without a cookie', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('ADMIN_ENV', 'production');
+    vi.stubEnv('ADMIN_PREVIEW_FIXTURES', '1');
+    expect(middleware(req('/')).status).toBe(307);
+  });
+
   it('lets a request with the cookie through (the page still verifies it)', () => {
     const res = middleware(req('/', 'x'));
     expect(res.headers.get('location')).toBeNull();
   });
 
   it('puts the security headers on every response, redirects included', () => {
-    vi.stubEnv('ADMIN_PREVIEW_FIXTURES', '');
+    vi.stubEnv('ADMIN_PREVIEW_FIXTURES', '0');
     for (const res of [middleware(req('/')), middleware(req('/sign-in'))]) {
       expect(res.headers.get('X-Frame-Options')).toBe('DENY');
       expect(res.headers.get('Content-Security-Policy')).toContain('nonce-');

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { adminEnv } from '../env';
 import type { StaffRole } from '../kyb/types';
 
 export interface StaffSession {
@@ -10,12 +11,15 @@ export interface StaffSession {
 }
 
 /**
- * Preview mode shows the screens with example data and a fixture identity so
- * the design and flow can be reviewed before staff authentication exists. It
- * cannot be switched on in a production build, whatever the variable says.
+ * Preview mode shows the screens with example data and a fixture identity, so
+ * the design and flow can be used before staff authentication exists. It is on
+ * wherever the environment is Testnet (local development, Vercel previews, or
+ * `ADMIN_ENV=testnet`) and off in production. `ADMIN_PREVIEW_FIXTURES=0`
+ * switches it off anywhere. It only ever serves the fictional fixtures.
  */
 export function previewEnabled(): boolean {
-  return process.env.ADMIN_PREVIEW_FIXTURES === '1' && process.env.NODE_ENV !== 'production';
+  if (process.env.ADMIN_PREVIEW_FIXTURES === '0') return false;
+  return adminEnv() === 'testnet';
 }
 
 const PREVIEW_STAFF: StaffSession = {
@@ -27,8 +31,8 @@ const PREVIEW_STAFF: StaffSession = {
 
 /**
  * Fail-closed identity lookup. Until staff authentication ships (docs/adr/0011,
- * increment 2) the only way in is preview mode in development; everywhere else
- * this returns `null` and every page redirects to /sign-in.
+ * increment 2) the only way in is preview mode; where it is off, this returns
+ * `null` and every page redirects to /sign-in.
  */
 export async function getStaffSession(): Promise<StaffSession | null> {
   if (previewEnabled()) return PREVIEW_STAFF;

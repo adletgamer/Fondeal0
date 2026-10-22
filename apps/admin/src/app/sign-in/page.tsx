@@ -5,8 +5,9 @@ import { CAPABILITIES } from '@/lib/env';
 export const dynamic = 'force-dynamic';
 
 /**
- * There is deliberately no form yet: a login screen that cannot log anyone in
- * is worse than none. Staff authentication arrives in the next increment.
+ * In preview this redirects straight in. Where preview is off there is
+ * deliberately no form yet: a login screen that cannot log anyone in is worse
+ * than none. Staff authentication arrives in the next increment.
  */
 export default async function SignInPage() {
   if (await getStaffSession()) redirect('/');
