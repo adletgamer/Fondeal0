@@ -89,32 +89,6 @@ export function LandingHeader({ locale }: { locale: Locale }) {
   );
 }
 
-/** Glyphs for the three ideas every visual is derived from (identity.md §9). */
-function ConceptGlyph({ kind }: { kind: 'signal' | 'passport' | 'network' }) {
-  return (
-    <svg aria-hidden viewBox="0 0 20 20" width="20" height="20" fill="none" className="shrink-0">
-      {kind === 'signal' ? (
-        <circle cx="10" cy="10" r="4.5" className="fill-brand-fill" />
-      ) : kind === 'passport' ? (
-        <rect x="4.5" y="2.5" width="11" height="15" rx="2.5" className="fill-mark-body" />
-      ) : (
-        <>
-          <ellipse
-            cx="10"
-            cy="10"
-            rx="8"
-            ry="4"
-            transform="rotate(-24 10 10)"
-            className="stroke-orbit"
-            strokeWidth="2"
-          />
-          <circle cx="16" cy="6.6" r="2" className="fill-brand-fill" />
-        </>
-      )}
-    </svg>
-  );
-}
-
 export function Hero({ locale }: { locale: Locale }) {
   const t = content[locale].hero;
   return (
@@ -166,19 +140,11 @@ export function Hero({ locale }: { locale: Locale }) {
         <div className="landing-fade order-first min-w-0 lg:order-none" style={stagger(3)}>
           <PassportScene
             label={t.sceneLabel}
-            sampleLabel={t.sample}
+            layerLabels={t.layers}
             pauseLabel={t.pause}
             playLabel={t.play}
             className="mx-auto aspect-[3/2] max-w-[620px] sm:aspect-[5/4]"
           />
-          <ul className="mx-auto mt-2 flex max-w-[620px] flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-ink-muted">
-            {(['signal', 'passport', 'network'] as const).map((k) => (
-              <li key={k} className="inline-flex items-center gap-2">
-                <ConceptGlyph kind={k} />
-                {t.legend[k]}
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
     </section>

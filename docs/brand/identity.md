@@ -174,12 +174,9 @@ cannot be traced to one of them, it does not belong.
 
 | Concept      | Means                                         | Visual form                                                                   | Where                                  |
 | ------------ | --------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------- |
-| **Signal**   | A fact with a source and a date               | A point. Filled mint = a named source confirmed it; hollow orbit = declared; dashed = pending | Hero scene, signal ledger, legend |
-| **Passport** | The company's portable record                 | The booklet from the mark, in 3D on the hero and as layered pages in the ledger | Hero scene, ledger card, CTA badge  |
+| **Signal**   | A fact with a source and a date               | A point. Filled mint = a named source confirmed it; hollow orbit = declared; dashed = pending | Hero scene, signal ledger |
+| **Passport** | The company's portable record                 | The booklet from the mark, in 3D on the hero (separating into its layers) and as layered pages in the ledger | Hero scene, ledger card, CTA badge  |
 | **Network**  | Permissioned links from company to recipients | The orbit ring and curved links; solid and flowing = access, dotted = none    | Hero scene, access section             |
-
-Glyphs for the legend are one dot (mint), one rounded booklet (`mark-body`) and
-one ring with a node (`orbit`). They live in `sections.tsx` (`ConceptGlyph`).
 
 **Hero thesis.** "Tu empresa ya tiene una historia. Hazla verificable." / "Your
 company already has a story. Make it verifiable." The line under it says how
@@ -203,9 +200,22 @@ sample object is labelled _Ejemplo_ / _Sample_ on its face.
 - Colours are read from `--mark-body`, `--brand-fill`, `--orbit` and `--holo` and
   re-read when `data-theme` changes. No hex values in the component.
 - Pixel ratio capped at 2; the loop stops off screen and in hidden tabs.
-- Reduced motion renders one still frame. Otherwise a visible "Pausar animación"
-  control is present (WCAG 2.2.2). The stage is `role="img"` with a description
-  that says it is a sample illustration.
+- **Exploded view.** Five layers on one stacking axis: back cover, financial
+  reputation, activity, identity, front cover. The cycle is assembled, apart,
+  assembled; hovering the stage holds it apart. Each layer has an edge line, and
+  guides join the corners along the stacking axis while apart.
+- **Pages carry no text and no figures.** They are pictograms (photo frame, seal
+  and machine-readable strip; bars and a trend of signals; a ring and a payment
+  record), so the scene shows how a passport is built without claiming anything
+  about a company. Keep it that way: no numbers, names, scores or "verified" marks.
+- **Call-outs, not a legend.** Once the layers are apart, each page gets a point
+  on its top edge, a guide line and a label on its own level (identity, activity,
+  financial reputation), so labels never overlap. They are hidden below `sm`.
+  There is no caption or legend under the scene.
+- Reduced motion renders one still frame, apart. Otherwise a visible "Pausar
+  animación" control is present (WCAG 2.2.2). The stage is `role="img"` and its
+  description says it is a sample illustration; the visible tag was removed
+  because the scene shows no data.
 - Do not add a second 3D scene. Every other visual uses the 3D icon tier (§7) or
   flat tone steps.
 

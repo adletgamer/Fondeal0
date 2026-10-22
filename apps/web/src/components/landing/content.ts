@@ -44,8 +44,7 @@ export interface LandingContent {
     sceneLabel: string;
     pause: string;
     play: string;
-    sample: string;
-    legend: { signal: string; passport: string; network: string };
+    layers: [string, string, string];
   };
   signals: {
     heading: string;
@@ -138,15 +137,10 @@ const es: LandingContent = {
     disclaimer:
       'Acceso anticipado gratuito. Fondealo no presta, no invierte ni intermedia inversiones.',
     sceneLabel:
-      'Ilustración de ejemplo: un pasaporte de empresa rodeado de señales; algunas tienen fuente verificada y se comparten con la red.',
+      'Ilustración de ejemplo: un pasaporte de empresa que se separa en sus capas (identidad, actividad y reputación financiera) y envía señales a la red.',
     pause: 'Pausar animación',
     play: 'Reanudar animación',
-    sample: 'Ilustración de ejemplo',
-    legend: {
-      signal: 'Señales con fuente',
-      passport: 'Pasaporte',
-      network: 'Acceso con permiso',
-    },
+    layers: ['Identidad', 'Actividad', 'Reputación financiera'],
   },
   signals: {
     heading: 'Cada dato lleva su fuente.',
@@ -210,7 +204,7 @@ const es: LandingContent = {
   },
   access: {
     heading: 'Tú decides quién ve qué.',
-    lead: 'Cada financiador recibe solo las capas que le das. Retiras el acceso cuando quieras.',
+    lead: 'Acceso con permiso: cada financiador recibe solo las capas que le das. Retiras el acceso cuando quieras.',
     sample: 'Ejemplo',
     company: 'Tu empresa',
     recipientsAria: 'A quién compartir',
@@ -321,15 +315,10 @@ const en: LandingContent = {
     secondary: 'See the network',
     disclaimer: 'Free early access. Fondealo does not lend, invest or intermediate investments.',
     sceneLabel:
-      'Sample illustration: a company passport surrounded by signals; some have a verified source and are shared with the network.',
+      'Sample illustration: a company passport separating into its layers (identity, activity and financial reputation) and sending signals to the network.',
     pause: 'Pause animation',
     play: 'Resume animation',
-    sample: 'Sample illustration',
-    legend: {
-      signal: 'Signals with a source',
-      passport: 'Passport',
-      network: 'Permissioned access',
-    },
+    layers: ['Identity', 'Activity', 'Financial reputation'],
   },
   signals: {
     heading: 'Every fact carries its source.',
@@ -389,7 +378,7 @@ const en: LandingContent = {
   },
   access: {
     heading: 'You decide who sees what.',
-    lead: 'Each funder receives only the layers you give them. You can withdraw access at any time.',
+    lead: 'Permissioned access: each funder receives only the layers you give them. You can withdraw access at any time.',
     sample: 'Sample',
     company: 'Your company',
     recipientsAria: 'Who to share with',

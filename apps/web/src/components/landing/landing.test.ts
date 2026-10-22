@@ -72,6 +72,18 @@ describe.each([
     expect(page.html).toMatch(/role="img"[^>]*aria-label="[^"]*(ejemplo|sample)/i);
   });
 
+  it('names the layers of the 3D passport and keeps the hero free of captions', () => {
+    const layers =
+      page === es
+        ? ['Identidad', 'Actividad', 'Reputación financiera']
+        : ['Identity', 'Activity', 'Financial reputation'];
+    for (const l of layers) expect(page.html).toContain(l);
+    // No caption or legend under the scene: the sample is declared in its description.
+    expect(page.text).not.toMatch(
+      /ilustración de ejemplo|sample illustration|señales con fuente|signals with a source/,
+    );
+  });
+
   it('gives every section a heading', () => {
     const sections = page.html.match(/<section[^>]*>/g) ?? [];
     expect(sections.length).toBeGreaterThanOrEqual(6);
@@ -117,10 +129,10 @@ describe('landing claims', () => {
   it('uses the passport vocabulary and keeps examples labelled', () => {
     expect(es.text).not.toContain('expediente');
     expect(en.text).not.toContain('company file');
-    for (const phrase of ['pasaporte', 'señales', 'acceso con permiso', 'ilustración de ejemplo']) {
+    for (const phrase of ['pasaporte', 'señales', 'acceso con permiso']) {
       expect(es.text).toContain(phrase);
     }
-    for (const phrase of ['passport', 'signals', 'permissioned access', 'sample illustration']) {
+    for (const phrase of ['passport', 'signals', 'permissioned access']) {
       expect(en.text).toContain(phrase);
     }
     expect(es.text).toContain('aún no hay socios firmados');
