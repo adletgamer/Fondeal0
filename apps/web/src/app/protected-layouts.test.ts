@@ -18,8 +18,8 @@ vi.mock('@/lib/auth/session', () => ({ getSession: async () => state.session }))
 vi.mock('@/components/app-shell', () => ({ AppShell: () => null }));
 vi.mock('@/components/auth-gate', () => ({ AuthGate: () => null }));
 
-const { default: BusinessLayout } = await import('./business/layout');
-const { default: InvestLayout } = await import('./invest/layout');
+const { default: BusinessLayout } = await import('./(app)/business/layout');
+const { default: InvestLayout } = await import('./(app)/invest/layout');
 const content = createElement('div', null, 'Protected content');
 
 beforeEach(() => {

@@ -5,7 +5,8 @@ import { PrivyProvider } from '@privy-io/react-auth';
 import { SessionSync } from './session-sync';
 
 /**
- * Privy is the login + wallet layer for the whole app: email/social login
+ * Privy is the login + wallet layer for the app group (see app/(app)/layout.tsx):
+ * email/social login
  * creates a real Stellar keypair on first sign-in (Tier 2 support — see
  * apps/web/src/hooks/use-stellar-wallet.ts), no seed phrase for the user to
  * manage. /invest and /business are gated behind this (see AuthGate).

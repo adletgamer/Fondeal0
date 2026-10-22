@@ -63,6 +63,7 @@ export function LandingHeader({ locale }: { locale: Locale }) {
           </span>
           <Link
             href="/onboarding"
+            prefetch={false}
             className="hidden h-11 items-center px-2 text-sm font-medium text-ink-muted hover:text-ink md:inline-flex"
           >
             {t.header.haveAccount}
@@ -381,7 +382,11 @@ export function LandingFooter({ locale }: { locale: Locale }) {
       >
         <p>{t.what}</p>
         <nav aria-label={t.aria} className="flex flex-wrap gap-x-6 gap-y-2">
-          <Link href="/onboarding" className="font-medium text-ink hover:underline">
+          <Link
+            href="/onboarding"
+            prefetch={false}
+            className="font-medium text-ink hover:underline"
+          >
             {t.haveAccount}
           </Link>
           <a

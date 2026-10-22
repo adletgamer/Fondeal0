@@ -6,7 +6,7 @@ import { SESSION_COOKIE_NAME } from '@/lib/auth/session-cookie';
  * not be reachable — not even their login-prompt shell — by a request that
  * carries no session cookie at all. This only checks for the cookie's
  * *presence* (cheap, Edge-safe, no crypto or DB); the layouts underneath
- * (apps/web/src/app/business/layout.tsx, .../invest/layout.tsx) do the real
+ * (apps/web/src/app/(app)/business/layout.tsx, .../invest/layout.tsx) do the real
  * work of verifying the token's signature and checking the persisted role
  * via `getSession()`, which needs the Node.js runtime for Prisma.
  */

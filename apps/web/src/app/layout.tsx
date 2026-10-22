@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { JetBrains_Mono, Onest, Unbounded } from 'next/font/google';
-import { PrivyProviders } from '@/components/privy-providers';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
 import '@fondealo/ui/styles.css';
 import './globals.css';
@@ -72,9 +71,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="min-h-screen bg-surface-0 font-sans text-ink antialiased">
-        <PrivyProviders>{children}</PrivyProviders>
-      </body>
+      <body className="min-h-screen bg-surface-0 font-sans text-ink antialiased">{children}</body>
     </html>
   );
 }

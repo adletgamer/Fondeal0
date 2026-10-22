@@ -31,7 +31,7 @@ function Spinner() {
  * States 2–4 of the onboarding flow (state 1, "Get Started", is the landing
  * page's CTA; state 5's redirect happens inside the `chooseRole` action).
  * State 5's target once a role already exists is decided server-side in
- * app/onboarding/page.tsx before this component ever mounts.
+ * app/(app)/onboarding/page.tsx before this component ever mounts.
  */
 export function OnboardingFlow({
   hasServerSession,

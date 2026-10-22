@@ -15,8 +15,8 @@ vi.mock('next/link', () => ({
 // The real action imports Prisma and request headers; the page only needs its reference.
 vi.mock('@/lib/actions/waitlist', () => ({ joinWaitlist: vi.fn() }));
 
-const { default: HomeEs } = await import('@/app/page');
-const { default: HomeEn } = await import('@/app/en/page');
+const { default: HomeEs } = await import('@/app/(public)/page');
+const { default: HomeEn } = await import('@/app/(public)/en/page');
 
 const render = (C: () => unknown) => {
   const html = renderToStaticMarkup(createElement(C as never));
@@ -162,8 +162,8 @@ describe('landing claims', () => {
 describe('landing source', () => {
   const dir = join(process.cwd(), 'src/components/landing');
   const files = [
-    join(process.cwd(), 'src/app/page.tsx'),
-    join(process.cwd(), 'src/app/en/page.tsx'),
+    join(process.cwd(), 'src/app/(public)/page.tsx'),
+    join(process.cwd(), 'src/app/(public)/en/page.tsx'),
     ...readdirSync(dir)
       .filter((f) => f.endsWith('.tsx') || f.endsWith('.ts'))
       .filter((f) => !f.endsWith('.test.ts'))

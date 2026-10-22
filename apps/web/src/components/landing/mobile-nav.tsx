@@ -86,6 +86,7 @@ export function MobileNav({
           <li>
             <Link
               href="/onboarding"
+              prefetch={false}
               className="flex min-h-12 items-center text-lg font-medium text-ink-muted"
             >
               {haveAccount}
