@@ -2,31 +2,28 @@ import type { Metadata } from 'next';
 import { content, type Locale } from './content';
 import { RevealMotion } from './reveal-motion';
 import {
+  Access,
   Faq,
   Hero,
-  Includes,
-  Intro,
   LandingFooter,
   LandingHeader,
-  NotDo,
-  Privacy,
-  Steps,
-  Today,
+  Signals,
+  Trust,
   WaitlistSection,
 } from './sections';
 
 const META: Record<Locale, { title: string; description: string; path: string; og: string }> = {
   es: {
-    title: 'Fondealo — El expediente de tu startup o MYPE, listo para compartir',
+    title: 'Fondealo — El pasaporte verificable de tu empresa',
     description:
-      'Prepara una vez el expediente de tu startup o MYPE y decide con quién compartirlo. Acceso anticipado gratuito. Fondealo no presta ni invierte.',
+      'Crea un pasaporte portable de tu empresa con tu identidad, tu actividad y tu reputación financiera, y compártelo solo con quien tú elijas. Acceso anticipado gratuito. Fondealo no presta ni invierte.',
     path: '/',
     og: 'es_PE',
   },
   en: {
-    title: 'Fondealo — Your startup’s company file, ready to share',
+    title: 'Fondealo — Your company’s verifiable passport',
     description:
-      'Organise your startup or small business file once and choose who sees it. Free early access. Fondealo does not lend or invest.',
+      'Build a portable company passport from your identity, activity and financial reputation, and share it only with the people you choose. Free early access. Fondealo does not lend or invest.',
     path: '/en',
     og: 'en_US',
   },
@@ -44,7 +41,7 @@ export function landingMetadata(locale: Locale): Metadata {
 }
 
 /**
- * Public landing (docs/strategy/2026-10-21-landing-redesign-plan.md).
+ * Public landing (docs/brand/identity.md §9).
  * Server-rendered and readable without JavaScript; client islands are the
  * live fragments, the theme switch, the waitlist form and the scroll entrances.
  */
@@ -62,12 +59,9 @@ export function LandingPage({ locale }: { locale: Locale }) {
       <LandingHeader locale={locale} />
       <main id="main" tabIndex={-1} className="focus:outline-none">
         <Hero locale={locale} />
-        <Intro locale={locale} />
-        <Steps locale={locale} />
-        <Includes locale={locale} />
-        <Privacy locale={locale} />
-        <NotDo locale={locale} />
-        <Today locale={locale} />
+        <Signals locale={locale} />
+        <Access locale={locale} />
+        <Trust locale={locale} />
         <Faq locale={locale} />
         <WaitlistSection locale={locale} />
       </main>
