@@ -13,6 +13,8 @@ Start here when reviewing the project. A document's existence is not evidence th
 | [Risk register](risks.md) | Threats to trust, money and operations |
 | [ADRs](adr/) | Durable architecture decisions and trade-offs |
 | [KYB evidence boundary](adr/0010-kyb-evidence-boundary.md) | Declaration-only intake, provider failure handling and upload gate |
+| [Admin back-office and decision authority](adr/0011-admin-back-office-and-decision-authority.md) | Privilege planes, who decides KYB, increments for `apps/admin` |
+| [KYB policy v1 (draft, Spanish)](kyb/policy-v1.md) | What a reviewer must confirm, accepted sources, reason codes; awaiting owner approval |
 
 ## Historical proposals and research
 
