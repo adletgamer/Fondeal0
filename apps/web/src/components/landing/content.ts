@@ -1,18 +1,21 @@
 /**
  * Landing copy in Spanish (default, `/`) and English (`/en`). Kept apart from
  * layout so the banned-claims test reads every string in one place. Rules:
- * docs/strategy/2026-10-20-landing-refactor-plan.md §4 — Fondealo helps
- * prepare and share; it never presents, selects or recommends companies, and
- * never offers investment, returns or approval.
+ * docs/strategy/2026-10-20-landing-refactor-plan.md §4 and the vocabulary in
+ * docs/brand/identity.md §2 — Fondealo helps prepare and share; it never
+ * presents, selects or recommends companies, and never offers investment,
+ * returns or approval. Say "verificada" only where a named source checked it.
  */
 
 export type Locale = 'es' | 'en';
-export type StageId = 'preseed' | 'seed' | 'revenue' | 'mype';
+export type LayerId = 'identity' | 'activity' | 'finance';
+export type SignalState = 'verified' | 'declared' | 'pending';
+export type RecipientId = 'fund' | 'lender' | 'accelerator';
 
-interface DossierItem {
+interface Signal {
   name: string;
-  detail: string;
-  ready: boolean;
+  source: string;
+  state: SignalState;
 }
 
 export interface LandingContent {
@@ -28,61 +31,71 @@ export interface LandingContent {
     switchLang: Locale;
     switchAria: string;
     navAria: string;
+    menu: string;
+    menuClose: string;
   };
   hero: {
+    eyebrow: string;
     lines: [string, string];
     lead: string;
     cta: string;
     secondary: string;
     disclaimer: string;
-  };
-  dossier: {
-    aria: string;
-    stageAria: string;
+    sceneLabel: string;
+    pause: string;
+    play: string;
     sample: string;
-    file: string;
-    count: (ready: number, total: number) => string;
-    sharedWith: string;
-    stages: { id: StageId; label: string; company: string; items: DossierItem[] }[];
+    legend: { signal: string; passport: string; network: string };
   };
-  intro: { srHeading: string; lead: string; columns: { runIn: string; text: string }[] };
-  steps: {
+  signals: {
     heading: string;
-    items: { title: string; text: string }[];
-    panel: {
-      formTitle: string;
-      fields: [string, string][];
-      pickTitle: string;
-      picks: { name: string; on: boolean }[];
-      shareTitle: string;
-      shareTo: string;
-      shareSees: string;
-      shareButton: string;
-      revoke: string;
-    };
+    lead: string;
+    sample: string;
+    company: string;
+    passportTitle: string;
+    layersAria: string;
+    sourceLabel: string;
+    states: Record<SignalState, string>;
+    count: (withSource: number, total: number) => string;
+    layers: {
+      id: LayerId;
+      label: string;
+      icon: 'identity' | 'activity' | 'payments';
+      items: Signal[];
+    }[];
+    rules: string[];
   };
-  includes: {
+  access: {
     heading: string;
-    searchLabel: string;
-    placeholder: string;
-    note: string;
-    empty: string;
-    status: { today: string; planned: string };
-    items: { name: string; detail: string; status: 'today' | 'planned' }[];
+    lead: string;
+    sample: string;
+    company: string;
+    recipientsAria: string;
+    layersAria: string;
+    layerLabels: Record<LayerId, string>;
+    recipients: {
+      id: RecipientId;
+      name: string;
+      kind: string;
+      icon: 'funder' | 'payments' | 'accelerator';
+    }[];
+    receives: (name: string, layers: string) => string;
+    receivesNothing: (name: string) => string;
+    revoke: string;
+    revoked: (name: string) => string;
+    hint: string;
+    partners: string;
+    network: string;
   };
-  privacy: {
+  trust: {
     heading: string;
-    statement: string;
-    points: string[];
-    panel: {
-      title: string;
-      rows: { who: string; sees: string; when: string; active: boolean }[];
-      active: string;
-      revoked: string;
-    };
+    todayTitle: string;
+    today: { part: string; state: string; live: boolean }[];
+    notTitle: string;
+    notItems: string[];
+    stellar: string;
+    privacy: string;
   };
-  notDo: { heading: string; statement: string; items: string[] };
-  today: { heading: string; note: string; rows: { part: string; state: string; live: boolean }[] };
   faq: { heading: string; items: { q: string; a: string }[] };
   cta: { heading: [string, string]; text: string };
   footer: {
@@ -99,269 +112,178 @@ const es: LandingContent = {
   lang: 'es-PE',
   skip: 'Saltar al contenido',
   nav: [
-    { href: '#como-funciona', label: 'Cómo funciona' },
-    { href: '#que-incluye', label: 'Qué incluye' },
-    { href: '#tus-datos', label: 'Tus datos' },
+    { href: '#senales', label: 'Señales' },
+    { href: '#red', label: 'Acceso' },
+    { href: '#estado', label: 'Estado' },
     { href: '#preguntas', label: 'Preguntas' },
   ],
   header: {
     home: 'Fondealo, inicio',
     haveAccount: 'Ya tengo cuenta',
-    join: 'Unirme',
+    join: 'Reservar',
     switchLabel: 'EN',
     switchHref: '/en',
     switchLang: 'en',
     switchAria: 'Read this page in English',
     navAria: 'Navegación principal',
+    menu: 'Abrir menú',
+    menuClose: 'Cerrar menú',
   },
   hero: {
-    lines: ['Un expediente.', 'Tú decides quién.'],
-    lead: 'Para startups que preparan una ronda o buscan financiamiento sin ceder acciones, y para MYPE que piden crédito. Ordena una vez los datos de tu empresa y compártelos solo con quien tú elijas.',
-    cta: 'Unirme a la lista de espera',
-    secondary: 'Cómo funciona',
+    eyebrow: 'Fondealo · Infraestructura de confianza',
+    lines: ['Tu empresa ya tiene una historia.', 'Hazla verificable.'],
+    lead: 'Crea un pasaporte portable de tu empresa con tu identidad, tu actividad y tu reputación financiera. Compártelo con quienes pueden financiar tu siguiente etapa.',
+    cta: 'Reservar mi pasaporte',
+    secondary: 'Ver la red',
     disclaimer:
       'Acceso anticipado gratuito. Fondealo no presta, no invierte ni intermedia inversiones.',
+    sceneLabel:
+      'Ilustración de ejemplo: un pasaporte de empresa rodeado de señales; algunas tienen fuente verificada y se comparten con la red.',
+    pause: 'Pausar animación',
+    play: 'Reanudar animación',
+    sample: 'Ilustración de ejemplo',
+    legend: {
+      signal: 'Señales con fuente',
+      passport: 'Pasaporte',
+      network: 'Acceso con permiso',
+    },
   },
-  dossier: {
-    aria: 'Ejemplo de expediente según la etapa de la empresa',
-    stageAria: 'Etapa de tu empresa',
+  signals: {
+    heading: 'Cada dato lleva su fuente.',
+    lead: 'Hoy cada financiador te pide lo mismo en otro formato. Aquí cada dato es una señal con su origen y su fecha, y juntas forman tu pasaporte.',
     sample: 'Ejemplo',
-    file: 'Expediente',
-    count: (r, t) => `${r} de ${t} listos`,
-    sharedWith: 'Aún no lo compartes',
-    stages: [
+    company: 'Kallpa Labs SAC',
+    passportTitle: 'Pasaporte de empresa',
+    layersAria: 'Capa del pasaporte',
+    sourceLabel: 'Fuente',
+    states: { verified: 'Verificada', declared: 'Declarada', pending: 'Pendiente' },
+    count: (v, t) => `${v} de ${t} con fuente`,
+    layers: [
       {
-        id: 'preseed',
-        label: 'Pre-seed',
-        company: 'Kallpa Labs SAC',
+        id: 'identity',
+        label: 'Identidad',
+        icon: 'identity',
         items: [
-          { name: 'Constitución de la empresa', detail: 'Partida registral', ready: true },
-          { name: 'Ficha RUC', detail: 'Activo · habido', ready: true },
-          { name: 'Estructura de accionistas', detail: 'Cap table actual', ready: false },
-          { name: 'Deck y métricas', detail: 'Usuarios, equipo, mercado', ready: true },
+          { name: 'Constitución de la empresa', source: 'Registro público', state: 'verified' },
+          { name: 'Ficha RUC', source: 'Administración tributaria', state: 'verified' },
+          { name: 'Representante legal', source: 'Declarada por la empresa', state: 'declared' },
         ],
       },
       {
-        id: 'seed',
-        label: 'Seed',
-        company: 'Kallpa Labs SAC',
+        id: 'activity',
+        label: 'Actividad verificada',
+        icon: 'activity',
         items: [
-          { name: 'Constitución y poderes', detail: 'Vigencia del representante', ready: true },
-          { name: 'Estructura de accionistas', detail: 'Incluye notas convertibles', ready: true },
-          { name: 'Estados financieros', detail: 'Último año, firmados', ready: false },
-          { name: 'Métricas mensuales', detail: 'Ingresos, retención, caja', ready: true },
-          { name: 'Contratos clave', detail: 'Clientes y proveedores', ready: false },
+          {
+            name: 'Ventas de los últimos 12 meses',
+            source: 'Facturas emitidas',
+            state: 'verified',
+          },
+          { name: 'Clientes principales', source: 'Declarada por la empresa', state: 'declared' },
+          { name: 'Métricas mensuales', source: 'Declarada por la empresa', state: 'declared' },
         ],
       },
       {
-        id: 'revenue',
-        label: 'Con ingresos',
-        company: 'Andes Logística SAC',
+        id: 'finance',
+        label: 'Reputación financiera',
+        icon: 'payments',
         items: [
-          { name: 'Ficha RUC y situación tributaria', detail: 'Sin deudas exigibles', ready: true },
-          { name: 'Ventas de los últimos 12 meses', detail: 'Facturas emitidas', ready: true },
-          { name: 'Principales clientes', detail: 'Concentración de cartera', ready: false },
-          { name: 'Estados financieros', detail: 'Último año', ready: true },
-        ],
-      },
-      {
-        id: 'mype',
-        label: 'MYPE',
-        company: 'Panadería San Blas EIRL',
-        items: [
-          { name: 'Ficha RUC', detail: 'Régimen MYPE tributario', ready: true },
-          { name: 'Representante legal', detail: 'DNI y vigencia', ready: true },
-          { name: 'Ventas mensuales', detail: 'Últimos 6 meses', ready: false },
+          {
+            name: 'Pagos a proveedores',
+            source: 'Quien te financia, con tu permiso',
+            state: 'pending',
+          },
+          {
+            name: 'Historial con financiadores',
+            source: 'Quien te financia, con tu permiso',
+            state: 'pending',
+          },
+          { name: 'Situación tributaria', source: 'Administración tributaria', state: 'verified' },
         ],
       },
     ],
-  },
-  intro: {
-    srHeading: 'Qué es Fondealo',
-    lead: 'Cada fondo, aceleradora o financiador te pide lo mismo en otro formato: quién eres, quién manda, cuánto vendes y qué debes. Fondealo te ayuda a tenerlo ordenado una vez y a compartirlo con permiso.',
-    columns: [
-      {
-        runIn: 'Para quién.',
-        text: 'Startups que preparan una ronda pre-seed o seed, startups con ingresos que buscan financiamiento sin ceder acciones y MYPE.',
-      },
-      {
-        runIn: 'Qué es.',
-        text: 'Los datos y documentos de tu empresa en un solo lugar. Lo ordenas una vez y lo reutilizas cuando te lo pidan.',
-      },
-      {
-        runIn: 'Qué no es.',
-        text: 'No es un préstamo ni una vitrina de empresas. Quien decide financiarte es siempre quien financia.',
-      },
-      {
-        runIn: 'Dónde está hoy.',
-        text: 'En versión de prueba: la verificación aún es de prueba y todavía no se comparte con terceros.',
-      },
+    rules: [
+      'Verificada: una fuente con nombre la confirmó.',
+      'Declarada: la empresa lo afirma, sin fuente aún.',
+      'Pendiente: todavía no hay dato.',
     ],
   },
-  steps: {
-    heading: 'Cómo funciona',
-    items: [
+  access: {
+    heading: 'Tú decides quién ve qué.',
+    lead: 'Cada financiador recibe solo las capas que le das. Retiras el acceso cuando quieras.',
+    sample: 'Ejemplo',
+    company: 'Tu empresa',
+    recipientsAria: 'A quién compartir',
+    layersAria: 'Qué ve',
+    layerLabels: { identity: 'Identidad', activity: 'Actividad', finance: 'Reputación financiera' },
+    recipients: [
+      { id: 'fund', name: 'Fondo de ejemplo', kind: 'Fondo', icon: 'funder' },
+      { id: 'lender', name: 'Financiera de ejemplo', kind: 'Financiera', icon: 'payments' },
       {
-        title: 'Registra tu empresa.',
-        text: 'Con su RUC, su representante y los documentos que puedes presentar. Sin subir archivos todavía.',
-      },
-      {
-        title: 'Elige qué compartir.',
-        text: 'Tú decides qué partes del expediente ve cada fondo, aceleradora o financiador.',
-      },
-      {
-        title: 'Compártelo cuando quieras.',
-        text: 'Das acceso con un permiso que puedes retirar. Cada acceso queda registrado.',
-      },
-    ],
-    panel: {
-      formTitle: 'Tu empresa',
-      fields: [
-        ['Razón social', 'Kallpa Labs SAC'],
-        ['RUC', '20612345678'],
-        ['Representante', 'Ana Quispe · Gerente general'],
-      ],
-      pickTitle: 'Qué compartir',
-      picks: [
-        { name: 'Datos de la empresa', on: true },
-        { name: 'Documentos declarados', on: true },
-        { name: 'Estructura de accionistas', on: false },
-        { name: 'Estados financieros', on: false },
-      ],
-      shareTitle: 'Dar acceso',
-      shareTo: 'Fondo de ejemplo',
-      shareSees: 'Ve: datos y documentos',
-      shareButton: 'Dar acceso',
-      revoke: 'Puedes retirarlo cuando quieras',
-    },
-  },
-  includes: {
-    heading: 'Qué incluirá tu expediente',
-    searchLabel: 'Buscar en el expediente',
-    placeholder: 'Busca un documento',
-    note: 'Hoy: lo puedes declarar en modo de prueba. Planeado: aún no está disponible.',
-    empty: 'Ningún documento coincide con tu búsqueda.',
-    status: { today: 'Hoy', planned: 'Planeado' },
-    items: [
-      {
-        name: 'Datos de la empresa y RUC',
-        detail: 'Razón social, sector y año de fundación.',
-        status: 'today',
-      },
-      {
-        name: 'Representante legal',
-        detail: 'Quién puede actuar en nombre de la empresa.',
-        status: 'today',
-      },
-      {
-        name: 'Documentos declarados',
-        detail: 'Constitución, ficha RUC, propietarios y domicilio.',
-        status: 'today',
-      },
-      {
-        name: 'Estructura de accionistas',
-        detail: 'Quién es dueño de qué parte de la empresa.',
-        status: 'planned',
-      },
-      {
-        name: 'Estados financieros',
-        detail: 'Los del último año, con su fuente y fecha.',
-        status: 'planned',
-      },
-      {
-        name: 'Historial de pagos',
-        detail: 'Solo lo que tú o tus financiadores reporten con tu permiso.',
-        status: 'planned',
+        id: 'accelerator',
+        name: 'Aceleradora de ejemplo',
+        kind: 'Aceleradora',
+        icon: 'accelerator',
       },
     ],
+    receives: (name, layers) => `${name} recibe: ${layers}.`,
+    receivesNothing: (name) => `${name} aún no recibe nada.`,
+    revoke: 'Retirar todo el acceso',
+    revoked: (name) => `Acceso retirado para ${name}.`,
+    hint: 'Prueba: activa y desactiva capas, o retira el acceso.',
+    partners: 'Fondos, financieras y aceleradoras de ejemplo. Aún no hay socios firmados.',
+    network: 'Red de financiamiento',
   },
-  privacy: {
-    heading: 'Quién lo ve',
-    statement: 'Nadie ve tu expediente hasta que tú lo compartes.',
-    points: [
-      'Tú eliges a quién darle acceso y qué partes ve.',
-      'Puedes retirar el permiso cuando quieras.',
-      'Tus datos personales y tributarios no se publican en ninguna red ni blockchain.',
-      'Con tu cuenta, en "Mis datos", ves qué guardamos y puedes pedir que lo borremos.',
+  trust: {
+    heading: 'Qué es real hoy.',
+    todayTitle: 'Hoy',
+    today: [
+      { part: 'Cuenta y registro de empresa', state: 'Versión de prueba', live: true },
+      { part: 'Revisión de los datos', state: 'Solo revisa el formato', live: true },
+      { part: 'Compartir con terceros y red de financiamiento', state: 'Planeado', live: false },
     ],
-    panel: {
-      title: 'Accesos a tu expediente',
-      rows: [
-        {
-          who: 'Fondo de ejemplo',
-          sees: 'Datos y documentos',
-          when: 'Desde el 3 de octubre',
-          active: true,
-        },
-        {
-          who: 'Financiera de ejemplo',
-          sees: 'Datos de la empresa',
-          when: 'Retirado el 12 de octubre',
-          active: false,
-        },
-      ],
-      active: 'Con acceso',
-      revoked: 'Retirado',
-    },
-  },
-  notDo: {
-    heading: 'Lo que Fondealo no hace',
-    statement:
-      'Te ayudamos a ordenar y compartir tu información. La decisión de financiarte siempre es de quien financia.',
-    items: [
+    notTitle: 'Lo que Fondealo no hace',
+    notItems: [
       'No presta dinero.',
       'No invierte ni intermedia inversiones.',
       'No garantiza que recibas financiamiento.',
-      'No publica ni recomienda startups o MYPE.',
+      'No publica ni recomienda empresas.',
       'No vende tus datos.',
     ],
-  },
-  today: {
-    heading: 'Lo que funciona hoy',
-    note: 'Nada de esto mueve dinero real.',
-    rows: [
-      { part: 'Sitio y registro de cuenta', state: 'Disponible (versión de prueba)', live: true },
-      { part: 'Solicitud de verificación', state: 'En modo de prueba', live: true },
-      { part: 'Compartir el expediente con terceros', state: 'Planeado', live: false },
-      { part: 'Historial de pagos', state: 'Planeado', live: false },
-    ],
+    stellar: 'Construido sobre Stellar · piloto',
+    privacy: 'Tus datos personales y tributarios no se publican en ninguna red ni blockchain.',
   },
   faq: {
     heading: 'Preguntas',
     items: [
-      { q: '¿Cuánto cuesta?', a: 'El acceso anticipado es gratuito para startups y MYPE.' },
       {
-        q: '¿Cuándo estará disponible?',
-        a: 'Todavía no hay fecha. Te escribiremos cuando abramos el acceso para tu tipo de empresa.',
+        q: '¿Cuánto cuesta y cuándo abre?',
+        a: 'El acceso anticipado es gratuito. Todavía no hay fecha: te escribiremos cuando abramos el acceso para tu tipo de empresa.',
       },
       {
-        q: '¿Mi startup queda verificada al registrarse?',
+        q: '¿Mi empresa queda verificada al registrarse?',
         a: 'No. Hoy la verificación funciona en modo de prueba y solo revisa el formato de los datos. Verificar tu empresa tampoco significa que recibirás financiamiento.',
       },
       {
-        q: '¿Fondealo me consigue inversionistas?',
-        a: 'No. Fondealo no presenta ni recomienda empresas. Tú decides con qué fondo, aceleradora o financiador compartes tu expediente.',
+        q: '¿Fondealo me consigue financiamiento?',
+        a: 'No. Fondealo no presta ni recomienda empresas. Tú eliges con quién compartes tu pasaporte; quien financia decide por su cuenta.',
       },
       {
         q: '¿Necesito una billetera o criptomonedas?',
         a: 'No. Entras con tu correo y no necesitas billetera, extensión ni frase semilla.',
       },
       {
-        q: 'Mi empresa está constituida fuera del Perú. ¿Me sirve?',
-        a: 'Cuéntanoslo en la lista de espera. Hoy el registro acepta, en modo de prueba, números tributarios de Perú y de otros cinco países de la región.',
-      },
-      {
-        q: 'Tengo una MYPE, no una startup.',
-        a: 'También es para ti. Elige "MYPE" en la lista de espera y te avisaremos cuando abramos tu acceso.',
+        q: '¿Es para startups o para MYPE?',
+        a: 'Para ambas. Elige tu perfil en la lista de espera. Hoy el registro acepta, en modo de prueba, números tributarios de Perú y de otros cinco países de la región.',
       },
     ],
   },
   cta: {
-    heading: ['Únete a la', 'lista de espera.'],
+    heading: ['Reserva tu', 'pasaporte.'],
     text: 'Te escribiremos cuando abramos el acceso para tu tipo de empresa. Sin spam: puedes salir cuando quieras.',
   },
   footer: {
-    what: 'Fondealo · expediente para startups y MYPE',
+    what: 'Fondealo · pasaporte de empresa para startups y MYPE',
     aria: 'Enlaces del pie',
     code: 'Código',
     codeSr: ' (GitHub, en inglés, abre en una pestaña nueva)',
@@ -374,268 +296,172 @@ const en: LandingContent = {
   lang: 'en',
   skip: 'Skip to content',
   nav: [
-    { href: '#como-funciona', label: 'How it works' },
-    { href: '#que-incluye', label: 'What it holds' },
-    { href: '#tus-datos', label: 'Your data' },
+    { href: '#senales', label: 'Signals' },
+    { href: '#red', label: 'Access' },
+    { href: '#estado', label: 'Status' },
     { href: '#preguntas', label: 'Questions' },
   ],
   header: {
     home: 'Fondealo, home',
     haveAccount: 'I have an account',
-    join: 'Join',
+    join: 'Reserve',
     switchLabel: 'ES',
     switchHref: '/',
     switchLang: 'es',
     switchAria: 'Leer esta página en español',
     navAria: 'Main navigation',
+    menu: 'Open menu',
+    menuClose: 'Close menu',
   },
   hero: {
-    lines: ['One company file.', 'You choose who.'],
-    lead: 'For startups preparing a round or looking for financing without giving up equity, and for small businesses applying for credit. Organise your company’s information once and share it only with the people you choose.',
-    cta: 'Join the waitlist',
-    secondary: 'How it works',
+    eyebrow: 'Fondealo · Trust infrastructure',
+    lines: ['Your company already has a story.', 'Make it verifiable.'],
+    lead: 'Build a portable company passport from your identity, activity and financial reputation. Share it with the people who can fund your next stage.',
+    cta: 'Reserve my passport',
+    secondary: 'See the network',
     disclaimer: 'Free early access. Fondealo does not lend, invest or intermediate investments.',
+    sceneLabel:
+      'Sample illustration: a company passport surrounded by signals; some have a verified source and are shared with the network.',
+    pause: 'Pause animation',
+    play: 'Resume animation',
+    sample: 'Sample illustration',
+    legend: {
+      signal: 'Signals with a source',
+      passport: 'Passport',
+      network: 'Permissioned access',
+    },
   },
-  dossier: {
-    aria: 'Sample company file by stage',
-    stageAria: 'Your company’s stage',
+  signals: {
+    heading: 'Every fact carries its source.',
+    lead: 'Every funder asks for the same things in a different format. Here each fact is a signal with its origin and date, and together they form your passport.',
     sample: 'Sample',
-    file: 'Company file',
-    count: (r, t) => `${r} of ${t} ready`,
-    sharedWith: 'Not shared yet',
-    stages: [
+    company: 'Kallpa Labs SAC',
+    passportTitle: 'Company passport',
+    layersAria: 'Passport layer',
+    sourceLabel: 'Source',
+    states: { verified: 'Verified', declared: 'Declared', pending: 'Pending' },
+    count: (v, t) => `${v} of ${t} with a source`,
+    layers: [
       {
-        id: 'preseed',
-        label: 'Pre-seed',
-        company: 'Kallpa Labs SAC',
+        id: 'identity',
+        label: 'Identity',
+        icon: 'identity',
         items: [
-          { name: 'Articles of incorporation', detail: 'Public registry entry', ready: true },
-          { name: 'Tax registration (RUC)', detail: 'Active · in good standing', ready: true },
-          { name: 'Shareholder structure', detail: 'Current cap table', ready: false },
-          { name: 'Deck and metrics', detail: 'Users, team, market', ready: true },
+          { name: 'Incorporation', source: 'Public registry', state: 'verified' },
+          { name: 'Tax registration (RUC)', source: 'Tax authority', state: 'verified' },
+          { name: 'Legal representative', source: 'Declared by the company', state: 'declared' },
         ],
       },
       {
-        id: 'seed',
-        label: 'Seed',
-        company: 'Kallpa Labs SAC',
+        id: 'activity',
+        label: 'Verified activity',
+        icon: 'activity',
         items: [
-          { name: 'Incorporation and powers', detail: 'Representative’s authority', ready: true },
-          { name: 'Shareholder structure', detail: 'Including convertible notes', ready: true },
-          { name: 'Financial statements', detail: 'Last year, signed', ready: false },
-          { name: 'Monthly metrics', detail: 'Revenue, retention, cash', ready: true },
-          { name: 'Key contracts', detail: 'Customers and suppliers', ready: false },
+          { name: 'Sales, last 12 months', source: 'Invoices issued', state: 'verified' },
+          { name: 'Main customers', source: 'Declared by the company', state: 'declared' },
+          { name: 'Monthly metrics', source: 'Declared by the company', state: 'declared' },
         ],
       },
       {
-        id: 'revenue',
-        label: 'With revenue',
-        company: 'Andes Logística SAC',
+        id: 'finance',
+        label: 'Financial reputation',
+        icon: 'payments',
         items: [
-          { name: 'Tax registration and status', detail: 'No overdue tax debt', ready: true },
-          { name: 'Sales, last 12 months', detail: 'Invoices issued', ready: true },
-          { name: 'Main customers', detail: 'Customer concentration', ready: false },
-          { name: 'Financial statements', detail: 'Last year', ready: true },
-        ],
-      },
-      {
-        id: 'mype',
-        label: 'Small business',
-        company: 'Panadería San Blas EIRL',
-        items: [
-          { name: 'Tax registration (RUC)', detail: 'Small-business tax regime', ready: true },
-          { name: 'Legal representative', detail: 'ID and authority', ready: true },
-          { name: 'Monthly sales', detail: 'Last 6 months', ready: false },
+          {
+            name: 'Supplier payments',
+            source: 'Whoever finances you, with your permission',
+            state: 'pending',
+          },
+          {
+            name: 'History with lenders',
+            source: 'Whoever finances you, with your permission',
+            state: 'pending',
+          },
+          { name: 'Tax standing', source: 'Tax authority', state: 'verified' },
         ],
       },
     ],
-  },
-  intro: {
-    srHeading: 'What Fondealo is',
-    lead: 'Every fund, accelerator or lender asks for the same things in a different format: who you are, who is in charge, what you sell and what you owe. Fondealo helps you keep it organised once and share it with permission.',
-    columns: [
-      {
-        runIn: 'Who it is for.',
-        text: 'Startups preparing a pre-seed or seed round, revenue-stage startups seeking financing without giving up equity, and small businesses.',
-      },
-      {
-        runIn: 'What it is.',
-        text: 'Your company’s information and documents in one place. Organise it once and reuse it whenever someone asks.',
-      },
-      {
-        runIn: 'What it is not.',
-        text: 'It is not a loan or a showcase of companies. The decision to finance you always belongs to whoever finances.',
-      },
-      {
-        runIn: 'Where it stands.',
-        text: 'In a test version: verification is still in test mode and nothing can be shared with third parties yet.',
-      },
+    rules: [
+      'Verified: a named source confirmed it.',
+      'Declared: the company says so, with no source yet.',
+      'Pending: there is no data yet.',
     ],
   },
-  steps: {
-    heading: 'How it works',
-    items: [
+  access: {
+    heading: 'You decide who sees what.',
+    lead: 'Each funder receives only the layers you give them. You can withdraw access at any time.',
+    sample: 'Sample',
+    company: 'Your company',
+    recipientsAria: 'Who to share with',
+    layersAria: 'What they see',
+    layerLabels: { identity: 'Identity', activity: 'Activity', finance: 'Financial reputation' },
+    recipients: [
+      { id: 'fund', name: 'Sample fund', kind: 'Fund', icon: 'funder' },
+      { id: 'lender', name: 'Sample lender', kind: 'Lender', icon: 'payments' },
+      { id: 'accelerator', name: 'Sample accelerator', kind: 'Accelerator', icon: 'accelerator' },
+    ],
+    receives: (name, layers) => `${name} receives: ${layers}.`,
+    receivesNothing: (name) => `${name} receives nothing yet.`,
+    revoke: 'Withdraw all access',
+    revoked: (name) => `Access withdrawn for ${name}.`,
+    hint: 'Try it: switch layers on and off, or withdraw access.',
+    partners: 'Sample funds, lenders and accelerators. There are no signed partners yet.',
+    network: 'Financing network',
+  },
+  trust: {
+    heading: 'What is real today.',
+    todayTitle: 'Today',
+    today: [
+      { part: 'Account and company sign-up', state: 'Test version', live: true },
+      { part: 'Data review', state: 'Only checks the format', live: true },
       {
-        title: 'Register your company.',
-        text: 'With its tax number, its representative and the documents you can provide. No file uploads yet.',
-      },
-      {
-        title: 'Choose what to share.',
-        text: 'You decide which parts of the file each fund, accelerator or lender can see.',
-      },
-      {
-        title: 'Share it when you are ready.',
-        text: 'You grant access with a permission you can withdraw. Every access is logged.',
+        part: 'Sharing with third parties and the financing network',
+        state: 'Planned',
+        live: false,
       },
     ],
-    panel: {
-      formTitle: 'Your company',
-      fields: [
-        ['Legal name', 'Kallpa Labs SAC'],
-        ['Tax number (RUC)', '20612345678'],
-        ['Representative', 'Ana Quispe · General manager'],
-      ],
-      pickTitle: 'What to share',
-      picks: [
-        { name: 'Company details', on: true },
-        { name: 'Declared documents', on: true },
-        { name: 'Shareholder structure', on: false },
-        { name: 'Financial statements', on: false },
-      ],
-      shareTitle: 'Grant access',
-      shareTo: 'Sample fund',
-      shareSees: 'Sees: details and documents',
-      shareButton: 'Grant access',
-      revoke: 'You can withdraw it at any time',
-    },
-  },
-  includes: {
-    heading: 'What your file will hold',
-    searchLabel: 'Search the file',
-    placeholder: 'Search for a document',
-    note: 'Today: you can declare it in test mode. Planned: not available yet.',
-    empty: 'No document matches your search.',
-    status: { today: 'Today', planned: 'Planned' },
-    items: [
-      {
-        name: 'Company details and tax number',
-        detail: 'Legal name, sector and founding year.',
-        status: 'today',
-      },
-      {
-        name: 'Legal representative',
-        detail: 'Who can act on behalf of the company.',
-        status: 'today',
-      },
-      {
-        name: 'Declared documents',
-        detail: 'Incorporation, tax record, owners and address.',
-        status: 'today',
-      },
-      {
-        name: 'Shareholder structure',
-        detail: 'Who owns which part of the company.',
-        status: 'planned',
-      },
-      {
-        name: 'Financial statements',
-        detail: 'Last year’s, with their source and date.',
-        status: 'planned',
-      },
-      {
-        name: 'Payment history',
-        detail: 'Only what you or your lenders report, with your permission.',
-        status: 'planned',
-      },
-    ],
-  },
-  privacy: {
-    heading: 'Who sees it',
-    statement: 'Nobody sees your file until you share it.',
-    points: [
-      'You choose who gets access and which parts they see.',
-      'You can withdraw permission at any time.',
-      'Your personal and tax data is never published on any network or blockchain.',
-      'With your account, “My data” shows what we store and lets you ask us to delete it.',
-    ],
-    panel: {
-      title: 'Access to your file',
-      rows: [
-        {
-          who: 'Sample fund',
-          sees: 'Details and documents',
-          when: 'Since 3 October',
-          active: true,
-        },
-        {
-          who: 'Sample lender',
-          sees: 'Company details',
-          when: 'Withdrawn on 12 October',
-          active: false,
-        },
-      ],
-      active: 'Has access',
-      revoked: 'Withdrawn',
-    },
-  },
-  notDo: {
-    heading: 'What Fondealo does not do',
-    statement:
-      'We help you organise and share your information. The decision to finance you always belongs to whoever finances.',
-    items: [
+    notTitle: 'What Fondealo does not do',
+    notItems: [
       'It does not lend money.',
       'It does not invest or intermediate investments.',
       'It does not promise you will get financing.',
       'It does not publish or recommend companies.',
       'It does not sell your data.',
     ],
-  },
-  today: {
-    heading: 'What works today',
-    note: 'None of this moves real money.',
-    rows: [
-      { part: 'Website and account sign-up', state: 'Available (test version)', live: true },
-      { part: 'Verification request', state: 'In test mode', live: true },
-      { part: 'Sharing the file with third parties', state: 'Planned', live: false },
-      { part: 'Payment history', state: 'Planned', live: false },
-    ],
+    stellar: 'Built on Stellar · pilot',
+    privacy: 'Your personal and tax data is never published on any network or blockchain.',
   },
   faq: {
     heading: 'Questions',
     items: [
-      { q: 'How much does it cost?', a: 'Early access is free for startups and small businesses.' },
       {
-        q: 'When will it be available?',
-        a: 'There is no date yet. We will write to you when access opens for your type of company.',
+        q: 'How much does it cost, and when does it open?',
+        a: 'Early access is free. There is no date yet: we will write to you when access opens for your type of company.',
       },
       {
-        q: 'Is my startup verified when it signs up?',
+        q: 'Is my company verified when it signs up?',
         a: 'No. Verification is in test mode today and only checks the format of the data. Being verified would not mean you will get financing either.',
       },
       {
-        q: 'Will Fondealo find me investors?',
-        a: 'No. Fondealo does not present or recommend companies. You decide which fund, accelerator or lender you share your file with.',
+        q: 'Will Fondealo get me financing?',
+        a: 'No. Fondealo does not lend or recommend companies. You choose who you share your passport with; whoever finances decides on their own.',
       },
       {
         q: 'Do I need a wallet or crypto?',
         a: 'No. You sign in with your email; no wallet, extension or seed phrase.',
       },
       {
-        q: 'My company is incorporated outside Peru. Can I use it?',
-        a: 'Tell us on the waitlist. Today sign-up accepts, in test mode, tax numbers from Peru and five other countries in the region.',
-      },
-      {
-        q: 'I run a small business, not a startup.',
-        a: 'It is for you too. Choose “Small business” on the waitlist and we will let you know when your access opens.',
+        q: 'Is it for startups or small businesses?',
+        a: 'For both. Pick your profile on the waitlist. Today sign-up accepts, in test mode, tax numbers from Peru and five other countries in the region.',
       },
     ],
   },
   cta: {
-    heading: ['Join the', 'waitlist.'],
+    heading: ['Reserve your', 'passport.'],
     text: 'We will write to you when access opens for your type of company. No spam: leave whenever you want.',
   },
   footer: {
-    what: 'Fondealo · company files for startups and small businesses',
+    what: 'Fondealo · company passport for startups and small businesses',
     aria: 'Footer links',
     code: 'Source code',
     codeSr: ' (GitHub, opens in a new tab)',

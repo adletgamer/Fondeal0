@@ -28,9 +28,9 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
-const title = 'Fondealo — El expediente de tu startup o MYPE, listo para compartir';
+const title = 'Fondealo — El pasaporte verificable de tu empresa';
 const description =
-  'Prepara una vez el expediente de tu startup o MYPE y decide con quién compartirlo. Acceso anticipado gratuito. Fondealo no presta ni invierte.';
+  'Crea un pasaporte portable de tu empresa con tu identidad, tu actividad y tu reputación financiera, y compártelo solo con quien tú elijas. Acceso anticipado gratuito. Fondealo no presta ni invierte.';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.fondealo.xyz'),
@@ -39,8 +39,8 @@ export const metadata: Metadata = {
   keywords: [
     'startups Perú',
     'MYPE',
-    'expediente de empresa',
-    'due diligence',
+    'pasaporte de empresa',
+    'señales de confianza',
     'financiamiento para empresas',
     'Pasaporte de Empresa',
   ],
