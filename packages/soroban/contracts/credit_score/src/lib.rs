@@ -23,7 +23,8 @@ mod test;
 
 use fondealo_soroban_shared::BusinessPassportClient;
 use soroban_sdk::{
-    contract, contracterror, contractevent, contractimpl, contracttype, Address, Env,
+    contract, contracterror, contractevent, contractimpl, contracttype, symbol_short, Address, Env,
+    Symbol,
 };
 
 /// Maximum score. Mirrors the Passport's `SCORE_MAX`.
@@ -43,9 +44,12 @@ const TTL_EXTEND_TO: u32 = 90 * 17_280;
 #[derive(Clone)]
 pub enum DataKey {
     Admin,
+    /// An admin handover in progress (two-step: propose, then accept).
+    PendingAdmin,
     /// Address of the deployed `business_passport` contract.
     Passport,
-    /// Address allowed to report loan outcomes (the escrow contract / backend).
+    /// Address allowed to report loan outcomes (the escrow contract). Unset at
+    /// deployment until the admin wires it.
     Reporter,
 }
 
@@ -56,6 +60,7 @@ pub enum Error {
     NotInitialized = 1,
     AlreadyInitialized = 2,
     PassportNotFound = 3,
+    NoPendingAdmin = 4,
 }
 
 /// Emitted on every scored event. Topic: `scored`.
@@ -68,30 +73,42 @@ pub struct Scored {
     pub score_after: u32,
 }
 
+/// Emitted when a role is set or rotated. Topic: `role_changed`.
+#[contractevent]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RoleChanged {
+    #[topic]
+    pub role: Symbol,
+    pub address: Address,
+}
+
+/// Emitted when the admin proposes a successor. Topic: `admin_proposed`.
+#[contractevent]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AdminProposed {
+    pub current: Address,
+    pub proposed: Address,
+}
+
 #[contract]
 pub struct CreditScoreContract;
 
 #[contractimpl]
 impl CreditScoreContract {
-    /// Initialize once. `passport` is the Business Passport contract address (this
-    /// contract must be set as that Passport's `reputation_manager`). `reporter`
-    /// is the escrow/backend allowed to report loan outcomes.
-    pub fn init(
-        env: Env,
-        admin: Address,
-        passport: Address,
-        reporter: Address,
-    ) -> Result<(), Error> {
-        if env.storage().instance().has(&DataKey::Admin) {
-            return Err(Error::AlreadyInitialized);
-        }
+    /// Fix the admin and the Passport at deployment, atomically with the
+    /// deploy. The reporter (the escrow) is unset until the admin wires it in,
+    /// so until then nobody can report a loan outcome.
+    pub fn __constructor(env: Env, admin: Address, passport: Address) {
         env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage().instance().set(&DataKey::Passport, &passport);
-        env.storage().instance().set(&DataKey::Reporter, &reporter);
         env.storage()
             .instance()
             .extend_ttl(TTL_BUMP_THRESHOLD, TTL_EXTEND_TO);
-        Ok(())
+        RoleChanged {
+            role: symbol_short!("admin"),
+            address: admin,
+        }
+        .publish(&env);
     }
 
     /// Report a repayment and update the business's score. Reporter-gated.
@@ -170,7 +187,44 @@ impl CreditScoreContract {
         env.storage()
             .instance()
             .set(&DataKey::Reporter, &new_reporter);
+        RoleChanged {
+            role: symbol_short!("reporter"),
+            address: new_reporter,
+        }
+        .publish(&env);
         Ok(())
+    }
+
+    /// Step one of an admin handover. Admin-gated.
+    pub fn propose_admin(env: Env, proposed: Address) -> Result<(), Error> {
+        let current = Self::require_admin(&env)?;
+        env.storage()
+            .instance()
+            .set(&DataKey::PendingAdmin, &proposed);
+        AdminProposed { current, proposed }.publish(&env);
+        Ok(())
+    }
+
+    /// Step two: the proposed admin accepts and becomes admin.
+    pub fn accept_admin(env: Env) -> Result<(), Error> {
+        let proposed: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::PendingAdmin)
+            .ok_or(Error::NoPendingAdmin)?;
+        proposed.require_auth();
+        env.storage().instance().set(&DataKey::Admin, &proposed);
+        env.storage().instance().remove(&DataKey::PendingAdmin);
+        RoleChanged {
+            role: symbol_short!("admin"),
+            address: proposed,
+        }
+        .publish(&env);
+        Ok(())
+    }
+
+    pub fn pending_admin(env: Env) -> Option<Address> {
+        env.storage().instance().get(&DataKey::PendingAdmin)
     }
 
     pub fn admin(env: Env) -> Result<Address, Error> {
@@ -223,14 +277,14 @@ impl CreditScoreContract {
         BusinessPassportClient::new(env, &addr)
     }
 
-    fn require_admin(env: &Env) -> Result<(), Error> {
+    fn require_admin(env: &Env) -> Result<Address, Error> {
         let admin: Address = env
             .storage()
             .instance()
             .get(&DataKey::Admin)
             .ok_or(Error::NotInitialized)?;
         admin.require_auth();
-        Ok(())
+        Ok(admin)
     }
 
     fn require_reporter(env: &Env) -> Result<(), Error> {

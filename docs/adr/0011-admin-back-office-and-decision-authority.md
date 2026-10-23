@@ -56,7 +56,7 @@ The back-office is the root of trust of the Passport's KYB credential. No KYB ev
 
 The **credential commitment** is SHA-256 over canonical JSON of the decision id, `policyVersion`, `evidenceSnapshotHash`, issue and expiry times and a random 32-byte salt that never leaves the server (same scheme as the intake's `dataHash`). Whoever is given the record and the salt can recompute it and compare it with the chain; nobody can derive anything about the company from it. The subject is the Passport's own Stellar address, so no hash of the company's identity goes on-chain: a tax number is enumerable, and a salted hash of it would add nothing.
 
-Two contract gaps to close in Phase 1 (the contracts are not deployed, so this costs no migration): the credential has no `expires_at`, so a verifier cannot check expiry on-chain; and a credential kind can exist only once per business, so renewal is revoke then add. `policyVersion` stays inside the commitment and the off-chain record.
+Two contract gaps were named here: the credential had no `expires_at`, and a credential kind could exist only once per business. Both are closed by [ADR-0012](0012-contract-initialization-roles-and-funds-safety.md): `Credential.expires_at`, renewal of a revoked or expired kind, and `is_credential_valid` for verifiers. `policyVersion` stays inside the commitment and the off-chain record.
 
 An approval creates an `OnchainAction` row. A worker holding the issuer key re-checks that the decision is current, waits out the cooling-off window, signs, confirms in the ledger and reconciles. Any mismatch alerts and halts. The worker is the only holder of the issuer key.
 

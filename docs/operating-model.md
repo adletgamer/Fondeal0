@@ -11,7 +11,7 @@ Fondealo is building business identity, underwriting and financing infrastructur
 | Privy sign-in, persistent Business/Investor role | Implemented in the app; a user reported successful sign-in on the official site | Account access, subject to runtime availability |
 | Business registration | Intake stores a sandbox KYB submission | Application received; **not** verified |
 | KYB and underwriting | PR #13 keeps sandbox submissions `Processing` and adds an unused decision model and financing gate | No real verification or credit approval is available yet |
-| Business Passport | Soroban contract and database projection exist; automatic issuance and reconciliation do not | Prototype credential, not a live verified Passport |
+| Business Passport | Soroban contract and database projection exist; contracts hardened for Testnet ([ADR-0012](adr/0012-contract-initialization-roles-and-funds-safety.md)) with a deploy-and-verify runbook; automatic issuance and reconciliation do not exist | Prototype credential, not a live verified Passport. **Testnet** only once `deployments/testnet.json` exists and `scripts/verify_testnet.sh` passes |
 | Funding and repayment | Server actions and an append-only test ledger exist; PR #13 blocks new financing without real KYB and underwriting | Test flow only; no claim of live capital settlement |
 | Agentic verification payments | Architecture and pilot plan only | Concept / planned Testnet pilot |
 
@@ -41,7 +41,7 @@ The server derives actor identity and role from the verified session. It must en
 | Database | Migration reviewed and applied to isolated Development; migration status, rollback plan and preflight for duplicate `Processing` KYB | Database / Engineering |
 | Existing obligations | Inventory `Open` and partially funded opportunities; ledger-reconciled cancel/refund or grandfathering decision | Product / Finance / Engineering |
 | KYB policy | Peru evidence sources, consent, reviewer authority, adverse/appeal path, retention and applicable legal review | Risk / Legal |
-| Chain readiness | Contract auth and lifecycle review, Testnet issue/revoke/TTL tests, event indexing and reconciliation | Soroban / Security |
+| Chain readiness | Contract auth and lifecycle review (done in code, ADR-0012; independent review pending), verified Testnet deployment manifest, Testnet issue/revoke/TTL tests, event indexing and reconciliation | Soroban / Security |
 | Production release | Explicit approval, target-environment smoke tests, monitoring, rollback operator and incident contact | Release owner |
 
 `main` now contains code that queries the new underwriting table. Before any Production deployment, verify the live database target and migration state, resolve duplicate `Processing` rows, and reconcile existing funding obligations. Apply the additive migration before deploying application code that requires it. This documentation work did not apply a Production migration or trigger a Production deployment.

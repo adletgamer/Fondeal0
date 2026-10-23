@@ -16,6 +16,7 @@ struct Fixture {
     score: CreditScoreContractClient<'static>,
     token: token::Client<'static>,
     token_admin: StellarAssetClient<'static>,
+    admin: Address,
     keeper: Address,
     business: Address,
 }
@@ -27,13 +28,6 @@ fn setup(start_score: u32) -> Fixture {
     let env = Env::default();
     env.mock_all_auths();
 
-    let passport_id = env.register(BusinessPassportContract, ());
-    let passport = BusinessPassportContractClient::new(&env, &passport_id);
-    let score_id = env.register(CreditScoreContract, ());
-    let score = CreditScoreContractClient::new(&env, &score_id);
-    let escrow_id = env.register(LoanEscrowContract, ());
-    let escrow = LoanEscrowContractClient::new(&env, &escrow_id);
-
     let admin = Address::generate(&env);
     let issuer = Address::generate(&env);
     let keeper = Address::generate(&env);
@@ -44,10 +38,26 @@ fn setup(start_score: u32) -> Fixture {
     let token = token::Client::new(&env, &token_address);
     let token_admin = StellarAssetClient::new(&env, &token_address);
 
-    // escrow is the score contract's reporter; score is the Passport's reputation manager.
-    passport.init(&admin, &issuer, &score_id);
-    score.init(&admin, &passport_id, &escrow_id);
-    escrow.init(&admin, &passport_id, &score_id, &token_address, &keeper);
+    // Deploy in the order the deploy script uses, each with its constructor.
+    let passport_id = env.register(BusinessPassportContract, (admin.clone(), issuer.clone()));
+    let passport = BusinessPassportContractClient::new(&env, &passport_id);
+    let score_id = env.register(CreditScoreContract, (admin.clone(), passport_id.clone()));
+    let score = CreditScoreContractClient::new(&env, &score_id);
+    let escrow_id = env.register(
+        LoanEscrowContract,
+        (
+            admin.clone(),
+            passport_id.clone(),
+            score_id.clone(),
+            token_address.clone(),
+            keeper.clone(),
+        ),
+    );
+    let escrow = LoanEscrowContractClient::new(&env, &escrow_id);
+
+    // Wire: score is the Passport's reputation manager, escrow is score's reporter.
+    passport.set_reputation_manager(&score_id);
+    score.set_reporter(&escrow_id);
 
     let business = Address::generate(&env);
     let data_hash = BytesN::from_array(&env, &[9u8; 32]);
@@ -63,6 +73,7 @@ fn setup(start_score: u32) -> Fixture {
         score,
         token,
         token_admin,
+        admin,
         keeper,
         business,
     }
@@ -394,15 +405,28 @@ fn default_before_due_and_grace_is_rejected() {
 }
 
 #[test]
-fn default_requires_the_keeper() {
-    // `mock_all_auths` in setup() lets any address's require_auth succeed, so
-    // this asserts the *role check* (a keeper address is on file for
-    // `default` to authorize as) rather than signature verification — the
-    // authorization-bypass itself is a testutils affordance, not a contract
-    // bug. `require_keeper` still runs and would reject in the absence of a
-    // configured keeper.
+fn default_requires_the_keepers_signature() {
     let f = setup(500);
-    assert_eq!(f.escrow.keeper(), f.keeper);
+    let investor = f.investor_with(100 * ONE_USDC);
+    f.open_and_release(1, &[(&investor, 100 * ONE_USDC)]);
+    f.env
+        .ledger()
+        .set_timestamp(f.env.ledger().timestamp() + 98 * 86_400);
+    let stranger = Address::generate(&f.env);
+    f.env.mock_auths(&[MockAuth {
+        address: &stranger,
+        invoke: &MockAuthInvoke {
+            contract: &f.escrow.address,
+            fn_name: "default",
+            args: (1u64,).into_val(&f.env),
+            sub_invokes: &[],
+        },
+    }]);
+    assert!(f.escrow.try_default(&1).is_err());
+    assert_eq!(
+        f.escrow.get_opportunity(&1).unwrap().status,
+        OpportunityStatus::Active
+    );
 }
 
 #[test]
@@ -454,4 +478,251 @@ fn wholly_self_funded_loan_is_score_neutral() {
     let p = f.passport.get(&f.business).unwrap();
     assert_eq!(p.score, 500); // unchanged
     assert_eq!(p.on_time_streak, 0);
+}
+
+// ---------------------------------------------------------------------------
+// Eligibility, pause, cancellation and never-trapped funds
+// ---------------------------------------------------------------------------
+
+const PRINCIPAL: i128 = 100 * ONE_USDC;
+const COLLATERAL: i128 = 50 * ONE_USDC; // band C
+
+impl Fixture {
+    fn open(&self, id: u64) {
+        self.escrow
+            .create(&id, &self.business, &PRINCIPAL, &90, &COLLATERAL, &1800);
+    }
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #15)")]
+fn admin_cannot_also_be_the_keeper() {
+    let env = Env::default();
+    let same = Address::generate(&env);
+    let other = Address::generate(&env);
+    env.register(
+        LoanEscrowContract,
+        (same.clone(), other.clone(), other.clone(), other, same),
+    );
+}
+
+#[test]
+fn constructor_records_every_address() {
+    let f = setup(500);
+    assert_eq!(f.escrow.admin(), f.admin);
+    assert_eq!(f.escrow.keeper(), f.keeper);
+    assert_eq!(f.escrow.passport(), f.passport.address);
+    assert_eq!(f.escrow.score(), f.score.address);
+    assert_eq!(f.escrow.token(), f.token.address);
+    assert!(!f.escrow.paused());
+}
+
+#[test]
+fn no_new_opportunity_for_a_frozen_passport_or_unaccepted_kyb() {
+    let f = setup(500);
+    f.passport.freeze(&f.business);
+    assert_eq!(
+        f.escrow
+            .try_create(&1, &f.business, &PRINCIPAL, &90, &COLLATERAL, &1800),
+        Err(Ok(Error::PassportNotActive))
+    );
+    f.passport.unfreeze(&f.business);
+    f.passport.set_kyb(&f.business, &KybStatus::Processing);
+    assert_eq!(
+        f.escrow
+            .try_create(&1, &f.business, &PRINCIPAL, &90, &COLLATERAL, &1800),
+        Err(Ok(Error::KybNotAccepted))
+    );
+}
+
+#[test]
+fn no_funding_or_release_once_the_business_is_no_longer_eligible() {
+    let f = setup(500);
+    let investor = f.investor_with(PRINCIPAL);
+    f.open(1);
+    f.passport.freeze(&f.business);
+    assert_eq!(
+        f.escrow.try_fund(&1, &investor, &PRINCIPAL),
+        Err(Ok(Error::PassportNotActive))
+    );
+    f.passport.unfreeze(&f.business);
+    f.escrow.fund(&1, &investor, &PRINCIPAL);
+    f.passport.freeze(&f.business);
+    assert_eq!(f.escrow.try_release(&1), Err(Ok(Error::PassportNotActive)));
+}
+
+#[test]
+fn keeper_unwinds_a_funded_loan_whose_business_was_frozen() {
+    let f = setup(500);
+    let a = f.investor_with(70 * ONE_USDC);
+    let b = f.investor_with(30 * ONE_USDC);
+    let business_before = f.token.balance(&f.business);
+    f.open(1);
+    f.escrow.fund(&1, &a, &(70 * ONE_USDC));
+    f.escrow.fund(&1, &b, &(30 * ONE_USDC));
+
+    // Still eligible: the keeper may not unwind it.
+    assert_eq!(f.escrow.try_force_cancel(&1), Err(Ok(Error::StillEligible)));
+
+    f.passport.freeze(&f.business);
+    f.escrow.force_cancel(&1);
+
+    assert_eq!(f.token.balance(&a), 70 * ONE_USDC);
+    assert_eq!(f.token.balance(&b), 30 * ONE_USDC);
+    assert_eq!(f.token.balance(&f.business), business_before);
+    assert_eq!(f.token.balance(&f.escrow.address), 0);
+    assert_eq!(
+        f.escrow.get_opportunity(&1).unwrap().status,
+        OpportunityStatus::Cancelled
+    );
+    // Nothing can happen to a cancelled opportunity.
+    assert_eq!(f.escrow.try_cancel(&1), Err(Ok(Error::InvalidStatus)));
+}
+
+#[test]
+fn the_business_can_cancel_before_release_but_not_after() {
+    let f = setup(500);
+    let investor = f.investor_with(40 * ONE_USDC);
+    let business_before = f.token.balance(&f.business);
+    f.open(1);
+    f.escrow.fund(&1, &investor, &(40 * ONE_USDC));
+    f.escrow.cancel(&1);
+    assert_eq!(f.token.balance(&investor), 40 * ONE_USDC);
+    assert_eq!(f.token.balance(&f.business), business_before);
+
+    let investor2 = f.investor_with(PRINCIPAL);
+    f.open_and_release(2, &[(&investor2, PRINCIPAL)]);
+    assert_eq!(f.escrow.try_cancel(&2), Err(Ok(Error::InvalidStatus)));
+}
+
+#[test]
+fn pause_stops_new_activity_but_never_repayment_or_cancellation() {
+    let f = setup(500);
+    let investor = f.investor_with(PRINCIPAL);
+    f.open_and_release(1, &[(&investor, PRINCIPAL)]);
+    let other = f.investor_with(10 * ONE_USDC);
+    f.open(2);
+    f.escrow.fund(&2, &other, &(10 * ONE_USDC));
+
+    f.escrow.set_paused(&true);
+    assert!(f.escrow.paused());
+    assert_eq!(
+        f.escrow
+            .try_create(&3, &f.business, &PRINCIPAL, &90, &COLLATERAL, &1800),
+        Err(Ok(Error::Paused))
+    );
+    assert_eq!(
+        f.escrow.try_fund(&2, &other, &ONE_USDC),
+        Err(Ok(Error::Paused))
+    );
+
+    // Obligations and exits keep working.
+    let total_due = PRINCIPAL + PRINCIPAL * 1800 * 90 / (10_000 * 365);
+    f.escrow.repay(&1, &total_due);
+    assert_eq!(
+        f.escrow.get_opportunity(&1).unwrap().status,
+        OpportunityStatus::Repaid
+    );
+    f.escrow.cancel(&2);
+    assert_eq!(f.token.balance(&other), 10 * ONE_USDC);
+
+    f.escrow.set_paused(&false);
+    f.open(3);
+}
+
+#[test]
+fn a_frozen_passport_never_traps_the_final_repayment() {
+    let f = setup(500);
+    let investor = f.investor_with(PRINCIPAL);
+    f.open_and_release(1, &[(&investor, PRINCIPAL)]);
+    let score_before = f.passport.get(&f.business).unwrap().score;
+    f.passport.freeze(&f.business);
+
+    let total_due = PRINCIPAL + PRINCIPAL * 1800 * 90 / (10_000 * 365);
+    f.escrow.repay(&1, &total_due);
+
+    let o = f.escrow.get_opportunity(&1).unwrap();
+    assert_eq!(o.status, OpportunityStatus::Repaid);
+    assert_eq!(f.token.balance(&investor), total_due);
+    assert_eq!(f.token.balance(&f.escrow.address), 0);
+    // The reputation update could not apply to a frozen Passport; the money moved anyway.
+    assert_eq!(f.passport.get(&f.business).unwrap().score, score_before);
+}
+
+#[test]
+fn a_frozen_passport_never_blocks_a_default() {
+    let f = setup(500);
+    let investor = f.investor_with(PRINCIPAL);
+    f.open_and_release(1, &[(&investor, PRINCIPAL)]);
+    f.passport.freeze(&f.business);
+    f.env
+        .ledger()
+        .set_timestamp(f.env.ledger().timestamp() + 98 * 86_400);
+    f.escrow.default(&1);
+    assert_eq!(
+        f.escrow.get_opportunity(&1).unwrap().status,
+        OpportunityStatus::Defaulted
+    );
+    assert_eq!(f.token.balance(&investor), COLLATERAL);
+}
+
+#[test]
+fn keeper_and_admin_stay_separate_and_admin_handover_is_two_step() {
+    let f = setup(500);
+    assert_eq!(
+        f.escrow.try_set_keeper(&f.admin),
+        Err(Ok(Error::RolesMustDiffer))
+    );
+    f.escrow.propose_admin(&f.keeper);
+    assert_eq!(f.escrow.try_accept_admin(), Err(Ok(Error::RolesMustDiffer)));
+    let next = Address::generate(&f.env);
+    f.escrow.propose_admin(&next);
+    f.escrow.accept_admin();
+    assert_eq!(f.escrow.admin(), next);
+    assert_eq!(f.escrow.pending_admin(), None);
+}
+
+#[test]
+fn only_the_admin_pauses_and_only_the_keeper_force_cancels() {
+    let f = setup(500);
+    f.open(1);
+    f.passport.freeze(&f.business);
+    let stranger = Address::generate(&f.env);
+
+    f.env.mock_auths(&[MockAuth {
+        address: &stranger,
+        invoke: &MockAuthInvoke {
+            contract: &f.escrow.address,
+            fn_name: "set_paused",
+            args: (true,).into_val(&f.env),
+            sub_invokes: &[],
+        },
+    }]);
+    assert!(f.escrow.try_set_paused(&true).is_err());
+
+    f.env.mock_auths(&[MockAuth {
+        address: &stranger,
+        invoke: &MockAuthInvoke {
+            contract: &f.escrow.address,
+            fn_name: "force_cancel",
+            args: (1u64,).into_val(&f.env),
+            sub_invokes: &[],
+        },
+    }]);
+    assert!(f.escrow.try_force_cancel(&1).is_err());
+
+    f.env.mock_auths(&[MockAuth {
+        address: &stranger,
+        invoke: &MockAuthInvoke {
+            contract: &f.escrow.address,
+            fn_name: "cancel",
+            args: (1u64,).into_val(&f.env),
+            sub_invokes: &[],
+        },
+    }]);
+    assert!(f.escrow.try_cancel(&1).is_err());
+    assert_eq!(
+        f.escrow.get_opportunity(&1).unwrap().status,
+        OpportunityStatus::Open
+    );
 }

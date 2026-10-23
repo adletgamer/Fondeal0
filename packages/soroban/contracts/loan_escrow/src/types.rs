@@ -29,6 +29,8 @@ pub enum OpportunityStatus {
     /// Defaulted after due + grace: collateral (and any partial repayment)
     /// seized pro-rata to investors, score penalized.
     Defaulted = 4,
+    /// Unwound before the principal was released: investors and collateral refunded.
+    Cancelled = 5,
 }
 
 /// One funding opportunity. Amounts are USDC (the SAC token configured at
@@ -57,6 +59,11 @@ pub struct Opportunity {
 #[derive(Clone)]
 pub enum DataKey {
     Admin,
+    /// An admin handover in progress (two-step: propose, then accept).
+    PendingAdmin,
+    /// When true, no new opportunity, funding or release; repayments, defaults
+    /// and cancellations still work.
+    Paused,
     /// Address of the deployed `business_passport` contract.
     Passport,
     /// Address of the deployed `credit_score` contract.
@@ -91,4 +98,14 @@ pub enum Error {
     RepaymentExceedsDue = 10,
     /// `default` called before `due_at` + the grace period.
     NotYetDue = 11,
+    /// The business's Passport is frozen or revoked.
+    PassportNotActive = 12,
+    /// The business's Passport does not carry an accepted KYB.
+    KybNotAccepted = 13,
+    Paused = 14,
+    /// The admin may not also hold an operational role.
+    RolesMustDiffer = 15,
+    NoPendingAdmin = 16,
+    /// The keeper may only unwind an opportunity whose business is no longer eligible.
+    StillEligible = 17,
 }

@@ -35,7 +35,7 @@ engine also mint identities or letting anyone forge score updates?
 - (+) 20/20 contract unit tests pass, including the cross-contract path and the
   self-funded-is-neutral anti-gaming test.
 - (−) Cross-contract call couples the two contracts at deploy time (wiring order:
-  deploy both → `passport.init(admin, issuer, score_id)` → `score.init(admin, passport_id, reporter)`).
+  deploy both → `passport.init(admin, issuer, score_id)` → `score.init(admin, passport_id, reporter)`). *Superseded by ADR-0012: constructors set the roles at deploy, then the admin sets the reputation manager and reporter.*
 - (−) `external` as a trusted boolean is a temporary weakness until Phase 6 derives it
   on-chain; called out explicitly rather than hidden.
 
