@@ -33,6 +33,8 @@
 #
 # Optional:
 #   TOKEN_SAC_ADDRESS=C...  escrow this Stellar Asset Contract instead of FTUSD
+#                           (USDC_SAC_ADDRESS is accepted as an alias). Get a classic
+#                           asset's SAC with: stellar contract id asset --asset CODE:ISSUER
 #   WRITE_ENV_LOCAL=1       also upsert the ids into apps/web/.env.local
 #   STELLAR_DEPLOY_NETWORK=local
 #                           rehearse against a local network instead
@@ -61,7 +63,7 @@ TEST_ASSET_CODE="${TEST_ASSET_CODE:-FTUSD}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SOROBAN_DIR="$ROOT/packages/soroban"
-WASM_DIR="$SOROBAN_DIR/target/wasm32v1-none/release"
+WASM_DIR="$SOROBAN_DIR/target/stellar-build"
 MANIFEST="$ROOT/deployments/$NETWORK.json"
 
 say() { printf '==> %s\n' "$*"; }
@@ -150,8 +152,14 @@ EOF
 fi
 
 # ---------------------------------------------------------------- build
-say "3/8 Build (the same command CI runs)"
-cargo build --manifest-path "$SOROBAN_DIR/Cargo.toml" --target wasm32v1-none --release --quiet
+# `stellar contract build` is the official build: it sets the SDK's spec-shaking
+# flag and remaps registry paths, and it is what people run by hand, so the
+# hashes recorded in the manifest are comparable. The hash still depends on the
+# machine that builds (paths); record the commit and compare on-chain, not
+# across machines.
+say "3/8 Build (stellar contract build)"
+rm -rf "$WASM_DIR"
+stellar contract build --manifest-path "$SOROBAN_DIR/Cargo.toml" --out-dir "$WASM_DIR" >/dev/null
 sha() { sha256sum "$1" | cut -d' ' -f1; }
 PASSPORT_WASM="$WASM_DIR/business_passport.wasm"
 SCORE_WASM="$WASM_DIR/credit_score.wasm"
@@ -163,7 +171,8 @@ done
 
 # ---------------------------------------------------------------- token
 say "4/8 Escrowed asset"
-if [ -n "${TOKEN_SAC_ADDRESS:-}" ]; then
+TOKEN_SAC_ADDRESS="${TOKEN_SAC_ADDRESS:-${USDC_SAC_ADDRESS:-}}"
+if [ -n "$TOKEN_SAC_ADDRESS" ]; then
   TOKEN="$TOKEN_SAC_ADDRESS"
   TOKEN_DESC="provided"
 else
@@ -211,7 +220,7 @@ MANIFEST="$MANIFEST" NETWORK="$NETWORK" PASSPHRASE="$EXPECTED_PASSPHRASE" COMMIT
   node -e '
     const e = process.env;
     const m = {
-      schema: 1,
+      schema: 2,
       note: "Public data only. Stellar Testnet is reset periodically; these ids are not permanent.",
       network: e.NETWORK,
       networkPassphrase: e.PASSPHRASE,
@@ -221,9 +230,9 @@ MANIFEST="$MANIFEST" NETWORK="$NETWORK" PASSPHRASE="$EXPECTED_PASSPHRASE" COMMIT
       roles: { admin: e.ADMIN, issuer: e.ISSUER, keeper: e.KEEPER },
       token: { contractId: e.TOKEN, description: e.TOKEN_DESC },
       contracts: {
-        business_passport: { id: e.PASSPORT_ID, wasmSha256: e.PASSPORT_SHA },
-        credit_score: { id: e.SCORE_ID, wasmSha256: e.SCORE_SHA },
-        loan_escrow: { id: e.ESCROW_ID, wasmSha256: e.ESCROW_SHA },
+        businessPassport: { id: e.PASSPORT_ID, wasmHash: e.PASSPORT_SHA },
+        reputation: { id: e.SCORE_ID, wasmHash: e.SCORE_SHA },
+        loanEscrow: { id: e.ESCROW_ID, wasmHash: e.ESCROW_SHA },
       },
       wiring: {
         "business_passport.reputation_manager": e.SCORE_ID,

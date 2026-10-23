@@ -35,7 +35,9 @@ Before the first Testnet deployment, a review of the three contracts found:
 ## Consequences
 
 - The deployment is a fixed sequence: deploy three contracts with constructors, then two admin calls to wire them. `scripts/deploy_testnet.sh` runs it and `scripts/verify_testnet.sh` checks every role, every wiring address and the Wasm hash on-chain.
-- `loan_escrow` is about 52 KB of Wasm, still well under the network limit.
+- `loan_escrow` is about 31 KB of Wasm when built with `stellar contract build` (about 52 KB with a plain `cargo build`), well under the network limit. The deploy script uses `stellar contract build`.
+- The manifest (`deployments/testnet.json`, schema 2) records each contract's id and Wasm hash, using the product names `businessPassport`, `reputation` (the `credit_score` crate) and `loanEscrow`.
+- Known, not fixed: `credit_score` and `loan_escrow` build with the warning "spec entry `Error` / `DataKey` is defined more than once", because they define their own `Error` and `DataKey` while also linking the shared crate's. It predates this work. Generated CLI help and error names for those two contracts may therefore be ambiguous; renaming the contract-local types would clear it.
 - The SDK in `packages/sdk` predates this ABI and also calls escrow functions the contract never had (`list_opportunities`, `get_positions`). The app falls back to its database when those reads fail, so configuring the contract ids is safe, but chain reads need an indexer and an SDK update before they are useful. Tracked in the backlog.
 - A reputation update skipped by `reputation_not_reported` must be reconciled by hand or by the future indexer.
 - Not done here: an independent security review, which remains a release gate before any real value moves.

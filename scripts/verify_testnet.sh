@@ -21,6 +21,7 @@ SOURCE="${VERIFY_SOURCE:-fondealo-admin}"
 
 get() { node -e 'const m=require(process.argv[1]); console.log(process.argv[2].split(".").reduce((o,k)=>o[k],m))' "$MANIFEST" "$1"; }
 
+[ "$(get schema)" = "2" ] || { echo "error: manifest schema $(get schema) is not supported (expected 2)" >&2; exit 1; }
 NETWORK="$(get network)"
 case "$NETWORK" in
   testnet | local) ;;
@@ -32,9 +33,9 @@ ADMIN="$(get roles.admin)"
 ISSUER="$(get roles.issuer)"
 KEEPER="$(get roles.keeper)"
 TOKEN="$(get token.contractId)"
-PASSPORT="$(get contracts.business_passport.id)"
-SCORE="$(get contracts.credit_score.id)"
-ESCROW="$(get contracts.loan_escrow.id)"
+PASSPORT="$(get contracts.businessPassport.id)"
+SCORE="$(get contracts.reputation.id)"
+ESCROW="$(get contracts.loanEscrow.id)"
 
 fail=0
 check() { # label expected actual
@@ -69,9 +70,9 @@ check "roles are distinct (admin != keeper)" "yes" "$([ "$ADMIN" != "$KEEPER" ] 
 echo "Wasm on-chain matches the manifest"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-for name in business_passport credit_score loan_escrow; do
+for name in businessPassport reputation loanEscrow; do
   id="$(get "contracts.$name.id")"
-  want="$(get "contracts.$name.wasmSha256")"
+  want="$(get "contracts.$name.wasmHash")"
   if stellar contract fetch --id "$id" "${net[@]}" --out-file "$tmp/$name.wasm" >/dev/null 2>&1; then
     check "$name wasm sha256" "$want" "$(sha256sum "$tmp/$name.wasm" | cut -d' ' -f1)"
   else

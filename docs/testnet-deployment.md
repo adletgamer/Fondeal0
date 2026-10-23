@@ -85,15 +85,52 @@ It writes `deployments/local.json` (gitignored) and runs the same verification. 
 
 Read-only. It checks every role and wiring address, that the escrow is not paused, that roles are distinct, and that the Wasm on-chain hashes to what the manifest names. It exits non-zero on any difference.
 
+## The manifest
+
+`deployments/testnet.json` (schema 2) records, for traceability, the three contract ids and the hash of the Wasm each one runs, plus roles, the escrowed token, the Git commit and the CLI version:
+
+```json
+{
+  "schema": 2,
+  "network": "testnet",
+  "gitCommit": "…",
+  "contracts": {
+    "businessPassport": { "id": "C…", "wasmHash": "…" },
+    "reputation": { "id": "C…", "wasmHash": "…" },
+    "loanEscrow": { "id": "C…", "wasmHash": "…" }
+  }
+}
+```
+
+- `reputation` is the contract in the `credit_score` crate. Product copy calls it the Reputation Engine; the crate and its ABI keep the old name for now.
+- `wasmHash` is the SHA-256 of the Wasm, which is also the hash the network stores for that code. `stellar contract build` prints the same value as `Wasm Hash`.
+- The script builds with `stellar contract build`, so the Wasm matches what you get building by hand. A build embeds machine paths, so the same commit can hash differently on different machines (for example your laptop and GitHub Actions). That is expected: compare against the chain, not across machines. `verify_testnet.sh` fetches each contract's Wasm from the network and checks it against the manifest.
+
+## Escrow real USDC instead of FTUSD
+
+By default the escrow holds the Testnet-only `FTUSD`. To hold Circle's Testnet USDC instead, pass its Stellar Asset Contract:
+
+```bash
+export TOKEN_SAC_ADDRESS=$(stellar contract id asset --network testnet \
+  --asset USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5)
+./scripts/deploy_testnet.sh
+```
+
+`USDC_SAC_ADDRESS` is accepted as an alias. Business and investor accounts then need a USDC trustline and Testnet USDC from Circle's faucet; with `FTUSD` the admin account can mint to them directly, which is simpler for a demo.
+
+## If you deployed with the earlier script
+
+Contracts deployed by the pre-hardening script (public `init`, no `cancel`, no `paused`, no `passport` getter on the escrow) are a different ABI from this repository. They cannot be upgraded in place and `verify_testnet.sh` will not accept them. Deploy again from this branch; Testnet ids are cheap. The old ids simply stop being referenced.
+
 ## Point the app at it
 
 In Vercel (**Preview** first), from `deployments/testnet.json`:
 
 ```
 NEXT_PUBLIC_STELLAR_NETWORK=testnet
-NEXT_PUBLIC_PASSPORT_CONTRACT_ID=<contracts.business_passport.id>
-NEXT_PUBLIC_SCORE_CONTRACT_ID=<contracts.credit_score.id>
-NEXT_PUBLIC_ESCROW_CONTRACT_ID=<contracts.loan_escrow.id>
+NEXT_PUBLIC_PASSPORT_CONTRACT_ID=<contracts.businessPassport.id>
+NEXT_PUBLIC_SCORE_CONTRACT_ID=<contracts.reputation.id>
+NEXT_PUBLIC_ESCROW_CONTRACT_ID=<contracts.loanEscrow.id>
 NEXT_PUBLIC_USDC_SAC_ADDRESS=<token.contractId>
 NEXT_PUBLIC_USDC_ASSET_CODE=FTUSD
 ```
