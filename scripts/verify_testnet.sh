@@ -6,6 +6,8 @@
 #
 #   scripts/verify_testnet.sh [deployments/testnet.json]
 #
+# The manifest names its network (testnet, or local for a rehearsal).
+#
 # Calls are simulated (`--send=no`), so nothing is signed or paid for.
 # VERIFY_SOURCE names the identity used as the simulation source
 # (default: fondealo-admin; any funded Testnet identity works).
@@ -19,8 +21,12 @@ SOURCE="${VERIFY_SOURCE:-fondealo-admin}"
 
 get() { node -e 'const m=require(process.argv[1]); console.log(process.argv[2].split(".").reduce((o,k)=>o[k],m))' "$MANIFEST" "$1"; }
 
-[ "$(get network)" = "testnet" ] || { echo "error: manifest is not for testnet" >&2; exit 1; }
-net=(--network testnet)
+NETWORK="$(get network)"
+case "$NETWORK" in
+  testnet | local) ;;
+  *) echo "error: manifest is for '$NETWORK', expected testnet (or local)" >&2; exit 1 ;;
+esac
+net=(--network "$NETWORK")
 
 ADMIN="$(get roles.admin)"
 ISSUER="$(get roles.issuer)"

@@ -65,3 +65,6 @@ _transfer*
 
 # taste-skill working files (screenshots, direction sheets)
 .taste-skill/
+
+# Local-network rehearsal manifest (scripts/deploy_testnet.sh, STELLAR_DEPLOY_NETWORK=local)
+deployments/local.json

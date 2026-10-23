@@ -28,18 +28,26 @@
 # Optional:
 #   TOKEN_SAC_ADDRESS=C...  escrow this Stellar Asset Contract instead of FTUSD
 #   WRITE_ENV_LOCAL=1       also upsert the ids into apps/web/.env.local
+#   STELLAR_DEPLOY_NETWORK=local
+#                           rehearse against a local network instead
+#                           (`stellar container start local`); writes
+#                           deployments/local.json, which is gitignored
 #
-# Output: deployments/testnet.json (public data only), then scripts/verify_testnet.sh.
+# Output: deployments/<network>.json (public data only), then scripts/verify_testnet.sh.
 set -euo pipefail
 
-NETWORK="testnet"
-EXPECTED_PASSPHRASE="Test SDF Network ; September 2015"
+NETWORK="${STELLAR_DEPLOY_NETWORK:-testnet}"
+case "$NETWORK" in
+  testnet) EXPECTED_PASSPHRASE="Test SDF Network ; September 2015" ;;
+  local) EXPECTED_PASSPHRASE="Standalone Network ; February 2017" ;;
+  *) echo "error: this script deploys to testnet (or local for a rehearsal), not '$NETWORK'" >&2; exit 1 ;;
+esac
 TEST_ASSET_CODE="${TEST_ASSET_CODE:-FTUSD}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SOROBAN_DIR="$ROOT/packages/soroban"
 WASM_DIR="$SOROBAN_DIR/target/wasm32v1-none/release"
-MANIFEST="$ROOT/deployments/testnet.json"
+MANIFEST="$ROOT/deployments/$NETWORK.json"
 
 say() { printf '==> %s\n' "$*"; }
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
@@ -59,7 +67,7 @@ PASSPHRASE="$(stellar network ls --long 2>/dev/null | awk -v n="$NETWORK" '
   $0 ~ "^Name: "n"$" {found=1; next}
   found && /^Network passphrase:/ {sub(/^Network passphrase: /, ""); print; exit}')"
 if [ -n "$PASSPHRASE" ] && [ "$PASSPHRASE" != "$EXPECTED_PASSPHRASE" ]; then
-  die "the '$NETWORK' network is not Stellar Testnet (passphrase: $PASSPHRASE)"
+  die "the '$NETWORK' network has an unexpected passphrase: $PASSPHRASE"
 fi
 echo "    $CLI_VERSION, network $NETWORK"
 
@@ -177,7 +185,7 @@ MANIFEST="$MANIFEST" NETWORK="$NETWORK" PASSPHRASE="$EXPECTED_PASSPHRASE" COMMIT
     require("fs").writeFileSync(e.MANIFEST, JSON.stringify(m, null, 2) + "\n");
   '
 
-if [ "${WRITE_ENV_LOCAL:-0}" = "1" ]; then
+if [ "${WRITE_ENV_LOCAL:-0}" = "1" ] && [ "$NETWORK" = "testnet" ]; then
   ENV_LOCAL="$ROOT/apps/web/.env.local"
   touch "$ENV_LOCAL"
   upsert() {
@@ -201,11 +209,14 @@ say "8/8 Verify on-chain"
 
 cat <<EOF
 
-Deployed and verified on Stellar Testnet.
+Deployed and verified on $NETWORK.
   business_passport  $PASSPORT_ID
   credit_score       $SCORE_ID
   loan_escrow        $ESCROW_ID
   token              $TOKEN
+EOF
+if [ "$NETWORK" = "testnet" ]; then
+  cat <<EOF
 Explorer: https://stellar.expert/explorer/testnet/contract/$PASSPORT_ID
 Commit deployments/testnet.json. For the app (Vercel, Preview):
   NEXT_PUBLIC_STELLAR_NETWORK=testnet
@@ -214,3 +225,4 @@ Commit deployments/testnet.json. For the app (Vercel, Preview):
   NEXT_PUBLIC_ESCROW_CONTRACT_ID=$ESCROW_ID
   NEXT_PUBLIC_USDC_SAC_ADDRESS=$TOKEN
 EOF
+fi

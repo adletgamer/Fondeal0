@@ -54,6 +54,20 @@ set -a; source .env; set +a; ./scripts/deploy_testnet.sh
 WRITE_ENV_LOCAL=1 ./scripts/deploy_testnet.sh
 ```
 
+## Rehearse on a local network first (optional)
+
+The same script runs against a throwaway local network, so you can see every step pass before touching Testnet. Needs Docker.
+
+```bash
+docker run -d --name stellar -p 8000:8000 stellar/quickstart:latest \
+  --local --limits testnet --protocol-version 29 --enable core,rpc,horizon
+STELLAR_DEPLOY_NETWORK=local GENERATE_KEYS=1 ./scripts/deploy_testnet.sh
+```
+
+It writes `deployments/local.json` (gitignored) and runs the same verification. Use `--protocol-version 29` to match Testnet: on 2026-10-23 the image's default local protocol (28) failed every contract upload in simulation, while 29 worked.
+
+**Rehearsal evidence, 2026-10-23** (stellar-cli 28.1.0, local network on protocol 29): deploy, wiring and all 17 verification checks passed; re-running the script was safe; a tampered manifest failed verification. A full loan cycle with real authorization also passed: Passport issued by the issuer (the admin was refused), KYB credential valid, create → fund → release → repay with exact payout to the investor, collateral returned, and the Passport updated by `credit_score` (`loans_repaid` 1, score 700 → 712). This is not Testnet evidence.
+
 ## Verify, any time
 
 ```bash
