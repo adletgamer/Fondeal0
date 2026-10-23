@@ -1,6 +1,6 @@
 # ADR-0011: Admin back-office and decision authority
 
-**Status:** Proposed, 2026-10-22. Increment 1 (design, workflow rules, fail-closed access) is implemented in `apps/admin`. Later increments are gated below. This is not approval to handle real documents, deploy contracts or issue Passports.
+**Status:** Proposed, 2026-10-22; revised the same day (Privy authenticates, Fondealo authorizes; maker-checker; decision records; credential anchoring). Increments 1 and 2a are implemented in `apps/admin` and `packages/database`. Later increments are gated below. This is not approval to handle real documents, deploy contracts or issue Passports.
 
 ## Context
 
@@ -21,29 +21,55 @@ Three privilege planes, each with its own surface and keys.
 ## Decision authority
 
 1. A human decides. The system never moves a case to Approved by itself, and provider output, a sandbox pass or a declaration is never enough.
-2. **Reviewer** may claim a case and ask for information. **Approver** may also approve, reject and reopen. A single person may hold both roles.
-3. Every decision records the case, the actor, the policy version, reason codes, the evidence sources used, the time and an expiry, and is append-only. The stored `KybStatus` is derived from the latest decision (`Approved` is the only `Accepted`).
-4. A decision is validated by one pure function (`validateDecision`) that the screen runs for guidance and the server runs as the authority. Rules live in code and in [KYB policy v1](../kyb/policy-v1.md).
-5. KYB approval is not underwriting approval. The existing `canRequestFinancing` gate stays: it requires a non-sandbox provider on the KYB record, a current underwriting decision and a matching Passport projection.
-6. With one operator there is no four-eyes control. Compensating controls: a cancellable cooling-off window before any on-chain issuance, notice to a second contact, and a policy field for two approvals that can be switched on without redesign.
+2. **Privy authenticates; Fondealo authorizes.** A verified Privy access token is only a claim of identity. Access comes from an `Active` `StaffMember` row keyed by the Privy user id (the token's subject), never by email, and from the permission table in `apps/admin/src/lib/kyb/authz.ts`. A person who can sign in to Privy but has no active row gets nothing.
+3. **Roles.** A person may hold several.
+
+   | Role | May |
+   | --- | --- |
+   | Reviewer | Read cases, claim, ask for information, reveal a full tax number (audited) |
+   | Approver | Everything a Reviewer may, plus approve, reject and reopen |
+   | Admin | Manage staff only. Does not read cases or decide unless the person also holds those roles |
+
+   Nobody changes their own access, and the last active Admin cannot be suspended or demoted. Policies are **not** editable from the back-office: a policy is versioned code plus its document, changed by pull request, so `policyVersion` always points at reviewable rules.
+4. **Separation of duties (maker-checker).** Whoever claimed and prepared a case may not approve or reject it. Enforced in code (`validateDecision`) and in the database (`KybDecision_maker_checker`). Production always enforces it. On Testnet a single operator may run `solo` (the default there until a second person joins); every such decision records `separationMode = 'solo'`, and the screen says so.
+5. **Every decision is a record**, append-only (a trigger rejects `UPDATE` and `DELETE`): case, submission, kind, from and to state, actor, preparer, separation mode, `policyVersion`, reason codes, checklist answers with sources, `evidenceSnapshotHash`, time, and an expiry for approvals. The stored `KybStatus` is a projection of the latest record (`Approved` is the only `Accepted`).
+6. **`evidenceSnapshotHash`** is the SHA-256 of a canonical (sorted-key) JSON of what the reviewer saw: the evidence list with sources, provider checks, the checklist and the intake's own commitment. Evidence may change later; the record proves what the decision was based on.
+7. A decision is validated by one pure function (`validateDecision`) that the screen runs for guidance and the server runs as the authority.
+8. KYB approval is not underwriting approval. The existing `canRequestFinancing` gate stays.
 
 ## Staff access
 
-Allowlist table (`StaffMember`: identity, role, active), mandatory second factor, short sessions, re-authentication to approve, `__Host-` cookie, per-request nonce CSP, `no-store`, `noindex`, no framing. Every read of a full tax number and every decision writes a `VerificationAuditEvent`. Until staff authentication ships, the example-data preview is the way in: it is on in local development, in Vercel preview deployments and wherever `ADMIN_ENV=testnet`, serves only fictional fixtures and stores nothing. On a production deployment it is off and access fails closed: no session means redirect to `/sign-in`. Increment 2 must keep the preview from ever reading real data.
+- **Separate Privy app for staff.** Its own app id and secret, apart from the customer app, so customer identities and staff identities never share a pool and the staff app can have its own login methods.
+- **Server-side verification on every request.** Verify the access token with Privy's server SDK (`verifyAuthToken`), look up `StaffMember` by the token subject, require `Active`. Never trust a client flag.
+- **Second factor.** Privy's MFA, as documented, protects the use of embedded-wallet keys, not the sign-in, and a session token does not say which method was used. Privy also cannot create an account from a passkey; a passkey must be linked to an existing account. So `mfaRequired` is enforced by Fondealo: a decision or staff change requires a fresh WebAuthn assertion that Fondealo verifies against a passkey registered to that `StaffMember` (step-up). Increment 3.
+- **Bootstrap.** While no active Admin exists, one sign-in whose Privy account has a verified email equal to `ADMIN_BOOTSTRAP_EMAIL` creates the first Admin, and the event is audited. After that the variable is ignored. Email is used only for this one-time bootstrap, never to authorize.
+- Short sessions, `__Host-` cookie, per-request nonce CSP, `no-store`, `noindex`, no framing. Staff access changes and full tax-number reveals write a `StaffAuditEvent` (append-only).
+- Until staff authentication ships, the example-data preview is the way in: on in local development, Vercel preview deployments and wherever `ADMIN_ENV=testnet`; it serves only fictional fixtures and stores nothing. On a production deployment it is off. The preview must never read real data.
 
 ## Approved decision to chain
 
-An approval creates an `OnchainAction` row (kind, business, decision, idempotency key, state). A worker holding the issuer key re-checks that the decision is current, waits out the cooling-off window, signs, confirms in the ledger and reconciles. Any mismatch alerts and halts; nothing is retried blindly. The worker is the only holder of the issuer key.
+The back-office is the root of trust of the Passport's KYB credential. No KYB evidence is published.
+
+| On-chain (Passport contract, `add_credential`) | Off-chain (database) |
+| --- | --- |
+| `kind = KYB`; `issuer` and `issued_at` (set by the contract); `status`; `data_hash` = the credential commitment | Tax number, representative, documents, sources, reviewer notes, the decision record, the commitment salt |
+
+The **credential commitment** is SHA-256 over canonical JSON of the decision id, `policyVersion`, `evidenceSnapshotHash`, issue and expiry times and a random 32-byte salt that never leaves the server (same scheme as the intake's `dataHash`). Whoever is given the record and the salt can recompute it and compare it with the chain; nobody can derive anything about the company from it. The subject is the Passport's own Stellar address, so no hash of the company's identity goes on-chain: a tax number is enumerable, and a salted hash of it would add nothing.
+
+Two contract gaps were named here: the credential had no `expires_at`, and a credential kind could exist only once per business. Both are closed by [ADR-0012](0012-contract-initialization-roles-and-funds-safety.md): `Credential.expires_at`, renewal of a revoked or expired kind, and `is_credential_valid` for verifiers. `policyVersion` stays inside the commitment and the off-chain record.
+
+An approval creates an `OnchainAction` row. A worker holding the issuer key re-checks that the decision is current, waits out the cooling-off window, signs, confirms in the ledger and reconciles. Any mismatch alerts and halts. The worker is the only holder of the issuer key.
 
 ## Increments
 
-| #   | Scope                                                                                                                                              | Exit evidence                                                                                       |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| 1   | Design, case queue and detail, decision panel on example data, state machine, reason codes, fail-closed access, security headers. **Implemented.** | Unit tests for every decision rule, middleware and CSP; typecheck, lint, build                      |
-| 2   | Staff authentication and allowlist, additive migration (`StaffMember`, `KybDecision`), database-backed reader, masked tax ID with audited reveal   | Migration applied to isolated Development; negative tests for unauthenticated and wrong-role access |
-| 3   | Persist decisions through server actions that re-run `validateDecision`; audit events; applicant-facing status updates                             | Decision history immutable; a rejected or stale input never changes state                           |
-| 4   | `OnchainAction` queue, signing worker, cooling-off, reconciliation and alerts                                                                      | Testnet issue and revoke reconciled; killing the worker mid-flight leaves no duplicate or orphan    |
-| 5   | Underwriting decision screen, expiry and review-due handling, second-approver option                                                               | Expired approval returns to review; financing gate unchanged                                        |
+| # | Scope | Exit evidence |
+| --- | --- | --- |
+| 1 | Design, queue and case detail on example data, state machine, reason codes, fail-closed access, security headers. **Implemented.** | Unit tests for every decision rule, middleware and CSP |
+| 2a | Roles and permissions, maker-checker, decision record with `policyVersion` and `evidenceSnapshotHash`, credential commitment; additive migration (`StaffMember`, `KybDecision`, `StaffAuditEvent`) with check constraints and append-only triggers. **Implemented.** | Unit tests; every migration applied in order to an embedded Postgres in CI with the invariants tested; not yet applied to any hosted database |
+| 2b | Separate staff Privy app, server-side token verification, `StaffMember` lookup, bootstrap, database-backed reader, audited tax-number reveal | Migration applied to isolated Development; negative tests for unauthenticated, unknown, suspended and wrong-role users |
+| 3 | Persist decisions through server actions that re-run `validateDecision`; WebAuthn step-up; applicant-facing status | A rejected, replayed or stale input never changes state |
+| 4 | `OnchainAction` queue, signing worker, cooling-off, reconciliation; contract `expires_at` | Testnet issue and revoke reconciled against the commitment |
+| 5 | Underwriting decision screen, expiry and review-due handling | Expired approval returns to review; financing gate unchanged |
 
 ## Consequences
 

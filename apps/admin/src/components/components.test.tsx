@@ -15,7 +15,13 @@ const { fixtureCases } = await import('@/lib/fixtures/cases');
 const now = new Date('2026-10-22T15:00:00Z');
 const cases = fixtureCases(now);
 const text = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-const staff = { id: 'p', name: 'Vista previa', role: 'Approver' as const, preview: true };
+const staff = {
+  id: 'p',
+  name: 'Vista previa',
+  roles: ['Approver'] as const,
+  status: 'Active' as const,
+  preview: true,
+};
 const caps = { persistsDecisions: false, queuesPassportIssuance: false };
 
 describe('review queue', () => {
@@ -51,7 +57,9 @@ describe('decision panel', () => {
         createElement(DecisionPanel, {
           legalName: 'X SAC',
           status,
-          reviewer: { id: 'p', role: 'Approver' },
+          actor: { id: 'p', roles: ['Approver'], status: 'Active' },
+          preparedBy: 'p',
+          separation: 'solo',
           env: 'testnet',
           capabilities: caps,
         }),
@@ -69,6 +77,10 @@ describe('decision panel', () => {
 
   it('names the policy version it decides under', () => {
     expect(render('InReview')).toContain('kyb-v1-draft');
+  });
+
+  it('says so when one person prepares and decides', () => {
+    expect(render('InReview')).toContain('Modo de un solo operador');
   });
 });
 

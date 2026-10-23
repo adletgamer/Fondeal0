@@ -41,7 +41,7 @@ scripts                  Development and Testnet operations
 .github/workflows        Node and Soroban CI
 ```
 
-The contracts compile for `wasm32v1-none` in CI. Their compilation does not establish network compatibility, deployed contract addresses, safe issuance or production readiness. The repository pins `soroban-sdk` 27; review compatibility before a Testnet deployment. No dependency upgrade is part of PR #13.
+The contracts compile for `wasm32v1-none` in CI. Their compilation does not establish network compatibility, deployed contract addresses, safe issuance or production readiness. Before the first Testnet deployment they were hardened ([ADR-0012](docs/adr/0012-contract-initialization-roles-and-funds-safety.md)): roles set atomically by constructors, admin separated from issuer and keeper, eligibility checks in the escrow, and refunds that cannot be blocked. Deploy and verify with the [Testnet runbook](docs/testnet-deployment.md). A contract is on Testnet only when `deployments/testnet.json` names it and `scripts/verify_testnet.sh` passes against it.
 
 ## Local development
 
@@ -74,6 +74,7 @@ Migration commands change the target database and are intentionally outside the 
 - [Roadmap](docs/roadmap.md): ordered delivery stages and acceptance criteria.
 - [Business approval strategy](docs/strategy/business-onboarding-underwriting-agentic-payments.md): Peru KYB, underwriting, Passport and agentic verification pilot.
 - [Deployment and database](docs/deployment-and-database.md): environment and Prisma runbook.
+- [Testnet deployment](docs/testnet-deployment.md): deploy, wire and verify the contracts.
 - [Risk register](docs/risks.md) and [architecture decisions](docs/adr/): security and design history.
 - [Documentation index](docs/README.md): which documents are current and which are historical.
 

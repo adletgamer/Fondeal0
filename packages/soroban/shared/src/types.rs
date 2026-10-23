@@ -75,6 +75,9 @@ pub struct Credential {
     pub data_hash: BytesN<32>,
     /// Ledger timestamp (unix seconds) when it was attested.
     pub issued_at: u64,
+    /// Ledger timestamp (unix seconds) after which the claim no longer holds.
+    /// A verifier must check it; `is_credential_valid` does.
+    pub expires_at: u64,
     pub status: CredentialStatus,
 }
 
@@ -120,13 +123,16 @@ pub struct Passport {
 /// - `Issuer` issues Passports, sets KYB status, and manages status and
 ///   credentials (the Fondealo backend / admin key acting on an approved KYB).
 /// - `RepManager` applies reputation updates — this is the `credit_score`
-///   contract, which updates the Passport via a cross-contract call.
+///   contract, which updates the Passport via a cross-contract call. It is
+///   unset at deployment (nobody can apply reputation) until the admin wires it.
 ///
 /// The owner (the business) controls only its own `metadata_uri`.
 #[contracttype]
 #[derive(Clone)]
 pub enum DataKey {
     Admin,
+    /// An admin handover in progress (two-step: propose, then accept).
+    PendingAdmin,
     Issuer,
     RepManager,
     /// Next `passport_id` to hand out.
@@ -157,4 +163,9 @@ pub enum Error {
     CredentialAlreadyExists = 12,
     TooManyCredentials = 13,
     InvalidStatusTransition = 14,
+    /// The admin may not also hold an operational role.
+    RolesMustDiffer = 15,
+    NoPendingAdmin = 16,
+    /// A credential's expiry must be in the future.
+    InvalidExpiry = 17,
 }

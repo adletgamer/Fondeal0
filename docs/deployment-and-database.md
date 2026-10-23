@@ -26,7 +26,7 @@ The **repo-root `.env`** (gitignored) is the single source of truth locally.
 | `NEXT_PUBLIC_PRIVY_APP_ID` | public | Privy app id. |
 | `PRIVY_APP_SECRET` | server | Verifies Privy identity tokens. Never `NEXT_PUBLIC_`. |
 | `NEXT_PUBLIC_STELLAR_NETWORK`, `_SOROBAN_RPC_URL`, `_HORIZON_URL`, `_NETWORK_PASSPHRASE` | public | Stellar/Soroban endpoints (used by `@fondealo/sdk`, not by login). |
-| `NEXT_PUBLIC_*_CONTRACT_ID`, `NEXT_PUBLIC_USDC_*` | public | Deployed contract ids / USDC SAC — empty until contracts are deployed. |
+| `NEXT_PUBLIC_*_CONTRACT_ID`, `NEXT_PUBLIC_USDC_*` | public | Deployed contract ids and the escrowed asset's SAC — empty until contracts are deployed. Copy them from `deployments/testnet.json`; see the [Testnet runbook](testnet-deployment.md). |
 
 Never put real values in `.env.example`, docs, logs or commits.
 

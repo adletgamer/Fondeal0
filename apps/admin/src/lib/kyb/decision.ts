@@ -7,12 +7,23 @@ import {
   acceptedSources,
 } from './policy';
 import { reasonCode } from './reason-codes';
-import type { AdminEnv, CaseStatus, ChecklistAnswer, DecisionKind, Reviewer } from './types';
+import { actionFor, can } from './authz';
+import type {
+  Actor,
+  AdminEnv,
+  CaseStatus,
+  ChecklistAnswer,
+  DecisionKind,
+  SeparationMode,
+} from './types';
 
 export interface DecisionInput {
   kind: DecisionKind;
   from: CaseStatus;
-  reviewer: Reviewer;
+  actor: Actor;
+  /** Who claimed and prepared the case, if anyone. */
+  preparedBy: string | null;
+  separation: SeparationMode;
   checklist: ChecklistAnswer[];
   reasonCodes: string[];
   note: string;
@@ -30,7 +41,7 @@ const itemLabel = (id: string) => POLICY_ITEMS.find((i) => i.id === id)?.label ?
  * treat it as the authority. Pure on purpose, so it can be tested exhaustively.
  */
 export function validateDecision(input: DecisionInput): DecisionCheck {
-  const { kind, from, reviewer, checklist, env } = input;
+  const { kind, from, actor, checklist, env } = input;
   const note = input.note.trim();
   const errors: string[] = [];
 
@@ -40,8 +51,23 @@ export function validateDecision(input: DecisionInput): DecisionCheck {
     return { ok: false, errors };
   }
 
-  if ((kind === 'Approve' || kind === 'Reject') && reviewer.role !== 'Approver') {
-    errors.push('Solo un Aprobador puede aprobar o rechazar.');
+  if (!can(actor, actionFor(kind))) {
+    errors.push(
+      kind === 'Approve' || kind === 'Reject' || kind === 'Reopen'
+        ? `Solo un Aprobador activo puede ${KIND_LABEL[kind]}.`
+        : `Tu rol no permite ${KIND_LABEL[kind]}.`,
+    );
+  }
+
+  // Maker-checker: whoever prepared the case does not also decide it.
+  if (
+    (kind === 'Approve' || kind === 'Reject') &&
+    input.separation === 'enforced' &&
+    input.preparedBy === actor.id
+  ) {
+    errors.push(
+      'Quien preparó el caso no puede decidirlo. Debe aprobarlo o rechazarlo otra persona.',
+    );
   }
 
   let reasonCodes = input.reasonCodes;

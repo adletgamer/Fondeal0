@@ -34,9 +34,20 @@ En una revisión manual la nota debe decir **qué se revisó, dónde y cuándo**
 
 ## Quién puede decidir
 
-- **Revisor:** toma casos y pide información.
+- **Revisor:** toma casos, revisa evidencia y pide información.
 - **Aprobador:** además aprueba, rechaza y reabre.
-- Una persona puede tener ambos roles. Sin segundo aprobador no hay control cruzado; ver ADR-0011 para las compensaciones.
+- **Administrador:** gestiona al personal. No ve casos ni decide si no tiene también esos roles. No edita políticas: una política cambia por pull request, con nueva versión.
+- Una persona puede tener varios roles. Nadie cambia su propio acceso.
+
+## Separación de funciones
+
+Quien tomó y preparó un caso **no puede aprobarlo ni rechazarlo**: debe hacerlo otra persona. En producción es obligatorio siempre. En Testnet, mientras haya un solo operador, se permite el **modo de un solo operador**: cada decisión queda marcada así y la pantalla lo advierte.
+
+## Qué queda registrado
+
+Cada decisión guarda, sin poder modificarse después: quién la tomó y quién preparó el caso, el modo de separación, la **versión de política** (`kyb-v1-draft`), los motivos, los puntos confirmados con su fuente y una **huella de la evidencia** (`evidenceSnapshotHash`). Si la evidencia cambia luego, la huella prueba en qué se basó la decisión.
+
+Al aprobar, se publica en Stellar solo una credencial `KYB` con un compromiso: un hash con sal que no revela nada de la empresa. Nunca se publican el RUC, el representante, documentos ni notas.
 
 ## Estados de un caso
 

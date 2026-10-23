@@ -25,7 +25,14 @@
 //! | `issue`, `set_kyb`, `freeze`, `unfreeze`, `revoke`, `add_credential`, `revoke_credential` | `issuer` (Fondealo backend acting on an approved KYB) |
 //! | `apply_reputation` (the score update) | `reputation_manager` (the `credit_score` contract) |
 //! | `update_metadata` | the Passport's **owner** (the business itself) |
-//! | `set_issuer`, `set_reputation_manager` | `admin` |
+//! | `set_issuer`, `set_reputation_manager`, `propose_admin` | `admin` |
+//! | `accept_admin` | the proposed admin |
+//!
+//! Roles are fixed in the constructor, which runs in the same transaction as the
+//! deployment, so there is no window in which someone else can claim them. The
+//! admin may never also be the issuer. The reputation manager is unset at
+//! deployment (no one can apply reputation) until the admin wires the
+//! `credit_score` contract in. Handing over admin is two-step.
 //!
 //! Conceptual names used in the product spec map to these entrypoints:
 //! `issue_passport`→`issue`, `get_passport`→`get`, `update_score`→`apply_reputation`,
@@ -54,7 +61,8 @@ pub use fondealo_soroban_shared::{
 };
 
 use soroban_sdk::{
-    contract, contractevent, contractimpl, Address, BytesN, Env, String, Symbol, Vec,
+    contract, contractevent, contractimpl, panic_with_error, symbol_short, Address, BytesN, Env,
+    String, Symbol, Vec,
 };
 
 /// Emitted when a Passport is first issued. Topic: `issued`.
@@ -120,6 +128,23 @@ pub struct CredentialRevoked {
     pub kind: Symbol,
 }
 
+/// Emitted when a role is set or rotated. Topic: `role_changed`.
+#[contractevent]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RoleChanged {
+    #[topic]
+    pub role: Symbol,
+    pub address: Address,
+}
+
+/// Emitted when the admin proposes a successor. Topic: `admin_proposed`.
+#[contractevent]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AdminProposed {
+    pub current: Address,
+    pub proposed: Address,
+}
+
 // --- TTL policy (ledgers). Testnet ~5s/ledger => ~17,280 ledgers/day. ---
 /// Bump when remaining TTL drops below ~30 days.
 const TTL_BUMP_THRESHOLD: u32 = 30 * 17_280;
@@ -131,42 +156,98 @@ pub struct BusinessPassportContract;
 
 #[contractimpl]
 impl BusinessPassportContract {
-    /// Initialize once with the three roles. `admin` can rotate `issuer` and
-    /// `reputation_manager`.
-    pub fn init(
-        env: Env,
-        admin: Address,
-        issuer: Address,
-        reputation_manager: Address,
-    ) -> Result<(), Error> {
-        if env.storage().instance().has(&DataKey::Admin) {
-            return Err(Error::AlreadyInitialized);
+    /// Fix the roles at deployment. Runs atomically with the deploy, so nobody
+    /// can initialize the contract first. The admin may not also be the issuer.
+    pub fn __constructor(env: Env, admin: Address, issuer: Address) {
+        if admin == issuer {
+            panic_with_error!(&env, Error::RolesMustDiffer);
         }
         env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage().instance().set(&DataKey::Issuer, &issuer);
         env.storage()
             .instance()
-            .set(&DataKey::RepManager, &reputation_manager);
-        env.storage()
-            .instance()
             .extend_ttl(TTL_BUMP_THRESHOLD, TTL_EXTEND_TO);
-        Ok(())
+        RoleChanged {
+            role: symbol_short!("admin"),
+            address: admin,
+        }
+        .publish(&env);
+        RoleChanged {
+            role: symbol_short!("issuer"),
+            address: issuer,
+        }
+        .publish(&env);
     }
 
-    /// Rotate the issuer. Admin-gated.
+    /// Rotate the issuer. Admin-gated. The issuer may never be the admin.
     pub fn set_issuer(env: Env, new_issuer: Address) -> Result<(), Error> {
-        Self::require_admin(&env)?;
+        let admin = Self::require_admin(&env)?;
+        if new_issuer == admin {
+            return Err(Error::RolesMustDiffer);
+        }
         env.storage().instance().set(&DataKey::Issuer, &new_issuer);
+        RoleChanged {
+            role: symbol_short!("issuer"),
+            address: new_issuer,
+        }
+        .publish(&env);
         Ok(())
     }
 
-    /// Rotate the reputation manager (the `credit_score` contract). Admin-gated.
+    /// Set or rotate the reputation manager (the `credit_score` contract). Admin-gated.
     pub fn set_reputation_manager(env: Env, new_manager: Address) -> Result<(), Error> {
         Self::require_admin(&env)?;
         env.storage()
             .instance()
             .set(&DataKey::RepManager, &new_manager);
+        RoleChanged {
+            role: symbol_short!("rep_mgr"),
+            address: new_manager,
+        }
+        .publish(&env);
         Ok(())
+    }
+
+    /// Step one of an admin handover. Admin-gated. Nothing changes until the
+    /// proposed address accepts, so a typo cannot lock the contract.
+    pub fn propose_admin(env: Env, proposed: Address) -> Result<(), Error> {
+        let current = Self::require_admin(&env)?;
+        env.storage()
+            .instance()
+            .set(&DataKey::PendingAdmin, &proposed);
+        AdminProposed { current, proposed }.publish(&env);
+        Ok(())
+    }
+
+    /// Step two: the proposed admin accepts and becomes admin.
+    pub fn accept_admin(env: Env) -> Result<(), Error> {
+        let proposed: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::PendingAdmin)
+            .ok_or(Error::NoPendingAdmin)?;
+        proposed.require_auth();
+        let issuer: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Issuer)
+            .ok_or(Error::NotInitialized)?;
+        if proposed == issuer {
+            return Err(Error::RolesMustDiffer);
+        }
+        env.storage().instance().set(&DataKey::Admin, &proposed);
+        env.storage().instance().remove(&DataKey::PendingAdmin);
+        RoleChanged {
+            role: symbol_short!("admin"),
+            address: proposed,
+        }
+        .publish(&env);
+        Ok(())
+    }
+
+    /// The admin proposed by `propose_admin`, if a handover is in progress. Public.
+    pub fn pending_admin(env: Env) -> Option<Address> {
+        env.storage().instance().get(&DataKey::PendingAdmin)
     }
 
     /// Issue a Passport for `business`. Issuer-gated. Fails if one already exists.
@@ -359,32 +440,45 @@ impl BusinessPassportContract {
         Ok(())
     }
 
-    /// Attach a verifiable credential (e.g. `tax_reg`, `ubo_check`) to an `Active`
-    /// Passport. Issuer-gated. A `kind` can be attached once; revoking it keeps the
-    /// record as an audit trail, so a replacement needs a new `kind`.
+    /// Attach a verifiable credential (e.g. `KYB`) to an `Active` Passport, valid
+    /// until `expires_at` (ledger seconds, must be in the future). Issuer-gated.
+    /// A kind that was revoked or has expired can be attached again (renewal);
+    /// an active, unexpired one cannot be overwritten. Every attachment and
+    /// revocation is an event, which is the audit trail.
     pub fn add_credential(
         env: Env,
         business: Address,
         kind: Symbol,
         data_hash: BytesN<32>,
+        expires_at: u64,
     ) -> Result<(), Error> {
         Self::require_issuer(&env)?;
         Self::load_active(&env, &DataKey::Passport(business.clone()))?;
+        let now = env.ledger().timestamp();
+        if expires_at <= now {
+            return Err(Error::InvalidExpiry);
+        }
 
         let ckey = DataKey::Credential(business.clone(), kind.clone());
-        if env.storage().persistent().has(&ckey) {
-            return Err(Error::CredentialAlreadyExists);
-        }
+        let existing: Option<Credential> = env.storage().persistent().get(&ckey);
         let kinds_key = DataKey::CredentialKinds(business.clone());
         let mut kinds: Vec<Symbol> = env
             .storage()
             .persistent()
             .get(&kinds_key)
             .unwrap_or_else(|| Vec::new(&env));
-        if kinds.len() >= MAX_CREDENTIALS {
-            return Err(Error::TooManyCredentials);
+        match existing {
+            Some(c) if c.status == CredentialStatus::Active && c.expires_at > now => {
+                return Err(Error::CredentialAlreadyExists);
+            }
+            Some(_) => {} // renewal: the kind is already listed
+            None => {
+                if kinds.len() >= MAX_CREDENTIALS {
+                    return Err(Error::TooManyCredentials);
+                }
+                kinds.push_back(kind.clone());
+            }
         }
-        kinds.push_back(kind.clone());
 
         let issuer: Address = env
             .storage()
@@ -395,7 +489,8 @@ impl BusinessPassportContract {
             kind: kind.clone(),
             issuer,
             data_hash,
-            issued_at: env.ledger().timestamp(),
+            issued_at: now,
+            expires_at,
             status: CredentialStatus::Active,
         };
         env.storage().persistent().set(&ckey, &credential);
@@ -404,6 +499,20 @@ impl BusinessPassportContract {
         Self::bump(&env, &kinds_key);
         CredentialAdded { business, kind }.publish(&env);
         Ok(())
+    }
+
+    /// Whether `business` holds an `Active`, unexpired `kind` credential on an
+    /// `Active` Passport. Public: what a verifier should call.
+    pub fn is_credential_valid(env: Env, business: Address, kind: Symbol) -> bool {
+        if !Self::is_active(env.clone(), business.clone()) {
+            return false;
+        }
+        env.storage()
+            .persistent()
+            .get::<_, Credential>(&DataKey::Credential(business, kind))
+            .is_some_and(|c| {
+                c.status == CredentialStatus::Active && c.expires_at > env.ledger().timestamp()
+            })
     }
 
     /// Withdraw a credential. Issuer-gated. Allowed even while the Passport is
@@ -490,8 +599,14 @@ impl BusinessPassportContract {
 
     // ---------------- internal helpers ----------------
 
-    fn require_admin(env: &Env) -> Result<(), Error> {
-        Self::require_role(env, &DataKey::Admin)
+    fn require_admin(env: &Env) -> Result<Address, Error> {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(Error::NotInitialized)?;
+        admin.require_auth();
+        Ok(admin)
     }
 
     fn require_issuer(env: &Env) -> Result<(), Error> {

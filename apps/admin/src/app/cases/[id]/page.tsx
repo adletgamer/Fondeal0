@@ -6,7 +6,7 @@ import { Shell } from '@/components/shell';
 import { StatusChip } from '@/components/status-chip';
 import { requireStaff } from '@/lib/auth/staff';
 import { getCase } from '@/lib/data';
-import { CAPABILITIES, adminEnv } from '@/lib/env';
+import { CAPABILITIES, adminEnv, separationMode } from '@/lib/env';
 import { ageLabel } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
@@ -44,7 +44,9 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
           <DecisionPanel
             legalName={c.legalName}
             status={c.status}
-            reviewer={{ id: staff.id, role: staff.role }}
+            actor={{ id: staff.id, roles: staff.roles, status: staff.status }}
+            preparedBy={c.preparedBy}
+            separation={separationMode()}
             env={env}
             capabilities={CAPABILITIES}
           />

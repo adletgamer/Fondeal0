@@ -41,7 +41,7 @@ A green CI build is evidence for code quality, not for database compatibility, p
 
 ## Stage 3–5 technical gates
 
-- Passport: no transfer/approval path; authorized issuer/admin; freeze/revoke; KYB status checked by consumers; storage TTL and restoration; event replay and reorg-safe reconciliation.
+- Passport: no transfer/approval path; authorized issuer/admin; freeze/revoke; KYB status checked by consumers; storage TTL and restoration; event replay and reorg-safe reconciliation. *Contract side done in code ([ADR-0012](adr/0012-contract-initialization-roles-and-funds-safety.md)): constructors, admin ≠ issuer/keeper, two-step admin, credential expiry, escrow eligibility gate, unblockable repayment and refunds. Open: Testnet deployment evidence ([runbook](testnet-deployment.md)), TTL job, indexer and reconciliation, independent review.*
 - Financing: server and contract enforce the same eligibility and ownership; no client-first value transfer; exact monetary units; idempotent transaction and payout; ledger-to-chain reconciliation.
 - Agentic payments: approved provider and evidence schema, minimal data, consent, per-call/daily caps, allowlisted asset/network/recipient, replay store and verified settlement. A paid response routes to underwriting review.
 

@@ -14,6 +14,9 @@ Start here when reviewing the project. A document's existence is not evidence th
 | [ADRs](adr/) | Durable architecture decisions and trade-offs |
 | [KYB evidence boundary](adr/0010-kyb-evidence-boundary.md) | Declaration-only intake, provider failure handling and upload gate |
 | [Admin back-office and decision authority](adr/0011-admin-back-office-and-decision-authority.md) | Privilege planes, who decides KYB, increments for `apps/admin` |
+| [Contract initialization, roles and funds safety](adr/0012-contract-initialization-roles-and-funds-safety.md) | Pre-Testnet contract hardening and its consequences |
+| [Current Testnet deployment](../deployments/README.md) | Which contract ids are current and which are deprecated |
+| [Testnet deployment](testnet-deployment.md) | Deploy, wire and verify the contracts on Stellar Testnet; known gaps |
 | [KYB policy v1 (draft, Spanish)](kyb/policy-v1.md) | What a reviewer must confirm, accepted sources, reason codes; awaiting owner approval |
 
 ## Historical proposals and research

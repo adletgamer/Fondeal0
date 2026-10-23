@@ -35,6 +35,8 @@ export interface CaseView {
   submittedAt: string;
   status: CaseStatus;
   assignedTo: string | null;
+  /** Staff id of whoever claimed and prepared the case. */
+  preparedBy: string | null;
   representative: { name: string; role: string; documentTail: string };
   consentVersion: string;
   evidence: EvidenceView[];

@@ -4,6 +4,7 @@ import { Badge, cn } from '@fondealo/ui';
 import { CAPABILITIES } from '@/lib/env';
 import type { AdminEnv } from '@/lib/kyb/types';
 import type { StaffSession } from '@/lib/auth/staff';
+import { ROLE_LABEL } from '@/lib/kyb/authz';
 
 const NAV = [
   { href: '/', label: 'Cola de revisión', ready: true },
@@ -74,7 +75,7 @@ export function Shell({
             {staff.preview ? <Badge variant="info">Datos de ejemplo</Badge> : null}
           </div>
           <p className="text-sm text-ink-muted">
-            {staff.name} · {staff.role === 'Approver' ? 'Aprobador' : 'Revisor'}
+            {staff.name} · {staff.roles.map((r) => ROLE_LABEL[r]).join(', ')}
           </p>
         </header>
 
