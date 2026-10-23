@@ -2,6 +2,8 @@
 
 How to put Fondealo's three Soroban contracts on Stellar **Testnet**, prove they are wired correctly, and point the app at them. Testnet only: no real money, and Testnet is reset periodically, so every id here is temporary. Design decisions are in [ADR-0012](adr/0012-contract-initialization-roles-and-funds-safety.md).
 
+Which ids are current: [`deployments/README.md`](../deployments/README.md).
+
 ## What gets deployed
 
 | Contract | Constructor | Set after deploy (by admin) |
