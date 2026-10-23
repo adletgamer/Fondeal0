@@ -1,0 +1,36 @@
+{
+  "schema": 2,
+  "note": "Public data only. Stellar Testnet is reset periodically; these ids are not permanent.",
+  "network": "testnet",
+  "networkPassphrase": "Test SDF Network ; September 2015",
+  "deployedAt": "2026-10-23T01:57:23Z",
+  "gitCommit": "57c99de4f82d089a20696299717a46c844436abf",
+  "stellarCli": "stellar 28.0.0 (300aaf69ab100536678bdb641428b06f06b318ea)",
+  "roles": {
+    "admin": "GD3E2HEMKTQ2N4KEVG6ZNVV2NC5YOWZTVAMGJXZJKA3TTMJ47CJHSRQT",
+    "issuer": "GDKXQFREA76LXIH7Y2SLDTZCG65GD5QMWQQASYSZHGHDKLRESG6TY4ZG",
+    "keeper": "GCAEGXX7ETCXRTRCJQEWQV6TFCGMYIEHZFIKJSV6CPYSZCIKX3DNI6V3"
+  },
+  "token": {
+    "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+    "description": "provided"
+  },
+  "contracts": {
+    "businessPassport": {
+      "id": "CCUTBEZ325I4WDCS5UJO23Z5Z2JVFSR3E5HPGJRTV2R3NGBWA54MJ6LN",
+      "wasmHash": "8a380a5b84ee86b48941b849ff5c08c49f752052d0f6fcb01af5bf61b983367c"
+    },
+    "reputation": {
+      "id": "CBHXDATTXZ35HTWCWPLSKKCA5BMLF4KCYOBFHOJBKPZBDO6WR3JJDTN3",
+      "wasmHash": "a2d4a98d41d8ca9cea1d0683d639c0cca323dd00c3a77f29b9b2053009df131f"
+    },
+    "loanEscrow": {
+      "id": "CB62PDPQQSU6QEOANOXJLN2642LECNJPAXB3E6TQDIO5QXUEKFKLJITY",
+      "wasmHash": "e7824fb12be2261de0cb89e89506d1a556a867a0097b67a50d97cd02d5665ebc"
+    }
+  },
+  "wiring": {
+    "business_passport.reputation_manager": "CBHXDATTXZ35HTWCWPLSKKCA5BMLF4KCYOBFHOJBKPZBDO6WR3JJDTN3",
+    "credit_score.reporter": "CB62PDPQQSU6QEOANOXJLN2642LECNJPAXB3E6TQDIO5QXUEKFKLJITY"
+  }
+}
