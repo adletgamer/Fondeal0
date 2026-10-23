@@ -18,18 +18,27 @@ Three **different** Testnet accounts. The script refuses to run if admin equals 
 
 | Identity | Holds | Who needs the secret |
 | --- | --- | --- |
-| `fondealo-admin` | Contract admin; pays for deployment; issues `FTUSD` | Whoever deploys and rotates roles |
+| `fondealo-admin` | **Fondealo Testnet Deployer.** Contract admin; pays for deployment; issues `FTUSD` | Whoever deploys and rotates roles |
 | `fondealo-issuer` | Issues Passports and KYB credentials | The app server (later increments) |
 | `fondealo-keeper` | Defaults overdue loans; unwinds ineligible ones | A scheduled job (later) |
 
-Never use a Mainnet key. Never commit a secret. The manifest holds only public addresses.
+Never use a Mainnet key. Never commit a secret. The manifest holds only public addresses. Use wallets created only for this, never a personal wallet (Freighter or otherwise). The old `DEPLOYER_PUBLIC` / `DEPLOYER_SECRET` variables are gone; the three identities above replace them.
+
+### Create the wallets (once)
+
+```bash
+cargo install --locked stellar-cli --version 28.1.0 --no-default-features
+./scripts/deploy_testnet.sh --wallets-only
+```
+
+This generates the three identities in your machine's stellar-cli keystore (only if they don't exist yet), funds each with Friendbot, checks each is on the ledger, and prints the three public addresses. It deploys nothing and never prints a secret. Running it again is safe. Stellar Testnet is reset periodically; after a reset, run it again to re-fund the same addresses.
 
 ## Path A: GitHub Actions (recommended)
 
-No local setup, and every run needs your approval.
+The deployment runs on GitHub, not on your machine, and every run needs your approval. You only need the CLI locally to create the wallets.
 
 1. **Settings → Environments → New environment** `testnet`. Under *Deployment protection rules*, add yourself as a required reviewer.
-2. In that environment add three secrets, each a Testnet secret key (`S…`) for a different account: `STELLAR_TESTNET_ADMIN_SECRET`, `STELLAR_TESTNET_ISSUER_SECRET`, `STELLAR_TESTNET_KEEPER_SECRET`. To create them: `stellar keys generate fondealo-admin` (and the other two), then `stellar keys secret fondealo-admin`. Or use Stellar Laboratory.
+2. In that environment add three secrets from the wallets you created above: `STELLAR_TESTNET_ADMIN_SECRET` = output of `stellar keys secret fondealo-admin`, and likewise `STELLAR_TESTNET_ISSUER_SECRET` (`fondealo-issuer`) and `STELLAR_TESTNET_KEEPER_SECRET` (`fondealo-keeper`). Paste each directly into GitHub; don't send it through chat or email.
 3. **Actions → Deploy contracts to Testnet → Run workflow**, type `deploy testnet`, approve the run.
 4. The job builds, deploys, wires, verifies, and prints the manifest in its summary. Download the `testnet-deployment` artifact and commit it as `deployments/testnet.json`.
 
@@ -44,7 +53,7 @@ cargo install --locked stellar-cli --version 28.1.0 --no-default-features
 Then, from the repository root:
 
 ```bash
-# First time: generate the three Testnet identities in the stellar-cli keystore.
+# After --wallets-only (above), or let the deploy create them in one go:
 GENERATE_KEYS=1 ./scripts/deploy_testnet.sh
 
 # Later runs reuse the identities. To use keys from the root .env instead:

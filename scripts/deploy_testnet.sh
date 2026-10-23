@@ -25,6 +25,12 @@
 # KEEPER_SECRET_KEY (CI), from an identity that already exists, or generated
 # when GENERATE_KEYS=1 (local runs only). Secrets are never printed.
 #
+# Usage:
+#   scripts/deploy_testnet.sh                 full deployment
+#   scripts/deploy_testnet.sh --wallets-only  only create (if missing) and
+#       fund the three dedicated Testnet wallets, print their public
+#       addresses, and stop. Nothing is deployed. Implies GENERATE_KEYS=1.
+#
 # Optional:
 #   TOKEN_SAC_ADDRESS=C...  escrow this Stellar Asset Contract instead of FTUSD
 #   WRITE_ENV_LOCAL=1       also upsert the ids into apps/web/.env.local
@@ -35,6 +41,15 @@
 #
 # Output: deployments/<network>.json (public data only), then scripts/verify_testnet.sh.
 set -euo pipefail
+
+WALLETS_ONLY=0
+for arg in "$@"; do
+  case "$arg" in
+    --wallets-only) WALLETS_ONLY=1; GENERATE_KEYS=1 ;;
+    -h | --help) sed -n '2,/^set -euo/p' "$0" | sed '$d; s/^# \{0,1\}//'; exit 0 ;;
+    *) echo "error: unknown argument $arg (try --help)" >&2; exit 1 ;;
+  esac
+done
 
 NETWORK="${STELLAR_DEPLOY_NETWORK:-testnet}"
 case "$NETWORK" in
@@ -92,14 +107,47 @@ ISSUER="$(ensure_identity fondealo-issuer ISSUER_SECRET_KEY)"
 KEEPER="$(ensure_identity fondealo-keeper KEEPER_SECRET_KEY)"
 [ "$ADMIN" != "$ISSUER" ] || die "admin and issuer must be different accounts"
 [ "$ADMIN" != "$KEEPER" ] || die "admin and keeper must be different accounts"
-echo "    admin  $ADMIN"
+echo "    admin  $ADMIN  (Fondealo Testnet Deployer: pays for deployment)"
 echo "    issuer $ISSUER"
 echo "    keeper $KEEPER"
 
+# Friendbot refuses an account that already exists, so success is judged by
+# whether the account is on the ledger afterwards, not by Friendbot's answer.
+on_ledger() {
+  stellar ledger entry fetch account --account "$1" "${net[@]}" 2>/dev/null |
+    node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.exit(JSON.parse(s).entries.length>0?0:1)}catch{process.exit(1)}})'
+}
 say "2/8 Fund with Friendbot (idempotent)"
 for id in fondealo-admin fondealo-issuer fondealo-keeper; do
-  stellar keys fund "$id" "${net[@]}" >/dev/null 2>&1 || echo "    $id: already funded"
+  addr="$(stellar keys address "$id")"
+  if on_ledger "$addr"; then
+    echo "    $id: already on the ledger"
+  else
+    stellar keys fund "$id" "${net[@]}" >/dev/null 2>&1 || true
+    on_ledger "$addr" || die "could not fund $id ($addr) with Friendbot on $NETWORK"
+    echo "    $id: funded"
+  fi
 done
+
+if [ "$WALLETS_ONLY" = "1" ]; then
+  cat <<EOF
+
+Fondealo $NETWORK wallets are ready. Public addresses (safe to share):
+  deployer/admin  $ADMIN
+  issuer          $ISSUER
+  keeper          $KEEPER
+Secrets stay in this machine's stellar-cli keystore and were not printed.
+To use them from the GitHub workflow, copy each into the environment
+'testnet' (STELLAR_TESTNET_ADMIN_SECRET, _ISSUER_SECRET, _KEEPER_SECRET):
+  stellar keys secret fondealo-admin
+  stellar keys secret fondealo-issuer
+  stellar keys secret fondealo-keeper
+EOF
+  if [ "$NETWORK" = "testnet" ]; then
+    echo "Explorer: https://stellar.expert/explorer/testnet/account/$ADMIN"
+  fi
+  exit 0
+fi
 
 # ---------------------------------------------------------------- build
 say "3/8 Build (the same command CI runs)"

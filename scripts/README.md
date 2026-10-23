@@ -5,7 +5,8 @@ Operational scripts for Fondealo.
 - `deploy_testnet.sh` — build the three contracts, deploy them to Stellar
   Testnet with their constructors, wire them, write the public manifest
   `deployments/testnet.json`, then verify. Needs `stellar-cli` 28.1.0 and three
-  distinct Testnet keys (admin, issuer, keeper).
+  distinct Testnet keys (admin, issuer, keeper). `--wallets-only` just creates
+  and funds those three dedicated wallets and stops.
 - `verify_testnet.sh [manifest]` — read-only check of a deployment: every role
   and wiring address, the pause flag, and the on-chain Wasm hash against the
   manifest. Exits non-zero on any difference.
