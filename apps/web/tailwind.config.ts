@@ -51,6 +51,7 @@ const config: Config = {
           100: token('surface-100'),
           200: token('surface-200'),
           300: token('surface-300'),
+          editorial: token('surface-editorial'),
         },
         line: { DEFAULT: token('line'), strong: token('line-strong') },
         ink: { DEFAULT: token('ink'), muted: token('ink-muted'), faint: token('ink-faint') },
@@ -58,6 +59,8 @@ const config: Config = {
         'on-gold': token('on-gold'),
         'on-band': '#070b16',
         holo: token('holo'),
+        orbit: token('orbit'),
+        'mark-body': token('mark-body'),
         info: { text: token('info-text'), soft: token('info-soft') },
         danger: { text: token('danger-text'), soft: token('danger-soft') },
         'focus-ring': token('focus-ring'),
@@ -84,8 +87,14 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
-        display: ['var(--font-display)', 'var(--font-sans)', 'sans-serif'],
-        serif: ['var(--font-serif)', 'Georgia', 'serif'],
+        // App headings stay in the text face; the wide brand face is opt-in.
+        display: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        brand: ['var(--font-brand)', 'var(--font-sans)', 'sans-serif'],
+      },
+      borderRadius: {
+        'card-sm': '8px',
+        'card-md': '14px',
+        'card-lg': '22px',
       },
       backgroundImage: {
         'grid-dark':

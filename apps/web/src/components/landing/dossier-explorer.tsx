@@ -76,7 +76,7 @@ export function DossierExplorer({ locale }: { locale: Locale }) {
     <figure
       data-ui
       aria-label={t.aria}
-      className="relative w-full max-w-[500px] overflow-hidden rounded-2xl border border-line bg-surface-100 text-ink"
+      className="relative w-full max-w-[500px] overflow-hidden rounded-card-lg border border-line bg-surface-100 text-ink"
     >
       <div
         role="radiogroup"
@@ -118,7 +118,7 @@ export function DossierExplorer({ locale }: { locale: Locale }) {
             {t.file} · {stage.label}
           </p>
         </div>
-        <span className="rounded-md border border-line px-2 py-0.5 text-[13px] font-medium text-ink-muted">
+        <span className="data-label rounded-md border border-line px-2 py-0.5 text-sm font-medium uppercase tracking-[0.1em] text-ink-muted">
           {t.sample}
         </span>
       </div>

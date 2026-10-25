@@ -1,11 +1,10 @@
 import type { Metadata } from 'next';
 import { content, type Locale } from './content';
 import { RevealMotion } from './reveal-motion';
+import { QaSection } from './qa-section';
 import {
-  Faq,
   Hero,
   Includes,
-  Intro,
   LandingFooter,
   LandingHeader,
   NotDo,
@@ -14,6 +13,7 @@ import {
   Today,
   WaitlistSection,
 } from './sections';
+import { ValueCards } from './value-cards';
 
 const META: Record<Locale, { title: string; description: string; path: string; og: string }> = {
   es: {
@@ -62,13 +62,13 @@ export function LandingPage({ locale }: { locale: Locale }) {
       <LandingHeader locale={locale} />
       <main id="main" tabIndex={-1} className="focus:outline-none">
         <Hero locale={locale} />
-        <Intro locale={locale} />
-        <Steps locale={locale} />
+        <ValueCards locale={locale} />
         <Includes locale={locale} />
+        <Steps locale={locale} />
         <Privacy locale={locale} />
         <NotDo locale={locale} />
         <Today locale={locale} />
-        <Faq locale={locale} />
+        <QaSection locale={locale} />
         <WaitlistSection locale={locale} />
       </main>
       <LandingFooter locale={locale} />

@@ -23,6 +23,9 @@ Fondealo's Soroban smart contracts (Rust). Cargo workspace, `soroban-sdk` 27.
 
 Wiring order at deploy: deploy both → `passport.init(admin, issuer, score_id)` →
 `score.init(admin, passport_id, reporter)`. See `scripts/deploy_testnet.sh`.
+Each `init` requires authorization from the proposed `admin`; the deployment
+transaction must include that account's signature. This prevents an unrelated
+account from claiming the one-time initialization and selecting privileged roles.
 
 **Tests:** 50 passing (`business_passport` 24, `credit_score` 9,
 `loan_escrow` 17), including the cross-contract paths and anti-gaming rule.

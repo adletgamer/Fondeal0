@@ -11,6 +11,8 @@ Start here when reviewing the project. A document's existence is not evidence th
 | [Business approval strategy](strategy/business-onboarding-underwriting-agentic-payments.md) | Peru-first KYB, underwriting, Passport and agentic verification design; Stage 1 scope |
 | [Deployment and database](deployment-and-database.md) | Environment precedence, migrations and health checks |
 | [Risk register](risks.md) | Threats to trust, money and operations |
+| [KYB review console roadmap](roadmap-kyb-review-console.md) | Proposed staff-only KYB review app, security boundary and phased rollout |
+| [Trust Engine workflow](rfc/0002-trust-engine-review-workflow.md) | Proposed five-stage KYB and underwriting decision-support workflow |
 | [ADRs](adr/) | Durable architecture decisions and trade-offs |
 | [KYB evidence boundary](adr/0010-kyb-evidence-boundary.md) | Declaration-only intake, provider failure handling and upload gate |
 

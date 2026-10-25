@@ -1,31 +1,27 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { Fraunces, Instrument_Sans, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
+import { JetBrains_Mono, Onest, Unbounded } from 'next/font/google';
 import { PrivyProviders } from '@/components/privy-providers';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
 import '@fondealo/ui/styles.css';
 import './globals.css';
 
-const instrumentSans = Instrument_Sans({
-  subsets: ['latin'],
+// Identity type (docs/brand/identity.md): Onest for text and app headings,
+// Unbounded for the wordmark and marketing display lines only.
+const onest = Onest({
+  subsets: ['latin', 'latin-ext'],
   variable: '--font-sans',
   display: 'swap',
 });
 
-const fraunces = Fraunces({
-  subsets: ['latin'],
-  variable: '--font-serif',
-  style: ['normal', 'italic'],
+const unbounded = Unbounded({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['500', '600', '700'],
+  variable: '--font-brand',
   display: 'swap',
 });
 
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-display',
-  display: 'swap',
-});
-
-// Ledger type: addresses, hashes, amounts.
+// Ledger type: addresses, hashes, amounts — inside the app only.
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
@@ -58,7 +54,7 @@ export const metadata: Metadata = {
   },
   twitter: { card: 'summary_large_image', title, description },
   icons: {
-    icon: [{ url: '/orbital-badge.png?v=2', type: 'image/png' }],
+    icon: [{ url: '/favicon.svg?v=3', type: 'image/svg+xml' }],
     apple: [{ url: '/orbital-badge.png?v=2', type: 'image/png' }],
   },
 };
@@ -71,7 +67,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       lang="es-PE"
       data-theme="dark"
       suppressHydrationWarning
-      className={`${instrumentSans.variable} ${spaceGrotesk.variable} ${fraunces.variable} ${jetbrainsMono.variable}`}
+      className={`${onest.variable} ${unbounded.variable} ${jetbrainsMono.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />

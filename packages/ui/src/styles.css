@@ -73,6 +73,7 @@
   --surface-100: 255 255 255;
   --surface-200: 241 245 249;
   --surface-300: 226 232 240;
+  --surface-editorial: 234 246 245;
   --line: 226 232 240;
   --line-strong: 122 134 153;
   --ink: 15 23 42;
@@ -95,6 +96,9 @@
   --danger-soft: 254 242 242;
   --focus-ring: 4 120 87;
   --bg-white: 255 255 255;
+  /* Identity: the orbit ring and passport body of the Fondealo mark. */
+  --orbit: 8 145 178;
+  --mark-body: 14 42 92;
 }
 
 /* Night: the primary theme. */
@@ -159,6 +163,7 @@
   --surface-100: 11 17 32;
   --surface-200: 15 23 40;
   --surface-300: 20 29 51;
+  --surface-editorial: 13 28 40;
   --line: 28 37 64;
   --line-strong: 94 107 136;
   --ink: 241 245 249;
@@ -181,6 +186,8 @@
   --danger-soft: 42 17 21;
   --focus-ring: 52 211 153;
   --bg-white: 11 17 32;
+  --orbit: 34 211 238;
+  --mark-body: 37 78 166;
 }
 
 /*
@@ -194,6 +201,7 @@
   --surface-100: 11 17 32;
   --surface-200: 15 23 40;
   --surface-300: 20 29 51;
+  --surface-editorial: 13 28 40;
   --line: 28 37 64;
   --line-strong: 94 107 136;
   --ink: 241 245 249;
@@ -216,4 +224,6 @@
   --danger-soft: 42 17 21;
   --focus-ring: 52 211 153;
   --bg-white: 255 255 255;
+  --orbit: 34 211 238;
+  --mark-body: 37 78 166;
 }

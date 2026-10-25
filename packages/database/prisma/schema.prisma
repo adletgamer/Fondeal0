@@ -81,6 +81,7 @@ model Business {
   kybSubmissions KybSubmission[]
   evidenceReferences EvidenceReference[]
   providerChecks ProviderCheck[]
+  evidenceAcquisitions EvidenceAcquisition[]
   verificationAuditEvents VerificationAuditEvent[]
   underwritingDecisions UnderwritingDecision[]
   opportunities  Opportunity[]
@@ -127,6 +128,7 @@ model KybSubmission {
 
   evidenceReferences EvidenceReference[]
   providerChecks ProviderCheck[]
+  evidenceAcquisitions EvidenceAcquisition[]
   auditEvents VerificationAuditEvent[]
 
   @@index([businessId])
@@ -161,6 +163,8 @@ model ProviderCheck {
   kybSubmissionId String
   kybSubmission KybSubmission @relation(fields: [kybSubmissionId], references: [id])
   idempotencyKey String @unique
+  evidenceAcquisitionId String?
+  evidenceAcquisition EvidenceAcquisition? @relation(fields: [evidenceAcquisitionId], references: [id])
   providerId String
   sourceType String
   checkType String
@@ -176,6 +180,39 @@ model ProviderCheck {
 
   @@index([businessId, createdAt])
   @@index([kybSubmissionId])
+  @@index([evidenceAcquisitionId])
+}
+
+/// Records how a provider check was acquired and paid for; never stores raw provider payloads.
+model EvidenceAcquisition {
+  id String @id @default(cuid())
+  businessId String
+  business Business @relation(fields: [businessId], references: [id])
+  kybSubmissionId String
+  kybSubmission KybSubmission @relation(fields: [kybSubmissionId], references: [id])
+  providerId String
+  evidenceType String
+  country String
+  requestHash String
+  idempotencyKey String @unique
+  network String
+  asset String
+  quotedAmount String?
+  paidAmount String?
+  paymentStatus String @default("Pending")
+  paymentTxHash String?
+  requestedAt DateTime @default(now())
+  paidAt DateTime?
+  fulfilledAt DateTime?
+  responseHash String?
+  failureCode String?
+  retryable Boolean @default(false)
+  createdAt DateTime @default(now())
+  providerChecks ProviderCheck[]
+
+  @@index([businessId, createdAt])
+  @@index([kybSubmissionId, createdAt])
+  @@index([providerId, evidenceType, country])
 }
 
 /// Append-only application and sensitive-access audit trail. No raw PII.

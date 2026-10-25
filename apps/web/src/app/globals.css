@@ -20,11 +20,17 @@
     text-rendering: optimizeLegibility;
   }
 
+  .data-label {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
   h1,
   h2,
   h3,
   h4 {
-    font-family: var(--font-display), system-ui, sans-serif;
+    font-family: var(--font-sans), system-ui, sans-serif;
     letter-spacing: -0.02em;
   }
 }
@@ -275,7 +281,7 @@
   }
 }
 .fdo-id__name {
-  font-family: var(--font-display), system-ui, sans-serif;
+  font-family: var(--font-brand), var(--font-sans), sans-serif;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -330,7 +336,7 @@
   height: 1.15rem;
   border-radius: 999px;
   background: rgba(7, 11, 22, 0.15);
-  font-family: var(--font-display), system-ui, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
   font-size: 0.72rem;
   font-weight: 700;
   color: #070b16;
@@ -507,5 +513,39 @@ html {
   .landing [data-reveal] {
     opacity: 1 !important;
     transform: none !important;
+  }
+}
+
+/* Landing visuals: dotted ground, live connector dashes, step progress. */
+.landing-dots {
+  background-image: radial-gradient(rgb(var(--line-strong) / 0.35) 1px, transparent 1.2px);
+  background-size: 18px 18px;
+}
+@keyframes landing-dash {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+.landing-dash {
+  animation: landing-dash 1.2s linear infinite;
+}
+@keyframes landing-step-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+.landing-step-progress {
+  animation: landing-step-progress linear forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-dash,
+  .landing-step-progress {
+    animation: none !important;
+  }
+  .landing-step-progress {
+    width: 100%;
   }
 }

@@ -8,6 +8,7 @@
 
 export type Locale = 'es' | 'en';
 export type StageId = 'preseed' | 'seed' | 'revenue' | 'mype';
+export type IntroIcon = 'audience' | 'file' | 'notLoan' | 'test';
 
 interface DossierItem {
   name: string;
@@ -32,6 +33,17 @@ export interface LandingContent {
   hero: {
     lines: [string, string];
     lead: string;
+    audience: {
+      aria: string;
+      startup: string;
+      funder: string;
+      startupCopy: string;
+      funderCopy: string;
+      startupCta: string;
+      funderCta: string;
+      startupNote: string;
+      funderNote: string;
+    };
     cta: string;
     secondary: string;
     disclaimer: string;
@@ -45,20 +57,29 @@ export interface LandingContent {
     sharedWith: string;
     stages: { id: StageId; label: string; company: string; items: DossierItem[] }[];
   };
-  intro: { srHeading: string; lead: string; columns: { runIn: string; text: string }[] };
+  intro: {
+    heading: string;
+    sub: string;
+    /** `text` may mark key phrases as **bold**. */
+    cards: { icon: IntroIcon; title: string; text: string }[];
+  };
   steps: {
     heading: string;
+    sub: string;
     items: { title: string; text: string }[];
-    panel: {
-      formTitle: string;
-      fields: [string, string][];
-      pickTitle: string;
-      picks: { name: string; on: boolean }[];
-      shareTitle: string;
-      shareTo: string;
-      shareSees: string;
-      shareButton: string;
-      revoke: string;
+    play: string;
+    pause: string;
+    stepLabel: (n: number) => string;
+    flow: {
+      aria: string;
+      company: string;
+      file: string;
+      layers: [string, string, string];
+      shared: string;
+      notShared: string;
+      recipients: { kind: 'fund' | 'accelerator' | 'lender'; name: string; access: boolean }[];
+      access: string;
+      noAccess: string;
     };
   };
   includes: {
@@ -81,15 +102,28 @@ export interface LandingContent {
       revoked: string;
     };
   };
-  notDo: { heading: string; statement: string; items: string[] };
+  notDo: { heading: string; statement: string };
   today: { heading: string; note: string; rows: { part: string; state: string; live: boolean }[] };
-  faq: { heading: string; items: { q: string; a: string }[] };
+  qa: {
+    heading: string;
+    sub: string;
+    tabsAria: string;
+    topics: {
+      id: 'startup' | 'mype' | 'data' | 'about';
+      label: string;
+      items: { q: string; a: string }[];
+    }[];
+    askTitle: string;
+    askText: string;
+    askCta: string;
+  };
   cta: { heading: [string, string]; text: string };
   footer: {
     what: string;
     aria: string;
     code: string;
     codeSr: string;
+    about: string;
     haveAccount: string;
     rights: string;
   };
@@ -99,10 +133,11 @@ const es: LandingContent = {
   lang: 'es-PE',
   skip: 'Saltar al contenido',
   nav: [
-    { href: '#como-funciona', label: 'Cómo funciona' },
-    { href: '#que-incluye', label: 'Qué incluye' },
-    { href: '#tus-datos', label: 'Tus datos' },
-    { href: '#preguntas', label: 'Preguntas' },
+    { href: '#que-incluye', label: 'Producto' },
+    { href: '#startups', label: 'Startups' },
+    { href: '#financiadores', label: 'Financiadores' },
+    { href: '#red-confianza', label: 'Red de confianza' },
+    { href: '#desarrolladores', label: 'Desarrolladores' },
   ],
   header: {
     home: 'Fondealo, inicio',
@@ -117,6 +152,19 @@ const es: LandingContent = {
   hero: {
     lines: ['Un expediente.', 'Tú decides quién.'],
     lead: 'Para startups que preparan una ronda o buscan financiamiento sin ceder acciones, y para MYPE que piden crédito. Ordena una vez los datos de tu empresa y compártelos solo con quien tú elijas.',
+    audience: {
+      aria: 'Elige tu perfil',
+      startup: 'Soy startup',
+      funder: 'Soy financiador',
+      startupCopy: 'Prepara el pasaporte de tu empresa y organiza su información en un solo lugar.',
+      funderCopy:
+        'Explora el piloto de datos estructurados con acceso por permiso. La decisión de financiar siempre será tuya.',
+      startupCta: 'Unirme a la lista de espera',
+      funderCta: 'Ver estado del piloto',
+      startupNote: 'Acceso anticipado gratuito. Fondealo no presta ni invierte.',
+      funderNote:
+        'El acceso para financiadores aún no está disponible. No hay datos reales ni decisiones de financiamiento en el piloto.',
+    },
     cta: 'Unirme a la lista de espera',
     secondary: 'Cómo funciona',
     disclaimer:
@@ -177,62 +225,65 @@ const es: LandingContent = {
     ],
   },
   intro: {
-    srHeading: 'Qué es Fondealo',
-    lead: 'Cada fondo, aceleradora o financiador te pide lo mismo en otro formato: quién eres, quién manda, cuánto vendes y qué debes. Fondealo te ayuda a tenerlo ordenado una vez y a compartirlo con permiso.',
-    columns: [
+    heading: 'Cada fondo, aceleradora o financiador te pide lo mismo en otro formato.',
+    sub: 'Fondealo te ayuda a tenerlo ordenado una vez y a compartirlo solo con permiso.',
+    cards: [
       {
-        runIn: 'Para quién.',
-        text: 'Startups que preparan una ronda pre-seed o seed, startups con ingresos que buscan financiamiento sin ceder acciones y MYPE.',
+        icon: 'audience',
+        title: 'Para startups y MYPE',
+        text: 'Startups que preparan una **ronda pre-seed o seed**, startups con ingresos que buscan **financiamiento sin ceder acciones** y MYPE que piden crédito.',
       },
       {
-        runIn: 'Qué es.',
-        text: 'Los datos y documentos de tu empresa en un solo lugar. Lo ordenas una vez y lo reutilizas cuando te lo pidan.',
+        icon: 'file',
+        title: 'Un solo expediente',
+        text: 'Los **datos y documentos de tu empresa** en un solo lugar. Lo ordenas una vez y lo **reutilizas cada vez** que te lo pidan.',
       },
       {
-        runIn: 'Qué no es.',
-        text: 'No es un préstamo ni una vitrina de empresas. Quien decide financiarte es siempre quien financia.',
+        icon: 'notLoan',
+        title: 'No es un préstamo',
+        text: 'Tampoco una vitrina de empresas. **Quien decide financiarte es siempre quien financia**, nunca Fondealo.',
       },
       {
-        runIn: 'Dónde está hoy.',
-        text: 'En versión de prueba: la verificación aún es de prueba y todavía no se comparte con terceros.',
+        icon: 'test',
+        title: 'En versión de prueba',
+        text: 'La verificación aún funciona **en modo de prueba** y todavía **no se comparte con terceros**. Por eso abrimos la lista.',
       },
     ],
   },
   steps: {
     heading: 'Cómo funciona',
+    sub: 'Tu expediente queda contigo. Tú decides qué parte ve cada quien, y por cuánto tiempo.',
     items: [
       {
-        title: 'Registra tu empresa.',
+        title: 'Registra tu empresa',
         text: 'Con su RUC, su representante y los documentos que puedes presentar. Sin subir archivos todavía.',
       },
       {
-        title: 'Elige qué compartir.',
-        text: 'Tú decides qué partes del expediente ve cada fondo, aceleradora o financiador.',
+        title: 'Elige qué compartir',
+        text: 'Marca qué partes del expediente ve cada fondo, aceleradora o financiador.',
       },
       {
-        title: 'Compártelo cuando quieras.',
+        title: 'Comparte con permiso',
         text: 'Das acceso con un permiso que puedes retirar. Cada acceso queda registrado.',
       },
     ],
-    panel: {
-      formTitle: 'Tu empresa',
-      fields: [
-        ['Razón social', 'Kallpa Labs SAC'],
-        ['RUC', '20612345678'],
-        ['Representante', 'Ana Quispe · Gerente general'],
+    play: 'Reproducir animación',
+    pause: 'Pausar animación',
+    stepLabel: (n) => `Paso ${n}`,
+    flow: {
+      aria: 'Diagrama: tu expediente y con quién lo compartes',
+      company: 'Kallpa Labs SAC',
+      file: 'Expediente',
+      layers: ['Datos y RUC', 'Documentos', 'Finanzas'],
+      shared: 'Se comparte',
+      notShared: 'Privado',
+      recipients: [
+        { kind: 'fund', name: 'Fondo de ejemplo', access: true },
+        { kind: 'accelerator', name: 'Aceleradora de ejemplo', access: true },
+        { kind: 'lender', name: 'Financiera de ejemplo', access: false },
       ],
-      pickTitle: 'Qué compartir',
-      picks: [
-        { name: 'Datos de la empresa', on: true },
-        { name: 'Documentos declarados', on: true },
-        { name: 'Estructura de accionistas', on: false },
-        { name: 'Estados financieros', on: false },
-      ],
-      shareTitle: 'Dar acceso',
-      shareTo: 'Fondo de ejemplo',
-      shareSees: 'Ve: datos y documentos',
-      shareButton: 'Dar acceso',
-      revoke: 'Puedes retirarlo cuando quieras',
+      access: 'Con acceso',
+      noAccess: 'Sin acceso',
     },
   },
   includes: {
@@ -307,54 +358,101 @@ const es: LandingContent = {
   notDo: {
     heading: 'Lo que Fondealo no hace',
     statement:
-      'Te ayudamos a ordenar y compartir tu información. La decisión de financiarte siempre es de quien financia.',
-    items: [
-      'No presta dinero.',
-      'No invierte ni intermedia inversiones.',
-      'No garantiza que recibas financiamiento.',
-      'No publica ni recomienda startups o MYPE.',
-      'No vende tus datos.',
-    ],
+      'Fondealo es infraestructura, no un prestamista. La decisión de financiar siempre queda en manos de cada proveedor de financiamiento.',
   },
   today: {
-    heading: 'Lo que funciona hoy',
+    heading: 'Estado del piloto y la red de confianza',
     note: 'Nada de esto mueve dinero real.',
     rows: [
       { part: 'Sitio y registro de cuenta', state: 'Disponible (versión de prueba)', live: true },
       { part: 'Solicitud de verificación', state: 'En modo de prueba', live: true },
       { part: 'Compartir el expediente con terceros', state: 'Planeado', live: false },
       { part: 'Historial de pagos', state: 'Planeado', live: false },
+      { part: 'Contratos Stellar / Soroban', state: 'Construidos; no desplegados', live: false },
     ],
   },
-  faq: {
-    heading: 'Preguntas',
-    items: [
-      { q: '¿Cuánto cuesta?', a: 'El acceso anticipado es gratuito para startups y MYPE.' },
+  qa: {
+    heading: 'Preguntas y respuestas',
+    sub: 'Lo que más nos preguntan fundadores y dueños de MYPE.',
+    tabsAria: 'Temas',
+    topics: [
       {
-        q: '¿Cuándo estará disponible?',
-        a: 'Todavía no hay fecha. Te escribiremos cuando abramos el acceso para tu tipo de empresa.',
+        id: 'startup',
+        label: 'Startups',
+        items: [
+          {
+            q: '¿Fondealo me consigue inversionistas?',
+            a: 'No. Fondealo no presenta ni recomienda empresas. Tú decides con qué fondo, aceleradora o financiador compartes tu expediente.',
+          },
+          {
+            q: '¿Me sirve para un due diligence?',
+            a: 'Esa es la idea: tener ordenado lo que suelen pedir en un due diligence (la revisión que hace un inversionista o financiador). Hoy puedes declararlo en modo de prueba; compartirlo llegará después.',
+          },
+          {
+            q: 'Mi empresa está constituida fuera del Perú. ¿Me sirve?',
+            a: 'Cuéntanoslo en la lista de espera. Hoy el registro acepta, en modo de prueba, números tributarios de Perú y de otros cinco países de la región.',
+          },
+        ],
       },
       {
-        q: '¿Mi startup queda verificada al registrarse?',
-        a: 'No. Hoy la verificación funciona en modo de prueba y solo revisa el formato de los datos. Verificar tu empresa tampoco significa que recibirás financiamiento.',
+        id: 'mype',
+        label: 'MYPE',
+        items: [
+          {
+            q: 'Tengo una MYPE, no una startup. ¿Es para mí?',
+            a: 'Sí. Elige "MYPE" en la lista de espera y te avisaremos cuando abramos tu acceso.',
+          },
+          {
+            q: '¿Verificar mi empresa me asegura un crédito?',
+            a: 'No. Verificar tu empresa no significa que recibirás financiamiento. La decisión siempre es de quien financia.',
+          },
+          {
+            q: '¿Cuánto cuesta?',
+            a: 'El acceso anticipado es gratuito para startups y MYPE.',
+          },
+        ],
       },
       {
-        q: '¿Fondealo me consigue inversionistas?',
-        a: 'No. Fondealo no presenta ni recomienda empresas. Tú decides con qué fondo, aceleradora o financiador compartes tu expediente.',
+        id: 'data',
+        label: 'Tus datos',
+        items: [
+          {
+            q: '¿Quién ve mi información?',
+            a: 'Nadie, hasta que tú la compartes. Eliges a quién y qué partes ve, y puedes retirar el permiso cuando quieras.',
+          },
+          {
+            q: '¿Publican mis datos en blockchain?',
+            a: 'No. Tus datos personales y tributarios no se publican en ninguna red ni blockchain.',
+          },
+          {
+            q: '¿Puedo pedir que borren mis datos?',
+            a: 'Sí. Con tu cuenta, en "Mis datos", ves qué guardamos y puedes pedir que lo borremos.',
+          },
+        ],
       },
       {
-        q: '¿Necesito una billetera o criptomonedas?',
-        a: 'No. Entras con tu correo y no necesitas billetera, extensión ni frase semilla.',
-      },
-      {
-        q: 'Mi empresa está constituida fuera del Perú. ¿Me sirve?',
-        a: 'Cuéntanoslo en la lista de espera. Hoy el registro acepta, en modo de prueba, números tributarios de Perú y de otros cinco países de la región.',
-      },
-      {
-        q: 'Tengo una MYPE, no una startup.',
-        a: 'También es para ti. Elige "MYPE" en la lista de espera y te avisaremos cuando abramos tu acceso.',
+        id: 'about',
+        label: 'Sobre Fondealo',
+        items: [
+          {
+            q: '¿Cuándo estará disponible?',
+            a: 'Todavía no hay fecha. Te escribiremos cuando abramos el acceso para tu tipo de empresa.',
+          },
+          {
+            q: '¿Mi startup queda verificada al registrarse?',
+            a: 'No. Hoy la verificación funciona en modo de prueba y solo revisa el formato de los datos.',
+          },
+          {
+            q: '¿Necesito una billetera o criptomonedas?',
+            a: 'No. Entras con tu correo y no necesitas billetera, extensión ni frase semilla.',
+          },
+        ],
       },
     ],
+    askTitle: '¿Tienes otra pregunta?',
+    askText:
+      'Déjanos tu correo en la lista de espera y cuéntanos tu caso en la entrevista opcional.',
+    askCta: 'Ir a la lista de espera',
   },
   cta: {
     heading: ['Únete a la', 'lista de espera.'],
@@ -365,6 +463,7 @@ const es: LandingContent = {
     aria: 'Enlaces del pie',
     code: 'Código',
     codeSr: ' (GitHub, en inglés, abre en una pestaña nueva)',
+    about: 'Sobre Fondealo',
     haveAccount: 'Ya tengo cuenta',
     rights: '© 2026 Fondealo · Versión de prueba',
   },
@@ -374,10 +473,11 @@ const en: LandingContent = {
   lang: 'en',
   skip: 'Skip to content',
   nav: [
-    { href: '#como-funciona', label: 'How it works' },
-    { href: '#que-incluye', label: 'What it holds' },
-    { href: '#tus-datos', label: 'Your data' },
-    { href: '#preguntas', label: 'Questions' },
+    { href: '#que-incluye', label: 'Product' },
+    { href: '#startups', label: 'Startups' },
+    { href: '#financiadores', label: 'Funders' },
+    { href: '#red-confianza', label: 'Trust network' },
+    { href: '#desarrolladores', label: 'Developers' },
   ],
   header: {
     home: 'Fondealo, home',
@@ -392,6 +492,19 @@ const en: LandingContent = {
   hero: {
     lines: ['One company file.', 'You choose who.'],
     lead: 'For startups preparing a round or looking for financing without giving up equity, and for small businesses applying for credit. Organise your company’s information once and share it only with the people you choose.',
+    audience: {
+      aria: 'Choose your role',
+      startup: 'I’m a startup',
+      funder: 'I’m a funder',
+      startupCopy: 'Prepare your company passport and organise its information in one place.',
+      funderCopy:
+        'Explore the structured-data pilot with permissioned access. Financing decisions always remain yours.',
+      startupCta: 'Join the waitlist',
+      funderCta: 'See pilot status',
+      startupNote: 'Free early access. Fondealo does not lend or invest.',
+      funderNote:
+        'Funder access is not available yet. The pilot has no real company data or financing decisions.',
+    },
     cta: 'Join the waitlist',
     secondary: 'How it works',
     disclaimer: 'Free early access. Fondealo does not lend, invest or intermediate investments.',
@@ -451,62 +564,65 @@ const en: LandingContent = {
     ],
   },
   intro: {
-    srHeading: 'What Fondealo is',
-    lead: 'Every fund, accelerator or lender asks for the same things in a different format: who you are, who is in charge, what you sell and what you owe. Fondealo helps you keep it organised once and share it with permission.',
-    columns: [
+    heading: 'Every fund, accelerator or lender asks for the same things in a different format.',
+    sub: 'Fondealo helps you keep it organised once and share it only with permission.',
+    cards: [
       {
-        runIn: 'Who it is for.',
-        text: 'Startups preparing a pre-seed or seed round, revenue-stage startups seeking financing without giving up equity, and small businesses.',
+        icon: 'audience',
+        title: 'For startups and small businesses',
+        text: 'Startups preparing a **pre-seed or seed round**, revenue-stage startups seeking **financing without giving up equity**, and small businesses applying for credit.',
       },
       {
-        runIn: 'What it is.',
-        text: 'Your company’s information and documents in one place. Organise it once and reuse it whenever someone asks.',
+        icon: 'file',
+        title: 'One company file',
+        text: 'Your **company’s information and documents** in one place. Organise it once and **reuse it every time** someone asks.',
       },
       {
-        runIn: 'What it is not.',
-        text: 'It is not a loan or a showcase of companies. The decision to finance you always belongs to whoever finances.',
+        icon: 'notLoan',
+        title: 'Not a loan',
+        text: 'Nor a showcase of companies. **The decision to finance you belongs to whoever finances**, never to Fondealo.',
       },
       {
-        runIn: 'Where it stands.',
-        text: 'In a test version: verification is still in test mode and nothing can be shared with third parties yet.',
+        icon: 'test',
+        title: 'In a test version',
+        text: 'Verification still runs **in test mode** and nothing is **shared with third parties yet**. That is why we opened the list.',
       },
     ],
   },
   steps: {
     heading: 'How it works',
+    sub: 'Your file stays with you. You decide which part each party sees, and for how long.',
     items: [
       {
-        title: 'Register your company.',
+        title: 'Register your company',
         text: 'With its tax number, its representative and the documents you can provide. No file uploads yet.',
       },
       {
-        title: 'Choose what to share.',
-        text: 'You decide which parts of the file each fund, accelerator or lender can see.',
+        title: 'Choose what to share',
+        text: 'Pick which parts of the file each fund, accelerator or lender can see.',
       },
       {
-        title: 'Share it when you are ready.',
+        title: 'Share with permission',
         text: 'You grant access with a permission you can withdraw. Every access is logged.',
       },
     ],
-    panel: {
-      formTitle: 'Your company',
-      fields: [
-        ['Legal name', 'Kallpa Labs SAC'],
-        ['Tax number (RUC)', '20612345678'],
-        ['Representative', 'Ana Quispe · General manager'],
+    play: 'Play animation',
+    pause: 'Pause animation',
+    stepLabel: (n) => `Step ${n}`,
+    flow: {
+      aria: 'Diagram: your company file and who you share it with',
+      company: 'Kallpa Labs SAC',
+      file: 'Company file',
+      layers: ['Details and tax ID', 'Documents', 'Financials'],
+      shared: 'Shared',
+      notShared: 'Private',
+      recipients: [
+        { kind: 'fund', name: 'Sample fund', access: true },
+        { kind: 'accelerator', name: 'Sample accelerator', access: true },
+        { kind: 'lender', name: 'Sample lender', access: false },
       ],
-      pickTitle: 'What to share',
-      picks: [
-        { name: 'Company details', on: true },
-        { name: 'Declared documents', on: true },
-        { name: 'Shareholder structure', on: false },
-        { name: 'Financial statements', on: false },
-      ],
-      shareTitle: 'Grant access',
-      shareTo: 'Sample fund',
-      shareSees: 'Sees: details and documents',
-      shareButton: 'Grant access',
-      revoke: 'You can withdraw it at any time',
+      access: 'Has access',
+      noAccess: 'No access',
     },
   },
   includes: {
@@ -581,54 +697,101 @@ const en: LandingContent = {
   notDo: {
     heading: 'What Fondealo does not do',
     statement:
-      'We help you organise and share your information. The decision to finance you always belongs to whoever finances.',
-    items: [
-      'It does not lend money.',
-      'It does not invest or intermediate investments.',
-      'It does not promise you will get financing.',
-      'It does not publish or recommend companies.',
-      'It does not sell your data.',
-    ],
+      'Fondealo is infrastructure, not a lender. Financing decisions always remain with each financing provider.',
   },
   today: {
-    heading: 'What works today',
+    heading: 'Pilot and trust network status',
     note: 'None of this moves real money.',
     rows: [
       { part: 'Website and account sign-up', state: 'Available (test version)', live: true },
       { part: 'Verification request', state: 'In test mode', live: true },
       { part: 'Sharing the file with third parties', state: 'Planned', live: false },
       { part: 'Payment history', state: 'Planned', live: false },
+      { part: 'Stellar / Soroban contracts', state: 'Built; not deployed', live: false },
     ],
   },
-  faq: {
-    heading: 'Questions',
-    items: [
-      { q: 'How much does it cost?', a: 'Early access is free for startups and small businesses.' },
+  qa: {
+    heading: 'Questions and answers',
+    sub: 'What founders and small-business owners ask us most.',
+    tabsAria: 'Topics',
+    topics: [
       {
-        q: 'When will it be available?',
-        a: 'There is no date yet. We will write to you when access opens for your type of company.',
+        id: 'startup',
+        label: 'Startups',
+        items: [
+          {
+            q: 'Will Fondealo find me investors?',
+            a: 'No. Fondealo does not present or recommend companies. You decide which fund, accelerator or lender you share your file with.',
+          },
+          {
+            q: 'Does it help with due diligence?',
+            a: 'That is the idea: keep ready what a due diligence usually asks for. Today you can declare it in test mode; sharing comes later.',
+          },
+          {
+            q: 'My company is incorporated outside Peru. Can I use it?',
+            a: 'Tell us on the waitlist. Today sign-up accepts, in test mode, tax numbers from Peru and five other countries in the region.',
+          },
+        ],
       },
       {
-        q: 'Is my startup verified when it signs up?',
-        a: 'No. Verification is in test mode today and only checks the format of the data. Being verified would not mean you will get financing either.',
+        id: 'mype',
+        label: 'Small business',
+        items: [
+          {
+            q: 'I run a small business, not a startup. Is it for me?',
+            a: 'Yes. Choose “Small business” on the waitlist and we will let you know when your access opens.',
+          },
+          {
+            q: 'Does verifying my company get me credit?',
+            a: 'No. Being verified does not mean you will get financing. The decision always belongs to whoever finances.',
+          },
+          {
+            q: 'How much does it cost?',
+            a: 'Early access is free for startups and small businesses.',
+          },
+        ],
       },
       {
-        q: 'Will Fondealo find me investors?',
-        a: 'No. Fondealo does not present or recommend companies. You decide which fund, accelerator or lender you share your file with.',
+        id: 'data',
+        label: 'Your data',
+        items: [
+          {
+            q: 'Who sees my information?',
+            a: 'Nobody, until you share it. You choose who and which parts they see, and you can withdraw permission at any time.',
+          },
+          {
+            q: 'Is my data published on a blockchain?',
+            a: 'No. Your personal and tax data is never published on any network or blockchain.',
+          },
+          {
+            q: 'Can I ask you to delete my data?',
+            a: 'Yes. With your account, “My data” shows what we store and lets you ask us to delete it.',
+          },
+        ],
       },
       {
-        q: 'Do I need a wallet or crypto?',
-        a: 'No. You sign in with your email; no wallet, extension or seed phrase.',
-      },
-      {
-        q: 'My company is incorporated outside Peru. Can I use it?',
-        a: 'Tell us on the waitlist. Today sign-up accepts, in test mode, tax numbers from Peru and five other countries in the region.',
-      },
-      {
-        q: 'I run a small business, not a startup.',
-        a: 'It is for you too. Choose “Small business” on the waitlist and we will let you know when your access opens.',
+        id: 'about',
+        label: 'About Fondealo',
+        items: [
+          {
+            q: 'When will it be available?',
+            a: 'There is no date yet. We will write to you when access opens for your type of company.',
+          },
+          {
+            q: 'Is my startup verified when it signs up?',
+            a: 'No. Verification is in test mode today and only checks the format of the data.',
+          },
+          {
+            q: 'Do I need a wallet or crypto?',
+            a: 'No. You sign in with your email; no wallet, extension or seed phrase.',
+          },
+        ],
       },
     ],
+    askTitle: 'Another question?',
+    askText:
+      'Leave your email on the waitlist and tell us about your case in the optional interview.',
+    askCta: 'Go to the waitlist',
   },
   cta: {
     heading: ['Join the', 'waitlist.'],
@@ -639,6 +802,7 @@ const en: LandingContent = {
     aria: 'Footer links',
     code: 'Source code',
     codeSr: ' (GitHub, opens in a new tab)',
+    about: 'About',
     haveAccount: 'I have an account',
     rights: '© 2026 Fondealo · Test version',
   },

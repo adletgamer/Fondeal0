@@ -13,7 +13,8 @@ export const type = {
   lead: 'text-xl leading-snug sm:text-[22px]',
   body: 'text-base leading-relaxed sm:text-[17px]',
   meta: 'text-sm leading-normal',
+  eyebrow: 'data-label text-sm font-medium uppercase tracking-[0.14em]',
 } as const;
 
 /** One pair of page margins for every section. */
-export const frame = 'mx-auto w-full max-w-6xl px-5 sm:px-8';
+export const frame = 'mx-auto w-full max-w-7xl px-5 sm:px-8';

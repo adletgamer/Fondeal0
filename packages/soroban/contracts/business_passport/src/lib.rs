@@ -139,6 +139,9 @@ impl BusinessPassportContract {
         issuer: Address,
         reputation_manager: Address,
     ) -> Result<(), Error> {
+        // The first initializer chooses every privileged role; require that
+        // the proposed admin authorizes this one-time configuration.
+        admin.require_auth();
         if env.storage().instance().has(&DataKey::Admin) {
             return Err(Error::AlreadyInitialized);
         }

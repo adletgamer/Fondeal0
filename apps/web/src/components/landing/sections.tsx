@@ -3,10 +3,11 @@ import Link from 'next/link';
 import { buttonVariants, cn } from '@fondealo/ui';
 import { Logo } from '@/components/logo';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { AudienceSwitch } from './audience-switch';
 import { content, type Locale } from './content';
 import { DossierExplorer } from './dossier-explorer';
 import { IncludesExplorer } from './includes-explorer';
-import { StepsShowcase } from './steps-showcase';
+import { ShareFlow } from './share-flow';
 import { frame, type } from './type';
 import { WaitlistForm } from './waitlist-form';
 
@@ -21,19 +22,6 @@ function CheckIcon({ className }: { className?: string }) {
   );
 }
 
-function CrossIcon({ className }: { className?: string }) {
-  return (
-    <svg aria-hidden viewBox="0 0 16 16" width="18" height="18" fill="none" className={className}>
-      <path
-        d="m4.5 4.5 7 7m0-7-7 7"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 export function LandingHeader({ locale }: { locale: Locale }) {
   const t = content[locale];
   const home = locale === 'en' ? '/en' : '/';
@@ -43,12 +31,12 @@ export function LandingHeader({ locale }: { locale: Locale }) {
         <Link href={home} aria-label={t.header.home} className="rounded-lg text-ink">
           <Logo priority />
         </Link>
-        <nav aria-label={t.header.navAria} className="hidden items-center gap-7 lg:flex">
+        <nav aria-label={t.header.navAria} className="hidden items-center gap-3 lg:flex">
           {t.nav.map((n) => (
             <a
               key={n.href}
               href={n.href}
-              className="text-sm font-medium text-ink-muted transition-colors hover:text-ink"
+              className="text-[13px] font-medium text-ink-muted transition-colors hover:text-ink"
             >
               {n.label}
             </a>
@@ -76,6 +64,19 @@ export function LandingHeader({ locale }: { locale: Locale }) {
           </a>
         </div>
       </div>
+      <nav aria-label={t.header.navAria} className="border-t border-line/70 lg:hidden">
+        <div className={cn(frame, 'flex gap-5 overflow-x-auto py-2.5')}>
+          {t.nav.map((n) => (
+            <a
+              key={n.href}
+              href={n.href}
+              className="shrink-0 text-sm font-medium text-ink-muted transition-colors hover:text-ink"
+            >
+              {n.label}
+            </a>
+          ))}
+        </div>
+      </nav>
     </header>
   );
 }
@@ -100,27 +101,16 @@ export function Hero({ locale }: { locale: Locale }) {
               </span>
             ))}
           </h1>
-          <p className={cn(type.lead, 'landing-fade mt-6 max-w-[34rem] text-ink-muted')}>
-            {t.lead}
-          </p>
-          <div className="landing-fade mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-            <a href="#lista" className={buttonVariants({ size: 'xl' })}>
-              {t.cta}
-            </a>
-            <a href="#como-funciona" className={buttonVariants({ variant: 'link', size: 'lg' })}>
-              {t.secondary}
-            </a>
-          </div>
-          <p className={cn(type.meta, 'landing-fade mt-6 max-w-[34rem] text-ink-muted')}>
-            {t.disclaimer}
-          </p>
+          <AudienceSwitch copy={t.audience} locale={locale} />
         </div>
         {/* One flat stage colour behind the fragment: depth from tone, not glow. */}
         <div className="relative flex min-w-0 justify-center lg:justify-end">
           <div
             aria-hidden
-            className="absolute -inset-x-6 -bottom-8 top-10 rounded-[28px] bg-surface-200 sm:-inset-x-10 lg:-right-16 lg:left-10"
-          />
+            className="absolute -inset-x-6 -bottom-8 top-10 overflow-hidden rounded-[28px] bg-surface-200 sm:-inset-x-10 lg:-right-16 lg:left-10"
+          >
+            <div className="landing-dots absolute inset-0 opacity-70" />
+          </div>
           <div className="landing-fade relative w-full max-w-[500px]" style={stagger(3)}>
             <DossierExplorer locale={locale} />
           </div>
@@ -130,46 +120,20 @@ export function Hero({ locale }: { locale: Locale }) {
   );
 }
 
-export function Intro({ locale }: { locale: Locale }) {
-  const t = content[locale].intro;
-  return (
-    <section aria-labelledby="intro-title" className="bg-surface-100">
-      <div className={cn(frame, 'py-16 sm:py-28')}>
-        <h2 id="intro-title" className="sr-only">
-          {t.srHeading}
-        </h2>
-        <p
-          data-reveal
-          className="max-w-4xl font-display text-[clamp(1.25rem,2.6vw,2.25rem)] font-medium leading-[1.25] tracking-[-0.01em] text-ink"
-        >
-          {t.lead}
-        </p>
-        <div className="mt-12 grid gap-x-10 gap-y-8 sm:mt-16 sm:grid-cols-2 lg:grid-cols-4">
-          {t.columns.map((c, i) => (
-            <p
-              key={c.runIn}
-              data-reveal
-              style={stagger(i)}
-              className={cn(type.body, 'border-t-2 border-brand-fill pt-4 text-ink-muted')}
-            >
-              <strong className="font-semibold text-ink">{c.runIn}</strong> {c.text}
-            </p>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export function Steps({ locale }: { locale: Locale }) {
   const t = content[locale].steps;
   return (
-    <section id="como-funciona" aria-labelledby="steps-title" className="bg-surface-0">
+    <section id="financiadores" aria-labelledby="steps-title" className="bg-surface-0">
       <div className={cn(frame, 'py-16 sm:py-28')}>
-        <h2 id="steps-title" data-reveal className={cn(type.h2, 'text-ink')}>
-          {t.heading}
-        </h2>
-        <StepsShowcase locale={locale} />
+        <div className="max-w-2xl">
+          <h2 id="steps-title" data-reveal className={cn(type.h2, 'text-ink')}>
+            {t.heading}
+          </h2>
+          <p data-reveal className={cn(type.lead, 'mt-3 text-ink-muted')}>
+            {t.sub}
+          </p>
+        </div>
+        <ShareFlow locale={locale} />
       </div>
     </section>
   );
@@ -178,7 +142,7 @@ export function Steps({ locale }: { locale: Locale }) {
 export function Includes({ locale }: { locale: Locale }) {
   const t = content[locale].includes;
   return (
-    <section id="que-incluye" aria-labelledby="includes-title" className="bg-surface-100">
+    <section id="que-incluye" aria-labelledby="includes-title" className="bg-editorial">
       <div className={cn(frame, 'grid gap-8 py-16 sm:py-28 lg:grid-cols-[4fr_8fr] lg:gap-16')}>
         <div className="lg:sticky lg:top-28 lg:self-start">
           <h2 id="includes-title" data-reveal className={cn(type.h2, 'text-ink')}>
@@ -207,7 +171,7 @@ export function Privacy({ locale }: { locale: Locale }) {
         )}
       >
         <div className="order-2 lg:order-1" data-reveal>
-          <div data-ui className="rounded-2xl border border-line bg-surface-100 p-2 text-ink">
+          <div data-ui className="rounded-card-lg border border-line bg-surface-100 p-2 text-ink">
             <p className="px-4 pb-2 pt-3 text-[15px] font-semibold">{t.panel.title}</p>
             <ul className="space-y-1">
               {t.panel.rows.map((r) => (
@@ -283,28 +247,19 @@ export function NotDo({ locale }: { locale: Locale }) {
   const t = content[locale].notDo;
   return (
     <section aria-labelledby="notdo-title" className="bg-ink text-surface-0">
-      <div className={cn(frame, 'py-16 sm:py-28')}>
-        <div className="grid gap-6 lg:grid-cols-[5fr_7fr] lg:gap-16">
-          <h2 id="notdo-title" data-reveal className={type.h2}>
+      <div className={cn(frame, 'py-8 sm:py-12')}>
+        <div className="grid items-center gap-4 lg:grid-cols-[4fr_8fr] lg:gap-12">
+          <h2
+            id="notdo-title"
+            data-reveal
+            className="font-display text-lg font-semibold sm:text-xl"
+          >
             {t.heading}
           </h2>
-          <p data-reveal className={cn(type.lead, 'text-surface-0/80')}>
+          <p data-reveal className="text-base leading-relaxed text-surface-0/80 sm:text-lg">
             {t.statement}
           </p>
         </div>
-        <ul className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {t.items.map((item, i) => (
-            <li
-              key={item}
-              data-reveal
-              style={stagger(i)}
-              className="flex items-start gap-3 rounded-2xl bg-surface-0/[0.06] p-5 text-base font-medium leading-snug"
-            >
-              <CrossIcon className="mt-0.5 shrink-0 text-surface-0/60" />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
       </div>
     </section>
   );
@@ -313,7 +268,7 @@ export function NotDo({ locale }: { locale: Locale }) {
 export function Today({ locale }: { locale: Locale }) {
   const t = content[locale].today;
   return (
-    <section aria-labelledby="today-title" className="bg-surface-0">
+    <section id="red-confianza" aria-labelledby="today-title" className="bg-surface-0">
       <div className={cn(frame, 'py-16 sm:py-28')}>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <h2 id="today-title" data-reveal className={cn(type.h2, 'text-ink')}>
@@ -323,13 +278,13 @@ export function Today({ locale }: { locale: Locale }) {
             {t.note}
           </p>
         </div>
-        <dl className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {t.rows.map((r, i) => (
             <div
               key={r.part}
               data-reveal
               style={stagger(i)}
-              className="flex min-h-36 flex-col justify-between gap-6 rounded-2xl border border-line bg-surface-100 p-5"
+              className="flex min-h-36 flex-col justify-between gap-6 rounded-card-lg border border-line bg-surface-100 p-5"
             >
               <dt className={cn(type.body, 'font-medium text-ink')}>{r.part}</dt>
               <dd className="inline-flex items-center gap-2 text-sm font-medium text-ink-muted">
@@ -350,43 +305,6 @@ export function Today({ locale }: { locale: Locale }) {
   );
 }
 
-export function Faq({ locale }: { locale: Locale }) {
-  const t = content[locale].faq;
-  return (
-    <section id="preguntas" aria-labelledby="faq-title" className="bg-surface-100">
-      <div className={cn(frame, 'grid gap-8 py-16 sm:py-28 lg:grid-cols-[4fr_8fr] lg:gap-16')}>
-        <h2
-          id="faq-title"
-          data-reveal
-          className={cn(type.h2, 'text-ink lg:sticky lg:top-28 lg:self-start')}
-        >
-          {t.heading}
-        </h2>
-        <div className="space-y-2">
-          {t.items.map((item, i) => (
-            <details
-              key={item.q}
-              name="faq"
-              data-reveal
-              style={stagger(i)}
-              className="group rounded-2xl bg-surface-200/70 transition-colors open:bg-brand-soft"
-            >
-              <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 rounded-2xl px-5 py-4 text-xl font-medium leading-snug text-ink sm:text-[22px] [&::-webkit-details-marker]:hidden">
-                {item.q}
-                <span aria-hidden className="relative h-4 w-4 shrink-0">
-                  <span className="absolute left-0 top-1/2 h-[2.5px] w-4 -translate-y-1/2 rounded bg-current" />
-                  <span className="absolute left-1/2 top-0 h-4 w-[2.5px] -translate-x-1/2 rounded bg-current transition-transform duration-200 group-open:rotate-90 motion-reduce:transition-none" />
-                </span>
-              </summary>
-              <p className={cn(type.body, 'max-w-[52ch] px-5 pb-5 text-ink')}>{item.a}</p>
-            </details>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export function WaitlistSection({ locale }: { locale: Locale }) {
   const t = content[locale].cta;
   return (
@@ -394,7 +312,7 @@ export function WaitlistSection({ locale }: { locale: Locale }) {
       <div
         className={cn(
           frame,
-          'grid items-center gap-10 py-16 sm:py-28 lg:min-h-[85svh] lg:grid-cols-[1fr_480px] lg:gap-16',
+          'grid items-center gap-10 py-16 sm:py-20 lg:grid-cols-[1fr_480px] lg:gap-16',
         )}
       >
         <div className="min-w-0 lg:self-end lg:pb-8">
@@ -414,7 +332,7 @@ export function WaitlistSection({ locale }: { locale: Locale }) {
         <div
           data-ui
           data-reveal
-          className="w-full rounded-2xl bg-surface-100 p-6 text-ink shadow-[0_30px_80px_-30px_rgba(2,6,23,0.6)] sm:p-8"
+          className="w-full rounded-card-lg bg-surface-100 p-6 text-ink shadow-[0_30px_80px_-30px_rgba(2,6,23,0.6)] sm:p-8"
         >
           <WaitlistForm locale={locale} />
         </div>
@@ -426,7 +344,7 @@ export function WaitlistSection({ locale }: { locale: Locale }) {
 export function LandingFooter({ locale }: { locale: Locale }) {
   const t = content[locale].footer;
   return (
-    <footer className="bg-surface-0">
+    <footer id="desarrolladores" className="bg-surface-0">
       <div
         className={cn(
           frame,
@@ -435,6 +353,9 @@ export function LandingFooter({ locale }: { locale: Locale }) {
       >
         <p>{t.what}</p>
         <nav aria-label={t.aria} className="flex flex-wrap gap-x-6 gap-y-2">
+          <a href="#preguntas" className="font-medium text-ink hover:underline">
+            {t.about}
+          </a>
           <Link href="/onboarding" className="font-medium text-ink hover:underline">
             {t.haveAccount}
           </Link>

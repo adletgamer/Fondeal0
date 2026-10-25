@@ -1,19 +1,6 @@
-import Image from 'next/image';
+import { FondealoLogo } from './brand/mark';
 
-/** Shared wordmark used in the navigation and footer. */
+/** Shared wordmark used in the navigation, footer and app shell. */
 export function Logo({ className, priority = false }: { className?: string; priority?: boolean }) {
-  return (
-    <span className={className} style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-      <Image
-        src="/orbital-badge.png"
-        alt=""
-        width={40}
-        height={40}
-        sizes="40px"
-        priority={priority}
-        className="h-10 w-10 shrink-0 object-contain"
-      />
-      <span className="font-display text-lg font-bold tracking-tight">Fondealo</span>
-    </span>
-  );
+  return <FondealoLogo className={className} priority={priority} />;
 }
