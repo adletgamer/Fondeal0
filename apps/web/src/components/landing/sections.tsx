@@ -128,7 +128,10 @@ export function Hero({ locale }: { locale: Locale }) {
                 />
               </svg>
             </a>
-            <a href="#red" className={cn(buttonVariants({ variant: 'link', size: 'lg' }), 'px-0')}>
+            <a
+              href="#senales"
+              className={cn(buttonVariants({ variant: 'link', size: 'lg' }), 'px-0')}
+            >
               {t.secondary}
             </a>
           </div>

@@ -14,16 +14,16 @@ import {
 
 const META: Record<Locale, { title: string; description: string; path: string; og: string }> = {
   es: {
-    title: 'Fondealo — El pasaporte verificable de tu empresa',
+    title: 'Fondealo — Presenta tu empresa. Respalda su historia.',
     description:
-      'Crea un pasaporte portable de tu empresa con tu identidad, tu actividad y tu reputación financiera, y compártelo solo con quien tú elijas. Acceso anticipado gratuito. Fondealo no presta ni invierte.',
+      'Estamos creando un pasaporte para reunir los datos de tu empresa y compartirlos con quienes tú elijas. Únete a la lista de espera.',
     path: '/',
     og: 'es_PE',
   },
   en: {
-    title: 'Fondealo — Your company’s verifiable passport',
+    title: 'Fondealo — Present your company. Back up its story.',
     description:
-      'Build a portable company passport from your identity, activity and financial reputation, and share it only with the people you choose. Free early access. Fondealo does not lend or invest.',
+      'We’re building a passport to bring your company’s data together and share it with the people you choose. Join the waitlist.',
     path: '/en',
     og: 'en_US',
   },

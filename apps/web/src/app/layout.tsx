@@ -28,9 +28,9 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
-const title = 'Fondealo — El pasaporte verificable de tu empresa';
+const title = 'Fondealo — Presenta tu empresa. Respalda su historia.';
 const description =
-  'Crea un pasaporte portable de tu empresa con tu identidad, tu actividad y tu reputación financiera, y compártelo solo con quien tú elijas. Acceso anticipado gratuito. Fondealo no presta ni invierte.';
+  'Estamos creando un pasaporte para reunir los datos de tu empresa y compartirlos con quienes tú elijas. Únete a la lista de espera.';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.fondealo.xyz'),
