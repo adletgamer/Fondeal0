@@ -80,6 +80,7 @@ model Business {
 
   kybSubmissions          KybSubmission[]
   evidenceReferences      EvidenceReference[]
+  evidenceAcquisitions    EvidenceAcquisition[]
   providerChecks          ProviderCheck[]
   verificationAuditEvents VerificationAuditEvent[]
   underwritingDecisions   UnderwritingDecision[]
@@ -127,12 +128,45 @@ model KybSubmission {
   reviewedAt            DateTime?
   createdAt             DateTime               @default(now())
 
-  evidenceReferences EvidenceReference[]
-  providerChecks     ProviderCheck[]
-  auditEvents        VerificationAuditEvent[]
+  evidenceReferences   EvidenceReference[]
+  evidenceAcquisitions EvidenceAcquisition[]
+  providerChecks       ProviderCheck[]
+  auditEvents          VerificationAuditEvent[]
 
   @@index([businessId])
   @@index([status])
+}
+
+/// A paid provider call and its settlement lifecycle, without retaining raw provider payloads.
+model EvidenceAcquisition {
+  id              String          @id @default(cuid())
+  businessId      String
+  business        Business        @relation(fields: [businessId], references: [id])
+  kybSubmissionId String
+  kybSubmission   KybSubmission   @relation(fields: [kybSubmissionId], references: [id])
+  providerId      String
+  evidenceType    String
+  country         String
+  requestHash     String
+  idempotencyKey  String          @unique
+  network         String
+  asset           String
+  quotedAmount    String?
+  paidAmount      String?
+  paymentStatus   String          @default("Pending")
+  paymentTxHash   String?
+  requestedAt     DateTime        @default(now())
+  paidAt          DateTime?
+  fulfilledAt     DateTime?
+  responseHash    String?
+  failureCode     String?
+  retryable       Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  providerChecks  ProviderCheck[]
+
+  @@index([businessId, createdAt])
+  @@index([kybSubmissionId, createdAt])
+  @@index([providerId, evidenceType, country])
 }
 
 /// Metadata only. No document bytes or public object URL are stored here.
@@ -157,27 +191,30 @@ model EvidenceReference {
 
 /// One normalized provider result per idempotent check.
 model ProviderCheck {
-  id                  String             @id @default(cuid())
-  businessId          String
-  business            Business           @relation(fields: [businessId], references: [id])
-  kybSubmissionId     String
-  kybSubmission       KybSubmission      @relation(fields: [kybSubmissionId], references: [id])
-  idempotencyKey      String             @unique
-  providerId          String
-  sourceType          String
-  checkType           String
-  result              String
-  evidenceReferenceId String?
-  evidenceReference   EvidenceReference? @relation(fields: [evidenceReferenceId], references: [id])
-  checkedAt           DateTime
-  expiresAt           DateTime?
-  reasonCodes         Json
-  failureCode         String?
-  retryable           Boolean            @default(false)
-  createdAt           DateTime           @default(now())
+  id                    String               @id @default(cuid())
+  businessId            String
+  business              Business             @relation(fields: [businessId], references: [id])
+  kybSubmissionId       String
+  kybSubmission         KybSubmission        @relation(fields: [kybSubmissionId], references: [id])
+  idempotencyKey        String               @unique
+  providerId            String
+  sourceType            String
+  checkType             String
+  result                String
+  evidenceReferenceId   String?
+  evidenceReference     EvidenceReference?   @relation(fields: [evidenceReferenceId], references: [id])
+  evidenceAcquisitionId String?
+  evidenceAcquisition   EvidenceAcquisition? @relation(fields: [evidenceAcquisitionId], references: [id], onDelete: SetNull)
+  checkedAt             DateTime
+  expiresAt             DateTime?
+  reasonCodes           Json
+  failureCode           String?
+  retryable             Boolean              @default(false)
+  createdAt             DateTime             @default(now())
 
   @@index([businessId, createdAt])
   @@index([kybSubmissionId])
+  @@index([evidenceAcquisitionId])
 }
 
 /// Append-only application and sensitive-access audit trail. No raw PII.
