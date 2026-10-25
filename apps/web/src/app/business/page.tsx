@@ -1,3 +1,4 @@
+import { getAppTranslator } from '@/lib/app-locale';
 import { redirect } from 'next/navigation';
 import { Badge, Card, Container } from '@fondealo/ui';
 import { COLLATERAL_CONFIG_V1, RiskBand, requiredCollateral } from '@fondealo/types';
@@ -13,6 +14,8 @@ import { getPassportTheme } from '@/lib/data/passport-theme';
 import { getWalletSummary } from '@/lib/wallet/ledger';
 import { BalanceCard } from '@/components/balance-card';
 import { Calendar, Coins, Plus, ShieldCheck } from '@/components/icons';
+import { getBusinessOnboardingState } from '@/lib/data/business-onboarding';
+import { getAppLocale } from '@/lib/app-locale';
 
 const BAND_ORDER = Object.values(RiskBand);
 const ACTIVE_STATUSES = new Set(['Open', 'Funded', 'Active']);
@@ -35,7 +38,13 @@ export default async function BusinessDashboard() {
   if (!session?.stellarAddress) redirect('/onboarding');
   if (session.role !== 'Business')
     redirect(session.role === 'Investor' ? '/invest' : '/onboarding');
+  const t = await getAppTranslator();
+
   const address = session.stellarAddress;
+  const [onboarding, locale] = await Promise.all([
+    getBusinessOnboardingState(session),
+    getAppLocale(),
+  ]);
   const kyb = await getKybState(address);
   const eligible = kyb?.eligible === true;
   const [wallet, theme] = await Promise.all([
@@ -76,9 +85,11 @@ export default async function BusinessDashboard() {
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
               <h1 className="font-display text-3xl font-bold text-slate-900">
-                {kyb?.legalName ?? 'Tu empresa'}
+                {kyb?.legalName ?? onboarding.initial?.legalName ?? t('Tu empresa')}
               </h1>
-              <p className="mt-1 text-slate-600">El estado de tu verificación y tus solicitudes.</p>
+              <p className="mt-1 text-slate-600">
+                {t('El estado de tu verificación y tus solicitudes.')}
+              </p>
             </div>
             <div className="flex gap-2">
               {eligible || hasObligations ? (
@@ -87,12 +98,51 @@ export default async function BusinessDashboard() {
               {eligible ? (
                 <a href="/business/new">
                   <Badge variant="brand">
-                    <Plus width={12} height={12} /> Nueva solicitud
+                    <Plus width={12} height={12} /> {t('Nueva solicitud')}
                   </Badge>
                 </a>
               ) : null}
             </div>
           </div>
+
+          <Card className="mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
+            <div className="max-w-2xl">
+              <h2 className="font-semibold text-ink">
+                {locale === 'es'
+                  ? onboarding.kind === 'PROFILE_COMPLETE' || onboarding.kind === 'PRE_REVENUE'
+                    ? 'Tu perfil financiero'
+                    : 'Completa tu perfil de financiamiento'
+                  : onboarding.kind === 'PROFILE_COMPLETE' || onboarding.kind === 'PRE_REVENUE'
+                    ? 'Your financial profile'
+                    : 'Complete your financing profile'}
+              </h2>
+              <p className="mt-1 text-sm text-ink-muted">
+                {onboarding.kind === 'UNAVAILABLE'
+                  ? locale === 'es'
+                    ? 'Tu perfil no está disponible por ahora. Puedes seguir usando tu panel.'
+                    : 'Your profile is temporarily unavailable. You can keep using your dashboard.'
+                  : onboarding.kind === 'PRE_REVENUE'
+                    ? locale === 'es'
+                      ? 'Perfil empresarial guardado. La propuesta de financiamiento que estamos preparando requiere flujos operativos verificables.'
+                      : 'Business profile saved. The financing product we are preparing requires verifiable operating cash flows.'
+                    : locale === 'es'
+                      ? 'Este perfil orienta la evidencia que necesitaremos. No constituye una verificación ni una aprobación de crédito.'
+                      : 'This profile guides the evidence we’ll need. It is not verification or credit approval.'}
+              </p>
+            </div>
+            <a
+              href="/business/onboarding"
+              className="shrink-0 rounded-xl bg-brand-fill px-4 py-3 text-sm font-semibold text-on-brand"
+            >
+              {locale === 'es'
+                ? onboarding.kind === 'PROFILE_COMPLETE' || onboarding.kind === 'PRE_REVENUE'
+                  ? 'Ver perfil'
+                  : 'Completar perfil'
+                : onboarding.kind === 'PROFILE_COMPLETE' || onboarding.kind === 'PRE_REVENUE'
+                  ? 'View profile'
+                  : 'Complete profile'}
+            </a>
+          </Card>
 
           {!eligible ? (
             <ApplicationStatusCard status={applicationStatus(kyb)} compact className="mb-6" />
@@ -121,22 +171,24 @@ export default async function BusinessDashboard() {
                     <div className="flex items-center gap-2 text-slate-500">
                       <Coins width={16} height={16} />
                       <span className="text-xs font-semibold uppercase tracking-wide">
-                        Garantía bloqueada
+                        {t('Garantía bloqueada')}
                       </span>
                     </div>
                     <div className="mt-2 font-display text-2xl font-bold text-slate-900">
-                      {totalCollateralLocked.toLocaleString('es-PE')} USDC
+                      {totalCollateralLocked.toLocaleString(t('__locale'))} USDC
                     </div>
                   </Card>
                   <Card className="p-5">
                     <div className="flex items-center gap-2 text-slate-500">
                       <Calendar width={16} height={16} />
                       <span className="text-xs font-semibold uppercase tracking-wide">
-                        Próximo pago
+                        {t('Próximo pago')}
                       </span>
                     </div>
                     <div className="mt-2 font-display text-2xl font-bold text-slate-900">
-                      {nextDue ? formatDateLima(nextDue.dueAt * 1000) : '—'}
+                      {nextDue
+                        ? formatDateLima(nextDue.dueAt * 1000, 'medium', t('__locale'))
+                        : '—'}
                     </div>
                   </Card>
                   {eligible && currentRatioBps !== null ? (
@@ -144,18 +196,21 @@ export default async function BusinessDashboard() {
                       <div className="flex items-center gap-2 text-slate-500">
                         <ShieldCheck width={16} height={16} />
                         <span className="text-xs font-semibold uppercase tracking-wide">
-                          Garantía requerida
+                          {t('Garantía requerida')}
                         </span>
                       </div>
                       <div className="mt-2 font-display text-2xl font-bold text-slate-900">
-                        {currentRatioBps / 100}% del monto
+                        {currentRatioBps / 100}
+                        {t('% del monto')}
                       </div>
                       {nextBand && nextRatioBps !== null ? (
                         <p className="mt-1 text-xs text-slate-600">
-                          En la banda {nextBand} sería {nextRatioBps / 100}%.
+                          {t('En la banda')} {nextBand} {t('sería')} {nextRatioBps / 100}%.
                         </p>
                       ) : (
-                        <p className="mt-1 text-xs text-emerald-600">Ya estás en la mejor banda.</p>
+                        <p className="mt-1 text-xs text-emerald-600">
+                          {t('Ya estás en la mejor banda.')}
+                        </p>
                       )}
                     </Card>
                   ) : null}
@@ -163,18 +218,18 @@ export default async function BusinessDashboard() {
 
                 <Card className="p-6">
                   <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-slate-900">Tus solicitudes</h2>
+                    <h2 className="text-lg font-semibold text-slate-900">{t('Tus solicitudes')}</h2>
                     {eligible ? (
                       <a
                         href="/business/new"
                         className="text-sm font-medium text-brand-600 hover:underline"
                       >
-                        + Nueva solicitud
+                        {t('+ Nueva solicitud')}
                       </a>
                     ) : null}
                   </div>
                   {opportunities.length === 0 ? (
-                    <p className="text-sm text-slate-600">Aún no tienes solicitudes.</p>
+                    <p className="text-sm text-slate-600">{t('Aún no tienes solicitudes.')}</p>
                   ) : (
                     <ul className="divide-y divide-slate-100">
                       {opportunities.map((o) => (
@@ -187,13 +242,18 @@ export default async function BusinessDashboard() {
                               {o.title}
                             </a>
                             <div className="text-xs text-slate-500">
-                              {Number(o.funded).toLocaleString('es-PE')} /{' '}
-                              {Number(o.amount).toLocaleString('es-PE')} USDC &nbsp;· {o.termDays}{' '}
-                              días · {(o.aprBps / 100).toFixed(1)}% anual
+                              {Number(o.funded).toLocaleString(t('__locale'))} /{' '}
+                              {Number(o.amount).toLocaleString(t('__locale'))} {t('USDC &nbsp;·')}{' '}
+                              {o.termDays} {t('días ·')}{' '}
+                              {(o.aprBps / 100).toLocaleString(t('__locale'), {
+                                minimumFractionDigits: 1,
+                                maximumFractionDigits: 1,
+                              })}
+                              {t('% anual')}
                             </div>
                           </div>
                           <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                            {STATUS_LABEL[o.status] ?? o.status}
+                            {t(STATUS_LABEL[o.status] ?? o.status)}
                           </span>
                         </li>
                       ))}

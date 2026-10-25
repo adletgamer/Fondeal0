@@ -122,6 +122,19 @@
   }
 }
 
+@media (max-width: 520px) {
+  .inner {
+    gap: 0.5rem;
+    width: calc(100% - 1rem);
+  }
+  .brand :global(span span) {
+    display: none;
+  }
+  .actions {
+    gap: 0.25rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .link {
     transition: none;

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { AuthGate } from '@/components/auth-gate';
 import { getSession } from '@/lib/auth/session';
+import { getAppLocale } from '@/lib/app-locale';
 
 export default async function InvestLayout({ children }: { children: ReactNode }) {
   const session = await getSession();
@@ -17,7 +18,7 @@ export default async function InvestLayout({ children }: { children: ReactNode }
   return (
     <AuthGate section="invest">
       {session?.role === 'Investor' && session.stellarAddress ? (
-        <AppShell role="Investor" address={session.stellarAddress}>
+        <AppShell role="Investor" address={session.stellarAddress} locale={await getAppLocale()}>
           {children}
         </AppShell>
       ) : (

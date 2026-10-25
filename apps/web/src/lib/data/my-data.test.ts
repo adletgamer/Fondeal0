@@ -43,11 +43,43 @@ beforeEach(() => {
       business: { findUnique: state.findBusiness },
       evidenceReference: { findMany: state.findEvidence },
       verificationAuditEvent: { findFirst: state.findRecentView, create: state.createEvent },
+      businessProfileEvent: { create: state.createEvent },
     }),
   );
 });
 
 describe('getMyData', () => {
+  it('shows and audits a saved profile even before any KYB submission exists', async () => {
+    state.findBusiness.mockResolvedValue({
+      id: 'profile-business',
+      legalName: 'Synthetic owner company',
+      country: 'Peru',
+      sector: 'Technology',
+      foundedYear: 2020,
+      revenueBand: null,
+      taxId: null,
+      email: null,
+      kybSubmissions: [],
+      verificationAuditEvents: [],
+      profileEvents: [],
+      financingProfile: {
+        primaryCashFlowType: 'PRE_REVENUE',
+        financingUseCase: null,
+        requestedAmountBand: null,
+        preferredTermBand: null,
+        b2bShareBand: null,
+        completedAt: new Date(),
+      },
+    });
+    const data = await getMyData('GOWNER', 'owner');
+    expect(data?.business?.legalName).toBe('Synthetic owner company');
+    expect(data?.financingProfile?.primaryCashFlowType).toBe('PRE_REVENUE');
+    expect(data?.consent).toBeNull();
+    expect(state.findEvidence).not.toHaveBeenCalled();
+    expect(state.createEvent).toHaveBeenCalledWith({
+      data: { businessId: 'profile-business', actorPrivyUserId: 'owner', action: 'Viewed' },
+    });
+  });
   it('audits the first read and never returns the commitment salt', async () => {
     const data = await getMyData('GOWNER', 'owner');
     expect(state.createEvent).toHaveBeenCalledTimes(1);

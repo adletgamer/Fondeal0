@@ -31,11 +31,27 @@ beforeEach(() => {
     fn({
       business: { findUnique: state.findBusiness },
       verificationAuditEvent: { findFirst: state.findEvent, create: state.createEvent },
+      businessProfileEvent: { findFirst: state.findEvent, create: state.createEvent },
     }),
   );
 });
 
 describe('data deletion request', () => {
+  it('accepts deletion requests for profile-only companies without creating a KYB submission', async () => {
+    state.findBusiness.mockResolvedValue({
+      id: 'profile-business',
+      kybSubmissions: [],
+      financingProfile: { businessId: 'profile-business' },
+    });
+    expect(await requestDataDeletion(null, form)).toMatchObject({ ok: true });
+    expect(state.createEvent).toHaveBeenCalledWith({
+      data: {
+        businessId: 'profile-business',
+        actorPrivyUserId: 'owner',
+        action: 'DeletionRequested',
+      },
+    });
+  });
   it('refuses anonymous and investor sessions before touching the database', async () => {
     state.session = null;
     expect(await requestDataDeletion(null, form)).toMatchObject({ ok: false });

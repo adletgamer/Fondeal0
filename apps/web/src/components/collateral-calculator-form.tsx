@@ -1,4 +1,5 @@
 'use client';
+import { useAppTranslation } from './app-locale-provider';
 
 import { useActionState, useMemo, useState } from 'react';
 import { Button, Card, Field, TextField } from '@fondealo/ui';
@@ -24,6 +25,8 @@ export function CollateralCalculatorForm({
   riskBand: RiskBand;
   balanceUsdc: number | null;
 }) {
+  const t = useAppTranslation();
+
   const [state, formAction, pending] = useActionState(createOpportunityOnChainAware, initialState);
   const [amount, setAmount] = useState(5000);
   const [termDays, setTermDays] = useState(90);
@@ -44,29 +47,30 @@ export function CollateralCalculatorForm({
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <Card className="p-6">
-        <h2 className="text-lg font-semibold text-slate-900">Request financing</h2>
+        <h2 className="text-lg font-semibold text-slate-900">{t('Request financing')}</h2>
         <p className="mt-1 text-sm text-slate-500">
-          Your Passport&apos;s current band (<strong>{riskBand}</strong>) sets your collateral —
-          this is not a choice, it&apos;s earned.
+          {t('Your Passport&apos;s current band (')}
+          <strong>{riskBand}</strong>
+          {t(') sets your collateral — this is not a choice, it&apos;s earned.')}
         </p>
 
         <form action={formAction} className="mt-4 space-y-3">
           <Field
-            label="Opportunity title"
+            label={t('Opportunity title')}
             name="title"
-            placeholder="Inventory financing — Lima"
+            placeholder={t('Inventory financing — Lima')}
             required
           />
           <TextField
-            label="Description"
+            label={t('Description')}
             name="description"
-            placeholder="What is the financing for?"
+            placeholder={t('What is the financing for?')}
             rows={2}
           />
 
           <div className="grid gap-3 sm:grid-cols-3">
             <Field
-              label="Amount"
+              label={t('Amount')}
               name="amount"
               type="number"
               min="1"
@@ -77,31 +81,33 @@ export function CollateralCalculatorForm({
               required
             />
             <Field
-              label="Term"
+              label={t('Term')}
               name="termDays"
               type="number"
               min="1"
               value={termDays || ''}
               onChange={(e) => setTermDays(Number(e.target.value) || 0)}
-              hint="days"
+              hint={t('days')}
               required
             />
             <Field
-              label="APR"
+              label={t('APR')}
               name="aprBps"
               type="number"
               min="0"
               value={aprBps || ''}
               onChange={(e) => setAprBps(Number(e.target.value) || 0)}
-              hint={`bps — suggested ${config.suggestedAprBps}`}
+              hint={t('bps — suggested {p0}', { p0: config.suggestedAprBps })}
               required
             />
           </div>
 
           {balanceUsdc !== null && balanceUsdc < collateral ? (
             <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              You have {balanceUsdc.toLocaleString('en-US')} USDC available but this request locks{' '}
-              {collateral.toLocaleString('en-US')} USDC. Add test funds from the dashboard first.
+              {t('You have')} {balanceUsdc.toLocaleString(t('__locale'))}{' '}
+              {t('USDC available but this request locks')}{' '}
+              {collateral.toLocaleString(t('__locale'))}{' '}
+              {t('USDC. Add test funds from the dashboard first.')}
             </p>
           ) : null}
 
@@ -110,57 +116,74 @@ export function CollateralCalculatorForm({
             disabled={pending || amount <= 0 || (balanceUsdc !== null && balanceUsdc < collateral)}
           >
             {pending
-              ? 'Locking collateral…'
-              : `Lock ${collateral.toLocaleString('en-US')} USDC & create`}
+              ? t('Locking collateral…')
+              : t('Lock {p0} USDC & create', { p0: collateral.toLocaleString(t('__locale')) })}
           </Button>
 
-          {state && !state.ok ? <p className="text-xs text-red-600">{state.error}</p> : null}
-          {state && state.ok ? <p className="text-xs text-brand-600">{state.message}</p> : null}
+          {state && !state.ok ? (
+            <p className="text-xs text-red-600">{t.error(state.error)}</p>
+          ) : null}
+          {state && state.ok ? <p className="text-xs text-brand-600">{t(state.message)}</p> : null}
         </form>
       </Card>
 
       <Card className="h-fit p-6">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-          Live collateral calculator
+          {t('Live collateral calculator')}
         </h3>
 
         <div className="mt-4 space-y-4">
-          <Row label="Requested amount" value={`${amount.toLocaleString('en-US')} USDC`} />
           <Row
-            label={`Required collateral (band ${riskBand}, ${config.collateralRatioBps / 100}%)`}
-            value={`${collateral.toLocaleString('en-US')} USDC`}
+            label={t('Requested amount')}
+            value={`${amount.toLocaleString(t('__locale'))} USDC`}
+          />
+          <Row
+            label={t('Required collateral (band {p0}, {p1}%)', {
+              p0: riskBand,
+              p1: config.collateralRatioBps / 100,
+            })}
+            value={`${collateral.toLocaleString(t('__locale'))} USDC`}
             accent
           />
-          <Row label="Investor protection" value={`${protectedPct}% of principal`} />
-          <Row label="Suggested APR" value={`${(config.suggestedAprBps / 100).toFixed(1)}%`} />
+          <Row label={t('Investor protection')} value={`${protectedPct}% ${t('of principal')}`} />
           <Row
-            label={`Total to repay over ${termDays}d`}
-            value={`${totalDue.toLocaleString('en-US', { maximumFractionDigits: 2 })} USDC`}
+            label={t('Suggested APR')}
+            value={`${(config.suggestedAprBps / 100).toLocaleString(t('__locale'), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`}
+          />
+          <Row
+            label={t('Total to repay over {p0}d', { p0: termDays })}
+            value={`${totalDue.toLocaleString(t('__locale'), { maximumFractionDigits: 2 })} USDC`}
           />
         </div>
 
         <div className="mt-5 rounded-lg border border-brand-200 bg-brand-50/60 p-3 text-sm text-brand-800">
-          You will lock <strong>{collateral.toLocaleString('en-US')} USDC</strong> of your own
-          working capital. Repay in full and it comes straight back — plus your score goes up, which
-          lowers this ratio on your next loan.
+          {t('You will lock')} <strong>{collateral.toLocaleString(t('__locale'))} USDC</strong>{' '}
+          {t(
+            'of your own working capital. Repay in full and it comes straight back — plus your score goes up, which lowers this ratio on your next loan.',
+          )}
         </div>
 
         {schedule.length > 0 ? (
           <div className="mt-5">
             <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Repayment preview
+              {t('Repayment preview')}
             </div>
             <ul className="space-y-1.5 text-xs text-slate-500">
               {schedule.slice(0, 4).map((s) => (
                 <li key={s.index} className="flex justify-between">
-                  <span>Day {s.dueInDays}</span>
+                  <span>
+                    {t('Day')} {s.dueInDays}
+                  </span>
                   <span className="font-medium text-slate-700">
-                    {Number(s.total).toLocaleString('en-US', { maximumFractionDigits: 2 })} USDC
+                    {Number(s.total).toLocaleString(t('__locale'), { maximumFractionDigits: 2 })}{' '}
+                    USDC
                   </span>
                 </li>
               ))}
               {schedule.length > 4 ? (
-                <li className="text-slate-400">+ {schedule.length - 4} more installments</li>
+                <li className="text-slate-400">
+                  + {schedule.length - 4} {t('more installments')}
+                </li>
               ) : null}
             </ul>
           </div>

@@ -1,4 +1,6 @@
+'use client';
 import { Badge } from '@fondealo/ui';
+import { useAppTranslation } from './app-locale-provider';
 import type { DataSource } from '@/lib/data/opportunities';
 
 const LABEL: Record<DataSource, string> = {
@@ -15,5 +17,6 @@ const VARIANT: Record<DataSource, 'brand' | 'gold' | 'neutral'> = {
 
 /** Tells the viewer exactly which tier answered — never claims to be live when it isn't. */
 export function DataSourceBadge({ source }: { source: DataSource }) {
-  return <Badge variant={VARIANT[source]}>{LABEL[source]}</Badge>;
+  const t = useAppTranslation();
+  return <Badge variant={VARIANT[source]}>{t(LABEL[source])}</Badge>;
 }

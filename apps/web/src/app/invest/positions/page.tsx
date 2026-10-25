@@ -1,3 +1,4 @@
+import { getAppTranslator } from '@/lib/app-locale';
 import { redirect } from 'next/navigation';
 import { Badge, Card, Container } from '@fondealo/ui';
 import { DataSourceBadge } from '@/components/data-source-badge';
@@ -19,6 +20,8 @@ export default async function PositionsPage() {
   if (!session?.stellarAddress) redirect('/onboarding');
   if (session.role !== 'Investor')
     redirect(session.role === 'Business' ? '/business' : '/onboarding');
+  const t = await getAppTranslator();
+
   const { source, positions } = await getInvestorPositions(session.stellarAddress);
 
   return (
@@ -27,34 +30,40 @@ export default async function PositionsPage() {
         <Container className="py-10">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h1 className="font-display text-3xl font-bold text-slate-900">Your positions</h1>
+              <h1 className="font-display text-3xl font-bold text-slate-900">
+                {t('Your positions')}
+              </h1>
               <p className="mt-1 text-slate-500">
-                Every opportunity you have funded, past and present.
+                {t('Every opportunity you have funded, past and present.')}
               </p>
             </div>
             <DataSourceBadge source={source} />
           </div>
 
+          <p className="mb-5 text-sm text-ink-muted">
+            {t('Estimated totals follow the scenario terms; they are not recorded payouts.')}
+          </p>
+
           {positions.length === 0 ? (
             <Card className="flex flex-col items-center gap-2 px-8 py-14 text-center">
-              <span className="text-lg font-semibold text-slate-900">No positions yet</span>
+              <span className="text-lg font-semibold text-slate-900">{t('No positions yet')}</span>
               <p className="max-w-sm text-sm text-slate-500">
-                Nothing funded under this address yet.
+                {t('Nothing funded under this address yet.')}
               </p>
               <a href="/invest/market">
-                <Badge variant="brand">Browse the market →</Badge>
+                <Badge variant="brand">{t('Browse the market →')}</Badge>
               </a>
             </Card>
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <table className="w-full text-left text-sm">
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+              <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
                   <tr>
-                    <th className="px-4 py-3 font-semibold">Opportunity</th>
-                    <th className="px-4 py-3 text-right font-semibold">Invested</th>
-                    <th className="px-4 py-3 text-right font-semibold">Expected return</th>
-                    <th className="px-4 py-3 font-semibold">Collateral coverage</th>
-                    <th className="px-4 py-3 font-semibold">Status</th>
+                    <th className="px-4 py-3 font-semibold">{t('Opportunity')}</th>
+                    <th className="px-4 py-3 text-right font-semibold">{t('Invested')}</th>
+                    <th className="px-4 py-3 text-right font-semibold">{t('Expected return')}</th>
+                    <th className="px-4 py-3 font-semibold">{t('Collateral coverage')}</th>
+                    <th className="px-4 py-3 font-semibold">{t('Status')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -76,20 +85,21 @@ export default async function PositionsPage() {
                           <div className="font-mono text-xs text-slate-400">{p.business}</div>
                         </td>
                         <td className="px-4 py-3 text-right font-medium text-slate-700">
-                          {Number(p.investorAmount).toLocaleString()} USDC
+                          {Number(p.investorAmount).toLocaleString(t('__locale'))} USDC
                         </td>
                         <td className="px-4 py-3 text-right text-slate-600">
-                          {expected.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC
-                          {p.status === 'Repaid' ? (
-                            <span className="ml-1.5 text-xs text-emerald-600">(realized)</span>
-                          ) : null}
+                          {expected.toLocaleString(t('__locale'), { maximumFractionDigits: 2 })}{' '}
+                          USDC
+                          <span className="ml-1.5 text-xs text-slate-500">{t('(realized)')}</span>
                         </td>
-                        <td className="px-4 py-3 text-slate-500">Risk {p.riskBand}</td>
+                        <td className="px-4 py-3 text-slate-500">
+                          {t('Risk')} {p.riskBand}
+                        </td>
                         <td className="px-4 py-3">
                           <span
                             className={`rounded-full border bg-white px-2 py-0.5 text-xs font-semibold ${STATUS_TONE[p.status] ?? 'border-slate-200 text-slate-500'}`}
                           >
-                            {p.status}
+                            {t(p.status)}
                           </span>
                         </td>
                       </tr>

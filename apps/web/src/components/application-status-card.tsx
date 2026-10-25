@@ -1,3 +1,5 @@
+'use client';
+import { useAppTranslation } from './app-locale-provider';
 import { Card } from '@fondealo/ui';
 import {
   NOT_A_FINANCING_PROMISE,
@@ -62,22 +64,27 @@ export function ApplicationStatusCard({
   showAction?: boolean;
   className?: string;
 }) {
+  const t = useAppTranslation();
+
   return (
     <Card className={`p-5 sm:p-6 ${TONE[status.tone]} ${className}`}>
       <section aria-labelledby="application-status-title" aria-live="polite">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-          Estado de tu solicitud
+          {t('Estado de tu solicitud')}
         </p>
         <h2
           id="application-status-title"
           className="mt-1 font-display text-xl font-bold text-slate-900"
         >
-          {status.title}
+          {t(status.title)}
         </h2>
-        <p className="mt-2 max-w-2xl text-sm text-slate-700">{status.body}</p>
+        <p className="mt-2 max-w-2xl text-sm text-slate-700">{t(status.body)}</p>
 
         {status.steps && !compact ? (
-          <ol className="mt-5 grid gap-3 sm:grid-cols-4" aria-label="Etapas de la verificación">
+          <ol
+            className="mt-5 grid gap-3 sm:grid-cols-4"
+            aria-label={t('Etapas de la verificación')}
+          >
             {status.steps.map((step, i) => (
               <li
                 key={step.key}
@@ -90,8 +97,8 @@ export function ApplicationStatusCard({
                     step.state === 'upcoming' ? 'text-slate-600' : 'font-medium text-slate-900'
                   }
                 >
-                  {step.label}
-                  <span className="sr-only"> ({STEP_SUFFIX[step.state]})</span>
+                  {t(step.label)}
+                  <span className="sr-only"> ({t(STEP_SUFFIX[step.state])})</span>
                 </span>
               </li>
             ))}
@@ -103,14 +110,14 @@ export function ApplicationStatusCard({
             href={status.action.href}
             className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-ink px-4 text-sm font-semibold text-surface-0 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
           >
-            {status.action.label}
+            {t(status.action.label)}
           </a>
         ) : null}
 
-        <p className="mt-4 text-xs text-slate-600">{NOT_A_FINANCING_PROMISE}</p>
+        <p className="mt-4 text-xs text-slate-600">{t(NOT_A_FINANCING_PROMISE)}</p>
         {SUPPORT_EMAIL ? (
           <p className="mt-1 text-xs text-slate-600">
-            ¿Dudas sobre tu solicitud? Escríbenos a{' '}
+            {t('¿Dudas sobre tu solicitud? Escríbenos a')}{' '}
             <a className="font-medium underline" href={`mailto:${SUPPORT_EMAIL}`}>
               {SUPPORT_EMAIL}
             </a>

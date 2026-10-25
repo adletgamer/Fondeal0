@@ -15,6 +15,7 @@ vi.mock('next/navigation', () => ({
   },
 }));
 vi.mock('@/lib/auth/session', () => ({ getSession: async () => state.session }));
+vi.mock('@/lib/app-locale', () => ({ getAppLocale: async () => 'es' }));
 
 const { default: OnboardingPage } = await import('./page');
 

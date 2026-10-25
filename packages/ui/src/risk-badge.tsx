@@ -22,6 +22,8 @@ const BAND_FILL: Record<RiskBandLetter, string> = {
 
 export interface RiskBadgeProps extends HTMLAttributes<HTMLSpanElement> {
   band: RiskBandLetter;
+  /** Fixed translations only; the business can never override its risk label. */
+  locale?: 'es' | 'en';
   /** Show only the grade letter (dense tables). The label stays for screen readers. */
   compact?: boolean;
 }
@@ -30,8 +32,15 @@ export interface RiskBadgeProps extends HTMLAttributes<HTMLSpanElement> {
  * The risk band pill: grade letter + fixed label on the band's fill, in
  * on-band (night) ink — 10:1 or better on every band, in both themes.
  */
-export function RiskBadge({ band, compact, className, ...props }: RiskBadgeProps) {
-  const label = RISK_BAND_LABEL[band];
+export function RiskBadge({ band, compact, locale = 'en', className, ...props }: RiskBadgeProps) {
+  const es: Record<RiskBandLetter, string> = {
+    A: 'Preferente',
+    B: 'Sólida',
+    C: 'En desarrollo',
+    D: 'En observación',
+    E: 'Riesgo alto',
+  };
+  const label = locale === 'es' ? es[band] : RISK_BAND_LABEL[band];
   return (
     <span
       className={cn(

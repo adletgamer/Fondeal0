@@ -1,4 +1,5 @@
 'use client';
+import { useAppTranslation } from './app-locale-provider';
 
 import { useActionState, useEffect, useState } from 'react';
 import { Button, Card } from '@fondealo/ui';
@@ -41,6 +42,8 @@ export function PassportStudio({
   explorerUrl?: string;
   initialTheme: PassportTheme;
 }) {
+  const t = useAppTranslation();
+
   const [state, formAction, pending] = useActionState(savePassportTheme, initialState);
   const [theme, setTheme] = useState<PassportTheme>(initialTheme);
   const [saved, setSaved] = useState<PassportTheme>(initialTheme);
@@ -77,10 +80,11 @@ export function PassportStudio({
       <Card className="h-fit p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Make it yours</h2>
+            <h2 className="text-lg font-semibold text-slate-900">{t('Make it yours')}</h2>
             <p className="mt-1 text-sm text-slate-500">
-              Choose how your Passport looks. Changes preview instantly; save to publish them to
-              lenders who view your profile.
+              {t(
+                'Choose how your Passport looks. Changes preview instantly; save to publish them to lenders who view your profile.',
+              )}
             </p>
           </div>
         </div>
@@ -91,7 +95,7 @@ export function PassportStudio({
           <input type="hidden" name="pattern" value={theme.pattern} />
 
           <fieldset>
-            <legend className="text-xs font-medium text-slate-600">Colour theme</legend>
+            <legend className="text-xs font-medium text-slate-600">{t('Colour theme')}</legend>
             <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
               {[
                 ...PASSPORT_PRESETS.map((p) => ({ id: p.id as PassportPresetId, label: p.label })),
@@ -118,7 +122,7 @@ export function PassportStudio({
                       style={{ background: swatchGradient(p.id, theme.accent) }}
                     />
                     <span className="text-[11px] font-medium leading-tight text-slate-700">
-                      {p.label}
+                      {t(p.label)}
                     </span>
                   </button>
                 );
@@ -130,14 +134,14 @@ export function PassportStudio({
             <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
               <input
                 type="color"
-                aria-label="Pick a custom accent colour"
+                aria-label={t('Pick a custom accent colour')}
                 value={isHexColor(theme.accent) ? theme.accent : '#22d3ee'}
                 onChange={(e) => setTheme((t) => ({ ...t, accent: e.target.value.toLowerCase() }))}
                 className="h-10 w-12 cursor-pointer rounded-lg border border-slate-200 bg-white p-1"
               />
               <div className="flex-1">
                 <label className="text-xs font-medium text-slate-600" htmlFor="accent-hex">
-                  Accent colour
+                  {t('Accent colour')}
                 </label>
                 <input
                   id="accent-hex"
@@ -155,7 +159,7 @@ export function PassportStudio({
           ) : null}
 
           <fieldset>
-            <legend className="text-xs font-medium text-slate-600">Pattern</legend>
+            <legend className="text-xs font-medium text-slate-600">{t('Pattern')}</legend>
             <div className="mt-2 inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
               {PASSPORT_PATTERNS.map((p) => (
                 <button
@@ -170,7 +174,7 @@ export function PassportStudio({
                       : 'text-slate-500 hover:text-slate-700',
                   ].join(' ')}
                 >
-                  {PATTERN_LABEL[p]}
+                  {t(PATTERN_LABEL[p])}
                 </button>
               ))}
             </div>
@@ -178,23 +182,25 @@ export function PassportStudio({
 
           <div className="flex flex-wrap items-center gap-3">
             <Button type="submit" disabled={pending || !dirty || customInvalid}>
-              {pending ? 'Saving…' : 'Save look'}
+              {pending ? t('Saving…') : t('Save look')}
             </Button>
             <button
               type="button"
               onClick={() => setTheme(DEFAULT_PASSPORT_THEME)}
               className="text-sm font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60"
             >
-              Reset to default
+              {t('Reset to default')}
             </button>
             {customInvalid ? (
-              <span className="text-xs text-red-600">Enter a valid colour like #22d3ee.</span>
+              <span className="text-xs text-red-600">
+                {t('Enter a valid colour like #22d3ee.')}
+              </span>
             ) : null}
             {state && !state.ok ? (
-              <span className="text-xs text-red-600">{state.error}</span>
+              <span className="text-xs text-red-600">{t.error(state.error)}</span>
             ) : null}
             {state && state.ok && !dirty ? (
-              <span className="text-xs text-brand-600">{state.message}</span>
+              <span className="text-xs text-brand-600">{t(state.message)}</span>
             ) : null}
           </div>
         </form>
@@ -204,9 +210,10 @@ export function PassportStudio({
             <Lock width={14} height={14} />
           </span>
           <p className="text-sm text-slate-600">
-            <strong className="text-slate-900">Style, not substance.</strong> The top of the card is
-            yours. The bottom — KYB status, credit score, risk band and repayment history — is set
-            by Fondealo and the on-chain record, so colours can never change how your credit reads.
+            <strong className="text-slate-900">{t('Style, not substance.')}</strong>{' '}
+            {t(
+              'The top of the card is yours. The bottom — KYB status, credit score, risk band and repayment history — is set by Fondealo and the on-chain record, so colours can never change how your credit reads.',
+            )}
           </p>
         </div>
       </Card>

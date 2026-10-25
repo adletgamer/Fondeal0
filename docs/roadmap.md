@@ -16,6 +16,8 @@
 
 Stages 2–5 may have small parallel research tasks, but a later stage cannot be called live because an earlier trust or money gate is missing. Do not upgrade dependencies, deploy contracts, apply Production migrations or move real value as a side effect of this roadmap.
 
+The 2026-10-25 economic-profile increment adds self-reported cash-flow segmentation and bilingual customer dashboards ([implementation and migration](rfc/0005-business-financing-profile-and-app-locales.md)). It prepares collection/evidence requirements for Stage 2 and does not implement or approve underwriting. Existing accounts retain access while their profile is incomplete; hosted database rollout remains unverified.
+
 ## Stage 1 release checklist
 
 - [x] Sandbox intake stays `Processing`; no automatic Passport projection or starting score.

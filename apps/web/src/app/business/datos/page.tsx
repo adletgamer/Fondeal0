@@ -1,3 +1,4 @@
+import { getAppTranslator } from '@/lib/app-locale';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Card, Container } from '@fondealo/ui';
@@ -5,6 +6,7 @@ import { DeletionRequestForm } from '@/components/deletion-request-form';
 import { getSession } from '@/lib/auth/session';
 import { getLoginEmail, getMyData, type MyDataOverview } from '@/lib/data/my-data';
 import { formatDateLima } from '@/lib/format';
+import type { appTranslator } from '@/lib/app-copy';
 import {
   KYB_DOCUMENTS,
   RELATIONSHIP_LABELS,
@@ -30,16 +32,21 @@ interface Row {
   who: string;
 }
 
-function rows(data: MyDataOverview, address: string, loginEmail: string | null): Row[] {
+function rows(
+  data: MyDataOverview,
+  address: string,
+  loginEmail: string | null,
+  t: ReturnType<typeof appTranslator>,
+): Row[] {
   const b = data.business;
   const country = b ? findCountry(b.country) : undefined;
   const docs = data.declaredEvidence
-    .map((kind) => KYB_DOCUMENTS.find((d) => d.id === kind)?.label ?? kind)
+    .map((kind) => t(KYB_DOCUMENTS.find((d) => d.id === kind)?.label ?? kind))
     .join(', ');
   return [
     {
       item: 'Razón social y país',
-      value: b ? `${b.legalName} · ${country?.label ?? b.country}` : null,
+      value: b ? `${b.legalName} · ${t(country?.label ?? b.country)}` : null,
       purpose: 'Identificar a tu empresa',
       where: FONDEALO_DB,
       who: ONLY_YOU,
@@ -55,9 +62,9 @@ function rows(data: MyDataOverview, address: string, loginEmail: string | null):
       item: 'Sector, año de fundación y ventas',
       value: b
         ? [
-            label(SECTOR_LABELS, b.sector),
+            b.sector ? t(label(SECTOR_LABELS, b.sector)!) : null,
             b.foundedYear ? String(b.foundedYear) : null,
-            label(REVENUE_BAND_LABELS, b.revenueBand),
+            b.revenueBand ? t(label(REVENUE_BAND_LABELS, b.revenueBand)!) : null,
           ]
             .filter(Boolean)
             .join(' · ')
@@ -76,7 +83,12 @@ function rows(data: MyDataOverview, address: string, loginEmail: string | null):
     {
       item: 'Representante',
       value: data.representative?.name
-        ? [data.representative.name, label(RELATIONSHIP_LABELS, data.representative.relationship)]
+        ? [
+            data.representative.name,
+            data.representative.relationship
+              ? t(label(RELATIONSHIP_LABELS, data.representative.relationship)!)
+              : null,
+          ]
             .filter(Boolean)
             .join(' · ')
         : null,
@@ -91,6 +103,26 @@ function rows(data: MyDataOverview, address: string, loginEmail: string | null):
       where: FONDEALO_DB,
       who: ONLY_YOU,
     },
+    ...(data.financingProfile
+      ? [
+          {
+            item: 'Financial profile',
+            value: [
+              data.financingProfile.primaryCashFlowType,
+              data.financingProfile.financingUseCase,
+              data.financingProfile.requestedAmountBand,
+              data.financingProfile.preferredTermBand,
+              data.financingProfile.b2bShareBand,
+            ]
+              .filter((v): v is string => Boolean(v))
+              .map((value) => t(value))
+              .join(' · '),
+            purpose: 'Prepare evidence requirements; not a credit decision',
+            where: FONDEALO_DB,
+            who: ONLY_YOU,
+          },
+        ]
+      : []),
     {
       item: 'Correo de inicio de sesión',
       value: loginEmail,
@@ -113,6 +145,8 @@ export default async function MyDataPage() {
   if (!session?.stellarAddress) redirect('/onboarding');
   if (session.role !== 'Business')
     redirect(session.role === 'Investor' ? '/invest' : '/onboarding');
+  const t = await getAppTranslator();
+
   const [data, loginEmail] = await Promise.all([
     getMyData(session.stellarAddress, session.privyUserId),
     getLoginEmail(session.privyUserId),
@@ -122,58 +156,63 @@ export default async function MyDataPage() {
     <main className="bg-slate-50 pb-20">
       <Container className="py-10">
         <div className="mx-auto max-w-3xl">
-          <h1 className="font-display text-3xl font-bold text-slate-900">Mis datos</h1>
+          <h1 className="font-display text-3xl font-bold text-slate-900">{t('Mis datos')}</h1>
           <p className="mt-1 text-slate-600">
-            Qué información guardamos sobre tu empresa, para qué la usamos y quién puede verla.
+            {t(
+              'Qué información guardamos sobre tu empresa, para qué la usamos y quién puede verla.',
+            )}
           </p>
 
           {!data ? (
             <Card className="mt-6 border-amber-200 bg-amber-50 p-6">
-              <h2 className="font-semibold text-slate-900">No pudimos cargar tus datos</h2>
+              <h2 className="font-semibold text-slate-900">{t('No pudimos cargar tus datos')}</h2>
               <p className="mt-1 text-sm text-slate-700">
-                Vuelve a intentarlo en unos minutos. Tus datos no se perdieron.
+                {t('Vuelve a intentarlo en unos minutos. Tus datos no se perdieron.')}
               </p>
             </Card>
           ) : (
             <>
               <Card className="mt-6 p-6">
-                <h2 className="text-lg font-semibold text-slate-900">Con quién compartimos</h2>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  {t('Con quién compartimos')}
+                </h2>
                 <p className="mt-1 text-sm text-slate-700">
-                  Hoy no compartimos tu información con ningún financiador. Cuando haya
-                  financiadores aliados, te pediremos permiso para cada uno y podrás retirarlo
-                  cuando quieras.
+                  {t(
+                    'Hoy no compartimos tu información con ningún financiador. Cuando haya financiadores aliados, te pediremos permiso para cada uno y podrás retirarlo cuando quieras.',
+                  )}
                 </p>
                 <p className="mt-3 text-sm text-slate-700">
-                  No publicamos tus datos en blockchain. Como mucho, después de una verificación
-                  revisada, publicaríamos un código (hash) que no permite reconstruir tus datos.
+                  {t(
+                    'No publicamos tus datos en blockchain. Como mucho, después de una verificación revisada, publicaríamos un código (hash) que no permite reconstruir tus datos.',
+                  )}
                 </p>
               </Card>
 
               {data.business ? (
                 <Card className="mt-6 overflow-hidden">
                   <h2 className="px-6 pt-6 text-lg font-semibold text-slate-900">
-                    Lo que guardamos
+                    {t('Lo que guardamos')}
                   </h2>
                   {/* Stacked definition list: readable at 375px without horizontal scroll. */}
                   <dl className="mt-3 divide-y divide-slate-100">
-                    {rows(data, session.stellarAddress, loginEmail).map((r) => (
+                    {rows(data, session.stellarAddress, loginEmail, t).map((r) => (
                       <div key={r.item} className="grid gap-1 px-6 py-4 sm:grid-cols-[200px_1fr]">
-                        <dt className="text-sm font-semibold text-slate-900">{r.item}</dt>
+                        <dt className="text-sm font-semibold text-slate-900">{t(r.item)}</dt>
                         <dd className="space-y-1 text-sm text-slate-700">
                           {r.value ? (
                             <p className="break-words font-medium text-slate-900">{r.value}</p>
                           ) : null}
                           <p>
-                            <span className="text-slate-600">Para qué: </span>
-                            {r.purpose}
+                            <span className="text-slate-600">{t('Para qué:')} </span>
+                            {t(r.purpose)}
                           </p>
                           <p>
-                            <span className="text-slate-600">Dónde: </span>
-                            {r.where}
+                            <span className="text-slate-600">{t('Dónde:')} </span>
+                            {t(r.where)}
                           </p>
                           <p>
-                            <span className="text-slate-600">Quién lo ve: </span>
-                            {r.who}
+                            <span className="text-slate-600">{t('Quién lo ve:')} </span>
+                            {t(r.who)}
                           </p>
                         </dd>
                       </div>
@@ -182,27 +221,30 @@ export default async function MyDataPage() {
                 </Card>
               ) : (
                 <Card className="mt-6 p-6">
-                  <h2 className="text-lg font-semibold text-slate-900">Aún no guardamos datos</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">
+                    {t('Aún no guardamos datos')}
+                  </h2>
                   <p className="mt-1 text-sm text-slate-700">
-                    Solo tenemos tu correo de inicio de sesión (en Privy) y la dirección de tu
-                    cuenta Stellar. Cuando envíes tu solicitud, verás aquí cada dato.
+                    {t(
+                      'Solo tenemos tu correo de inicio de sesión (en Privy) y la dirección de tu cuenta Stellar. Cuando envíes tu solicitud, verás aquí cada dato.',
+                    )}
                   </p>
                   <a
                     href="/business/verify"
                     className="mt-3 inline-block text-sm font-medium text-brand-600 hover:underline"
                   >
-                    Empezar mi solicitud
+                    {t('Empezar mi solicitud')}
                   </a>
                 </Card>
               )}
 
               {data.consent?.at ? (
                 <Card className="mt-6 p-6">
-                  <h2 className="text-lg font-semibold text-slate-900">Tu consentimiento</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">{t('Tu consentimiento')}</h2>
                   <p className="mt-1 text-sm text-slate-700">
-                    Aceptaste la política de solicitud{' '}
-                    <span className="font-mono">{data.consent.version ?? '—'}</span> el{' '}
-                    {formatDateLima(data.consent.at, 'long')}.
+                    {t('Aceptaste la política de solicitud')}{' '}
+                    <span className="font-mono">{data.consent.version ?? '—'}</span> {t('el')}{' '}
+                    {formatDateLima(data.consent.at, 'long', t('__locale'))}.
                   </p>
                 </Card>
               ) : null}
@@ -210,16 +252,17 @@ export default async function MyDataPage() {
               {data.business ? (
                 <Card className="mt-6 p-6">
                   <h2 className="text-lg font-semibold text-slate-900">
-                    Eliminar mis datos y retirar mi consentimiento
+                    {t('Eliminar mis datos y retirar mi consentimiento')}
                   </h2>
                   <p className="mt-1 text-sm text-slate-700">
-                    Registraremos tu solicitud. En esta versión de prueba la eliminación no es
-                    automática: requiere una revisión manual, y algunos datos podrían conservarse si
-                    la ley lo exige.
+                    {t(
+                      'Registraremos tu solicitud. En esta versión de prueba la eliminación no es automática: requiere una revisión manual, y algunos datos podrían conservarse si la ley lo exige.',
+                    )}
                   </p>
                   {data.deletionRequestedAt ? (
                     <p className="mt-2 text-sm font-medium text-slate-900">
-                      Solicitud registrada el {formatDateLima(data.deletionRequestedAt)}.
+                      {t('Solicitud registrada el')}{' '}
+                      {formatDateLima(data.deletionRequestedAt, 'medium', t('__locale'))}.
                     </p>
                   ) : null}
                   <DeletionRequestForm alreadyRequested={Boolean(data.deletionRequestedAt)} />
@@ -227,8 +270,9 @@ export default async function MyDataPage() {
               ) : null}
 
               <p className="mt-6 text-xs text-slate-600">
-                Esta página describe cómo funciona hoy la versión de prueba de Fondealo. El texto
-                final está pendiente de revisión legal.
+                {t(
+                  'Esta página describe cómo funciona hoy la versión de prueba de Fondealo. El texto final está pendiente de revisión legal.',
+                )}
               </p>
             </>
           )}

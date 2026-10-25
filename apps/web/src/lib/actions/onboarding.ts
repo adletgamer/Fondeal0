@@ -81,5 +81,5 @@ export async function chooseRole(role: 'Business' | 'Investor'): Promise<ChooseR
     };
   }
 
-  redirect(SECTION_FOR_ROLE[role]);
+  redirect(role === 'Business' ? '/business/onboarding' : SECTION_FOR_ROLE[role]);
 }

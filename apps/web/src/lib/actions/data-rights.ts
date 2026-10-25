@@ -31,6 +31,7 @@ export async function requestDataDeletion(
         where: { stellarAddress: session.stellarAddress! },
         select: {
           id: true,
+          financingProfile: { select: { businessId: true } },
           kybSubmissions: {
             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
             take: 1,
@@ -39,7 +40,23 @@ export async function requestDataDeletion(
         },
       });
       const submission = business?.kybSubmissions[0];
-      if (!business || !submission) return { kind: 'nothing' as const };
+      if (!business) return { kind: 'nothing' as const };
+      if (!submission && business.financingProfile) {
+        const existing = await tx.businessProfileEvent.findFirst({
+          where: { businessId: business.id, action: 'DeletionRequested' },
+          select: { createdAt: true },
+        });
+        if (existing) return { kind: 'already' as const, at: existing.createdAt };
+        await tx.businessProfileEvent.create({
+          data: {
+            businessId: business.id,
+            actorPrivyUserId: session.privyUserId,
+            action: 'DeletionRequested',
+          },
+        });
+        return { kind: 'recorded' as const };
+      }
+      if (!submission) return { kind: 'nothing' as const };
 
       const existing = await tx.verificationAuditEvent.findFirst({
         where: { businessId: business.id, action: 'DeletionRequested' },

@@ -22,6 +22,7 @@ vi.mock('next/navigation', () => ({
   },
 }));
 vi.mock('@/lib/auth/session', () => ({ getSession: async () => state.session }));
+vi.mock('@/lib/app-locale', () => ({ getAppTranslator: async () => (message: string) => message }));
 vi.mock('@/lib/data/opportunities', () => ({
   getMarketOpportunities: state.market,
   getOpportunityDetail: state.detail,

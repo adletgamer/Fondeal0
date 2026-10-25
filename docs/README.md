@@ -13,6 +13,7 @@ Start here when reviewing the project. A document's existence is not evidence th
 | [Risk register](risks.md) | Threats to trust, money and operations |
 | [Bounded x402 evidence acquisition](rfc/0003-evidence-acquisition-x402.md) | Experimental, server-only Testnet evidence acquisition; not wired to an admin action |
 | [Pollar authentication and Stellar wallets](rfc/0004-pollar-auth-and-stellar-wallets.md) | Exploration of a Privy replacement, server-session design and a staged Testnet pilot; not enabled in the app |
+| [Business economic profiles and ES/EN dashboards](rfc/0005-business-financing-profile-and-app-locales.md) | Self-reported cash-flow onboarding, owner/role boundaries, additive migration and app language preference |
 | [ADRs](adr/) | Durable architecture decisions and trade-offs |
 | [KYB evidence boundary](adr/0010-kyb-evidence-boundary.md) | Declaration-only intake, provider failure handling and upload gate |
 | [Admin back-office and decision authority](adr/0011-admin-back-office-and-decision-authority.md) | Privilege planes, who decides KYB, increments for `apps/admin` |

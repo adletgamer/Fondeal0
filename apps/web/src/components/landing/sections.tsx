@@ -59,7 +59,7 @@ export function LandingHeader({ locale }: { locale: Locale }) {
             {t.header.switchLabel}
           </a>
           <span className="hidden sm:block">
-            <ThemeToggle />
+            <ThemeToggle locale={locale} />
           </span>
           <Link
             href="/onboarding"

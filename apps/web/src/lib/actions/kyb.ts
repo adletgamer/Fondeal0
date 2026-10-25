@@ -22,6 +22,7 @@ export type KybResult =
   | { ok: false; error: string };
 
 const kybSchema = z.object({
+  locale: z.enum(['es', 'en']).default('es'),
   legalName: z.string().trim().min(2, 'Ingresa la razón social').max(120),
   country: z.string().refine((c) => Boolean(findCountry(c)), 'Selecciona un país'),
   taxId: z.string().transform(normalizeTaxId),
@@ -77,6 +78,7 @@ export async function submitKyb(_prev: KybResult | null, formData: FormData): Pr
   if (!parsed.success)
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Datos no válidos' };
   const d = parsed.data;
+  const consentVersion = d.locale === 'en' ? `${CONSENT_VERSION}-en` : CONSENT_VERSION;
 
   const country = findCountry(d.country)!;
   if (!country.pattern.test(d.taxId)) {
@@ -168,7 +170,7 @@ export async function submitKyb(_prev: KybResult | null, formData: FormData): Pr
           providerRef,
           idempotencyKey: d.idempotencyKey,
           consentAt: new Date(),
-          consentVersion: CONSENT_VERSION,
+          consentVersion,
           fields: {
             documentsDeclared: [...new Set(d.docs)],
             representativeName: d.representativeName,
@@ -219,7 +221,7 @@ export async function submitKyb(_prev: KybResult | null, formData: FormData): Pr
             kybSubmissionId: submission.id,
             actorPrivyUserId: session.privyUserId,
             action: 'ConsentRecorded',
-            metadata: { version: CONSENT_VERSION },
+            metadata: { version: consentVersion, locale: d.locale },
           },
           {
             businessId: business.id,

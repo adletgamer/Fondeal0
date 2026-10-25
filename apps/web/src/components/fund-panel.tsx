@@ -1,4 +1,5 @@
 'use client';
+import { useAppTranslation } from './app-locale-provider';
 
 import { useMemo, useState, type FormEvent } from 'react';
 import { Button, Card, Field, TxStatus } from '@fondealo/ui';
@@ -26,6 +27,8 @@ export function FundPanel({
   isOpen: boolean;
   balanceUsdc: number | null;
 }) {
+  const t = useAppTranslation();
+
   const { stellarAddress } = useStellarWallet();
   const [amount, setAmount] = useState(remaining > 0 ? Math.min(remaining, 500) : 0);
   const [pending, setPending] = useState(false);
@@ -56,9 +59,9 @@ export function FundPanel({
   if (!isOpen) {
     return (
       <Card className="p-6">
-        <h2 className="text-lg font-semibold text-slate-900">Funding closed</h2>
+        <h2 className="text-lg font-semibold text-slate-900">{t('Funding closed')}</h2>
         <p className="mt-2 text-sm text-slate-500">
-          This opportunity is no longer open for new funding.
+          {t('This opportunity is no longer open for new funding.')}
         </p>
       </Card>
     );
@@ -66,17 +69,17 @@ export function FundPanel({
 
   return (
     <Card className="p-6">
-      <h2 className="text-lg font-semibold text-slate-900">Fund in USDC</h2>
+      <h2 className="text-lg font-semibold text-slate-900">{t('Fund in USDC')}</h2>
       <p className="mt-1 text-sm text-slate-500">
-        {remaining.toLocaleString('en-US')} USDC remaining.
+        {remaining.toLocaleString(t('__locale'))} {t('USDC remaining.')}
         {balanceUsdc !== null ? (
           <>
             {' '}
-            Your balance:{' '}
+            {t('Your balance:')}{' '}
             <strong className="text-slate-700">
-              {balanceUsdc.toLocaleString('en-US')} USDC
+              {balanceUsdc.toLocaleString(t('__locale'))} USDC
             </strong>{' '}
-            <span className="text-slate-400">(test funds)</span>
+            <span className="text-slate-400">{t('(test funds)')}</span>
           </>
         ) : null}
       </p>
@@ -84,14 +87,14 @@ export function FundPanel({
       <form onSubmit={handleSubmit} className="mt-4 space-y-3">
         {stellarAddress ? (
           <p className="text-xs text-slate-500">
-            Funding as{' '}
+            {t('Funding as')}{' '}
             <span className="font-mono text-slate-700">
               {stellarAddress.slice(0, 6)}…{stellarAddress.slice(-6)}
             </span>
           </p>
         ) : null}
         <Field
-          label="Amount"
+          label={t('Amount')}
           name="amount"
           type="number"
           min="1"
@@ -123,24 +126,26 @@ export function FundPanel({
             onClick={() => setAmount(remaining)}
             className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-brand-300 hover:text-brand-700"
           >
-            Fund it all
+            {t('Fund it all')}
           </button>
         </div>
 
         <div className="rounded-lg bg-slate-50 p-3 text-sm">
           <div className="flex justify-between text-slate-500">
-            <span>Projected return over {termDays} days</span>
+            <span>
+              {t('Projected return over')} {termDays} {t('days')}
+            </span>
             <span className="font-semibold text-slate-800">
-              {projectedReturn.toLocaleString('en-US', { maximumFractionDigits: 2 })} USDC
+              {projectedReturn.toLocaleString(t('__locale'), { maximumFractionDigits: 2 })} USDC
             </span>
           </div>
         </div>
 
         {insufficient ? (
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            Not enough balance for this amount.{' '}
+            {t('Not enough balance for this amount.')}{' '}
             <a href="/invest#balance" className="font-medium underline">
-              Add test funds
+              {t('Add test funds')}
             </a>
           </p>
         ) : null}
@@ -151,16 +156,18 @@ export function FundPanel({
           className="w-full"
           disabled={pending || amount <= 0 || !stellarAddress || insufficient}
         >
-          {pending ? 'Funding…' : `Fund ${amount.toLocaleString('en-US')} USDC`}
+          {pending
+            ? t('Funding…')
+            : t('Fund {p0} USDC', { p0: amount.toLocaleString(t('__locale')) })}
         </Button>
 
         {pending ? (
-          <TxStatus state="pending" label="Recording test funding" />
+          <TxStatus state="pending" label={t('Recording test funding')} />
         ) : result ? (
           <TxStatus
             state={result.ok ? 'confirmed' : 'failed'}
-            label={result.ok ? 'Recorded' : undefined}
-            meta={result.ok ? result.message : result.error}
+            label={result.ok ? t('Recorded') : undefined}
+            meta={result.ok ? t(result.message) : t.error(result.error)}
           />
         ) : null}
       </form>

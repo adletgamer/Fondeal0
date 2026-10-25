@@ -1,3 +1,5 @@
+'use client';
+import { useAppTranslation } from './app-locale-provider';
 import { Card } from '@fondealo/ui';
 import {
   SCORE_DEFAULT_PENALTY,
@@ -14,6 +16,8 @@ import { ShieldCheck, TrendingUp, XCircle } from './icons';
  * "underwriting factors": every number here is real and auditable.
  */
 export function ScoreBreakdown({ passport }: { passport: Passport }) {
+  const t = useAppTranslation();
+
   const nextGain = previewOnTimeGain(passport.score, passport.onTimeStreak);
 
   const rows = [
@@ -45,12 +49,19 @@ export function ScoreBreakdown({ passport }: { passport: Passport }) {
 
   return (
     <Card className="p-6">
-      <h2 className="text-lg font-semibold text-slate-900">How your score moves</h2>
+      <h2 className="text-lg font-semibold text-slate-900">{t('How your score moves')}</h2>
       <p className="mt-1 text-xs text-slate-500">
-        At your current score ({passport.score}) and streak ({passport.onTimeStreak}), the next
-        on-time, investor-funded repayment adds{' '}
-        <strong className="text-brand-600">+{nextGain} points</strong>. Gains shrink as you approach
-        1000; penalties are flat, so they bite hardest for high scorers.
+        {t('At your current score (')}
+        {passport.score}
+        {t(') and streak (')}
+        {passport.onTimeStreak}
+        {t('), the next on-time, investor-funded repayment adds')}{' '}
+        <strong className="text-brand-600">
+          +{nextGain} {t('points')}
+        </strong>
+        {t(
+          '. Gains shrink as you approach 1000; penalties are flat, so they bite hardest for high scorers.',
+        )}
       </p>
       <ul className="mt-4 divide-y divide-slate-100">
         {rows.map((r) => (
@@ -58,8 +69,8 @@ export function ScoreBreakdown({ passport }: { passport: Passport }) {
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-50 text-slate-500">
               <r.icon width={16} height={16} />
             </span>
-            <span className="flex-1 text-sm text-slate-700">{r.label}</span>
-            <span className={`font-display text-sm font-bold ${r.tone}`}>{r.value}</span>
+            <span className="flex-1 text-sm text-slate-700">{t(r.label)}</span>
+            <span className={`font-display text-sm font-bold ${r.tone}`}>{t(r.value)}</span>
           </li>
         ))}
       </ul>

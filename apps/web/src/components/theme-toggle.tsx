@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { THEME_STORAGE_KEY, type Theme } from '@/lib/theme';
 
 /** Night / Day switch for the navbar. Persists per browser. */
-export function ThemeToggle() {
+export function ThemeToggle({ locale = 'es' }: { locale?: 'es' | 'en' }) {
   const [theme, setTheme] = useState<Theme>('dark');
 
   useEffect(() => {
@@ -22,7 +22,14 @@ export function ThemeToggle() {
     setTheme(next);
   }
 
-  const label = theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
+  const label =
+    locale === 'es'
+      ? theme === 'dark'
+        ? 'Cambiar a tema claro'
+        : 'Cambiar a tema oscuro'
+      : theme === 'dark'
+        ? 'Switch to light theme'
+        : 'Switch to dark theme';
   return (
     <button
       type="button"

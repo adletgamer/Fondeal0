@@ -1,4 +1,5 @@
 'use client';
+import { useAppLocale, useAppTranslation } from './app-locale-provider';
 
 import { useActionState, useEffect, useState } from 'react';
 import { Button, Card, Field, SelectField } from '@fondealo/ui';
@@ -76,6 +77,9 @@ export function KybWizard({
   initial?: Partial<Draft>;
   previouslyRejected?: boolean;
 }) {
+  const t = useAppTranslation();
+  const locale = useAppLocale();
+
   const [state, formAction, pending] = useActionState(submitKyb, initialState);
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<Draft>({ ...EMPTY, ...initial });
@@ -153,24 +157,26 @@ export function KybWizard({
           <ShieldCheck width={26} height={26} />
         </span>
         <h2 className="mt-4 font-display text-2xl font-bold text-slate-900">
-          Recibimos tu solicitud
+          {t('Recibimos tu solicitud')}
         </h2>
         <p className="mt-2 text-sm text-slate-500">
-          Revisamos el formato de tus datos en modo de prueba. La verificación de tu empresa sigue
-          pendiente y todavía no se ha emitido un Pasaporte. Verificar tu empresa no significa que
-          recibirás financiamiento.
+          {t(
+            'Revisamos el formato de tus datos en modo de prueba. La verificación de tu empresa sigue pendiente y todavía no se ha emitido un Pasaporte. Verificar tu empresa no significa que recibirás financiamiento.',
+          )}
         </p>
         <ul className="mx-auto mt-5 max-w-sm space-y-1.5 text-left text-xs text-slate-500">
           {state.reasons.map((r) => (
             <li key={r} className="flex gap-2">
               <Check width={14} height={14} className="mt-0.5 shrink-0 text-brand-500" />
-              {r}
+              {t(r)}
             </li>
           ))}
         </ul>
-        <p className="mt-4 font-mono text-[11px] text-slate-400">Referencia {state.providerRef}</p>
+        <p className="mt-4 font-mono text-[11px] text-slate-400">
+          {t('Referencia')} {state.providerRef}
+        </p>
         <a href="/business/verify">
-          <Button className="mt-6">Ver el estado de mi solicitud</Button>
+          <Button className="mt-6">{t('Ver el estado de mi solicitud')}</Button>
         </a>
       </Card>
     );
@@ -180,12 +186,12 @@ export function KybWizard({
     <div className="mx-auto max-w-2xl">
       {previouslyRejected && !state ? (
         <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Tu solicitud anterior no fue aprobada. Corrige tus datos y envíala de nuevo.
+          {t('Tu solicitud anterior no fue aprobada. Corrige tus datos y envíala de nuevo.')}
         </p>
       ) : null}
 
       <ol
-        aria-label="Pasos de la solicitud"
+        aria-label={t('Pasos de la solicitud')}
         className="mb-6 grid grid-cols-2 gap-3 text-xs font-medium sm:flex sm:items-center"
       >
         {STEPS.map((label, i) => (
@@ -206,7 +212,7 @@ export function KybWizard({
             >
               {i < step ? <Check width={12} height={12} /> : i + 1}
             </span>
-            <span className={i === step ? 'text-slate-900' : 'text-slate-400'}>{label}</span>
+            <span className={i === step ? 'text-slate-900' : 'text-slate-400'}>{t(label)}</span>
             {i < STEPS.length - 1 ? (
               <span className="h-px flex-1 bg-slate-200" aria-hidden />
             ) : null}
@@ -216,6 +222,7 @@ export function KybWizard({
 
       <Card className="p-6">
         <form action={formAction} className="space-y-5">
+          <input type="hidden" name="locale" value={locale} />
           {/* Every step's values travel in hidden inputs so the final submit has the full draft. */}
           <input type="hidden" name="legalName" value={draft.legalName} />
           <input type="hidden" name="country" value={draft.country} />
@@ -241,48 +248,53 @@ export function KybWizard({
           {step === 0 ? (
             <div className="space-y-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Cuéntanos sobre tu empresa</h2>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  {t('Cuéntanos sobre tu empresa')}
+                </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Usamos estos datos para identificar a tu empresa. Te pediremos permiso antes de
-                  compartirlos con cualquier financiador.
+                  {t(
+                    'Usamos estos datos para identificar a tu empresa. Te pediremos permiso antes de compartirlos con cualquier financiador.',
+                  )}
                 </p>
               </div>
               <Field
-                label="Razón social"
+                label={t('Razón social')}
                 value={draft.legalName}
                 onChange={(e) => set('legalName', e.target.value)}
                 placeholder="Café Andino SAC"
               />
               <div className="grid gap-4 sm:grid-cols-2">
                 <SelectField
-                  label="País de registro"
+                  label={t('País de registro')}
                   value={draft.country}
                   onChange={(e) => set('country', e.target.value)}
                 >
-                  <option value="">Selecciona…</option>
+                  <option value="">{t('Selecciona…')}</option>
                   {KYB_COUNTRIES.map((c) => (
                     <option key={c.code} value={c.name}>
-                      {c.label}
+                      {t(c.label)}
                     </option>
                   ))}
                 </SelectField>
                 <Field
                   label={
-                    country ? `${country.taxIdLabel} (número tributario)` : 'Número tributario'
+                    country
+                      ? t('{p0} (número tributario)', { p0: country.taxIdLabel })
+                      : t('Número tributario')
                   }
                   value={draft.taxId}
                   onChange={(e) => set('taxId', e.target.value)}
-                  placeholder={country?.taxIdExample ?? 'Primero elige un país'}
+                  placeholder={country?.taxIdExample ?? t('Select a country first')}
                   hint={
                     country ? (
                       <>
-                        {country.taxIdHint}.{' '}
+                        {t(country.taxIdHint)}.{' '}
                         <button
                           type="button"
                           className="font-medium text-brand-600 hover:underline"
                           onClick={() => set('taxId', country.taxIdExample)}
                         >
-                          Usar un valor de prueba
+                          {t('Usar un valor de prueba')}
                         </button>
                       </>
                     ) : undefined
@@ -291,19 +303,19 @@ export function KybWizard({
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <SelectField
-                  label="Sector"
+                  label={t('Sector')}
                   value={draft.sector}
                   onChange={(e) => set('sector', e.target.value)}
                 >
-                  <option value="">Selecciona…</option>
+                  <option value="">{t('Selecciona…')}</option>
                   {SECTORS.map((s) => (
                     <option key={s} value={s}>
-                      {SECTOR_LABELS[s]}
+                      {t(SECTOR_LABELS[s])}
                     </option>
                   ))}
                 </SelectField>
                 <Field
-                  label="Año de fundación"
+                  label={t('Año de fundación')}
                   type="number"
                   value={draft.foundedYear}
                   onChange={(e) => set('foundedYear', e.target.value)}
@@ -312,19 +324,19 @@ export function KybWizard({
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <SelectField
-                  label="Ventas mensuales (aprox.)"
+                  label={t('Ventas mensuales (aprox.)')}
                   value={draft.revenueBand}
                   onChange={(e) => set('revenueBand', e.target.value)}
                 >
-                  <option value="">Selecciona…</option>
+                  <option value="">{t('Selecciona…')}</option>
                   {REVENUE_BANDS.map((r) => (
                     <option key={r} value={r}>
-                      {REVENUE_BAND_LABELS[r]}
+                      {t(REVENUE_BAND_LABELS[r])}
                     </option>
                   ))}
                 </SelectField>
                 <Field
-                  label="Correo de contacto"
+                  label={t('Correo de contacto')}
                   type="email"
                   value={draft.email}
                   onChange={(e) => set('email', e.target.value)}
@@ -337,30 +349,32 @@ export function KybWizard({
           {step === 1 ? (
             <div className="space-y-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Representante autorizado</h2>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  {t('Representante autorizado')}
+                </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Es la persona que puede actuar en nombre de la empresa.
+                  {t('Es la persona que puede actuar en nombre de la empresa.')}
                 </p>
               </div>
               <Field
-                label="Nombre completo"
+                label={t('Nombre completo')}
                 value={draft.representativeName}
                 onChange={(e) => set('representativeName', e.target.value)}
               />
               <SelectField
-                label="Relación con la empresa"
+                label={t('Relación con la empresa')}
                 value={draft.representativeRelationship}
                 onChange={(e) => set('representativeRelationship', e.target.value)}
               >
-                <option value="">Selecciona…</option>
+                <option value="">{t('Selecciona…')}</option>
                 {REPRESENTATIVE_RELATIONSHIPS.map((r) => (
                   <option key={r} value={r}>
-                    {RELATIONSHIP_LABELS[r]}
+                    {t(RELATIONSHIP_LABELS[r])}
                   </option>
                 ))}
               </SelectField>
               <p className="text-sm text-slate-500">
-                Esta relación es declarada por ti. En esta etapa no verificamos tus poderes.
+                {t('Esta relación es declarada por ti. En esta etapa no verificamos tus poderes.')}
               </p>
             </div>
           ) : null}
@@ -368,11 +382,13 @@ export function KybWizard({
           {step === 2 ? (
             <div className="space-y-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Evidencia y consentimiento</h2>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  {t('Evidencia y consentimiento')}
+                </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Marca los documentos que puedes presentar. La constancia de inscripción y el
-                  documento tributario son obligatorios; los de propietarios y domicilio solo se
-                  pedirán si la revisión los necesita. No subas documentos aquí.
+                  {t(
+                    'Marca los documentos que puedes presentar. La constancia de inscripción y el documento tributario son obligatorios; los de propietarios y domicilio solo se pedirán si la revisión los necesita. No subas documentos aquí.',
+                  )}
                 </p>
               </div>
               <ul className="space-y-2">
@@ -387,9 +403,9 @@ export function KybWizard({
                       />
                       <span>
                         <span className="block text-sm font-medium text-slate-900">
-                          {doc.label}
+                          {t(doc.label)}
                         </span>
-                        <span className="block text-xs text-slate-500">{doc.help}</span>
+                        <span className="block text-xs text-slate-500">{t(doc.help)}</span>
                       </span>
                     </label>
                   </li>
@@ -402,8 +418,9 @@ export function KybWizard({
                   checked={draft.accept}
                   onChange={(e) => set('accept', e.target.checked)}
                 />
-                Declaro que la información es correcta y que estoy autorizado para registrar esta
-                empresa.
+                {t(
+                  'Declaro que la información es correcta y que estoy autorizado para registrar esta empresa.',
+                )}
               </label>
               <label className="flex cursor-pointer items-start gap-3 text-sm text-slate-600">
                 <input
@@ -412,11 +429,11 @@ export function KybWizard({
                   checked={draft.evidenceConsent}
                   onChange={(e) => set('evidenceConsent', e.target.checked)}
                 />
-                Autorizo a Fondealo a guardar esta solicitud y mis declaraciones de evidencia para
-                verificar mi empresa (política de solicitud v1). No compartimos estos datos con
-                financiadores sin pedirte permiso. En este modo de prueba no se suben documentos.{' '}
+                {t(
+                  'Autorizo a Fondealo a guardar esta solicitud y mis declaraciones de evidencia para verificar mi empresa (política de solicitud v1). No compartimos estos datos con financiadores sin pedirte permiso. En este modo de prueba no se suben documentos.',
+                )}{' '}
                 <a href="/business/datos" className="font-medium text-brand-600 hover:underline">
-                  Qué datos guardamos
+                  {t('Qué datos guardamos')}
                 </a>
               </label>
             </div>
@@ -424,7 +441,7 @@ export function KybWizard({
 
           {step === 3 ? (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-slate-900">Revisa y envía</h2>
+              <h2 className="text-lg font-semibold text-slate-900">{t('Revisa y envía')}</h2>
               <dl className="divide-y divide-slate-100 rounded-xl border border-slate-200 text-sm">
                 {[
                   ['Razón social', draft.legalName],
@@ -437,10 +454,14 @@ export function KybWizard({
                   ['Representante', draft.representativeName],
                   ['Relación', label(RELATIONSHIP_LABELS, draft.representativeRelationship)],
                   ['Verificador', KYB_VERIFIERS.find((v) => v.id === draft.verifierId)?.name ?? ''],
-                ].map(([k, v]) => (
+                ].map(([k = '', v = '']) => (
                   <div key={k} className="flex justify-between gap-4 px-4 py-2.5">
-                    <dt className="text-slate-500">{k}</dt>
-                    <dd className="text-right font-medium text-slate-900">{v}</dd>
+                    <dt className="text-slate-500">{t(k)}</dt>
+                    <dd className="text-right font-medium text-slate-900">
+                      {['Sector', 'Ventas mensuales', 'Relación', 'Verificador', 'País'].includes(k)
+                        ? t(v)
+                        : v}
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -460,7 +481,7 @@ export function KybWizard({
                           }`}
                         />
                       )}
-                      <span className={i > progress ? 'text-slate-400' : ''}>{label}</span>
+                      <span className={i > progress ? 'text-slate-400' : ''}>{t(label)}</span>
                     </li>
                   ))}
                 </ul>
@@ -468,7 +489,7 @@ export function KybWizard({
 
               {state && !state.ok ? (
                 <p role="alert" className="text-sm text-red-600">
-                  {state.error}
+                  {t.error(state.error)}
                 </p>
               ) : null}
             </div>
@@ -476,7 +497,7 @@ export function KybWizard({
 
           {stepError ? (
             <p role="alert" className="text-sm text-red-600">
-              {stepError}
+              {t.error(stepError)}
             </p>
           ) : null}
 
@@ -490,15 +511,15 @@ export function KybWizard({
                 setStep((s) => Math.max(0, s - 1));
               }}
             >
-              Atrás
+              {t('Atrás')}
             </Button>
             {step < STEPS.length - 1 ? (
               <Button type="button" onClick={next}>
-                Continuar
+                {t('Continuar')}
               </Button>
             ) : (
               <Button type="submit" disabled={pending || !draft.idempotencyKey}>
-                {pending ? 'Enviando…' : 'Enviar para revisión'}
+                {pending ? t('Enviando…') : t('Enviar para revisión')}
               </Button>
             )}
           </div>

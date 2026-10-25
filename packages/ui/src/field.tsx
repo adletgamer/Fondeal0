@@ -30,7 +30,9 @@ function FieldShell({
 }: FieldShellProps & { hintId: string; children: ReactNode }) {
   return (
     <label className={cn('flex flex-col gap-1.5', className)}>
-      <span className="text-[13px] font-medium text-ink">{label}</span>
+      <span id={`${hintId}-label`} className="text-[13px] font-medium text-ink">
+        {label}
+      </span>
       {children}
       {error ? (
         <span id={hintId} className="flex items-start gap-1.5 text-[13px] text-danger-text">
@@ -54,8 +56,15 @@ function FieldShell({
   );
 }
 
-function controlA11y(hintId: string, hint: ReactNode, error: ReactNode) {
+function controlA11y(
+  hintId: string,
+  hint: ReactNode,
+  error: ReactNode,
+  props: { 'aria-label'?: string; 'aria-labelledby'?: string },
+) {
   return {
+    'aria-labelledby':
+      props['aria-labelledby'] ?? (props['aria-label'] ? undefined : `${hintId}-label`),
     'aria-invalid': error ? true : undefined,
     'aria-describedby': error || hint ? hintId : undefined,
   } as const;
@@ -81,7 +90,7 @@ export function Field({
   const input = (
     <input
       {...props}
-      {...controlA11y(hintId, hint, error)}
+      {...controlA11y(hintId, hint, error, props)}
       className={cn(
         fieldControlClass,
         (mono || unit) && 'font-mono tabular-nums',
@@ -116,7 +125,11 @@ export function TextField({
   const hintId = useId();
   return (
     <FieldShell label={label} hint={hint} error={error} hintId={hintId} className={className}>
-      <textarea {...props} {...controlA11y(hintId, hint, error)} className={fieldControlClass} />
+      <textarea
+        {...props}
+        {...controlA11y(hintId, hint, error, props)}
+        className={fieldControlClass}
+      />
     </FieldShell>
   );
 }
@@ -132,7 +145,7 @@ export function SelectField({
   const hintId = useId();
   return (
     <FieldShell label={label} hint={hint} error={error} hintId={hintId} className={className}>
-      <select {...props} {...controlA11y(hintId, hint, error)} className={fieldControlClass}>
+      <select {...props} {...controlA11y(hintId, hint, error, props)} className={fieldControlClass}>
         {children}
       </select>
     </FieldShell>

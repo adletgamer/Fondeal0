@@ -87,9 +87,79 @@ model Business {
   kybDecisions            KybDecision[]
   opportunities           Opportunity[]
   passport                PassportProjection?
+  financingProfile        BusinessFinancingProfile?
+  profileEvents           BusinessProfileEvent[]
 
   @@unique([country, taxId])
   @@index([country])
+}
+
+enum CashFlowType {
+  B2B_RECEIVABLES
+  RECURRING_REVENUE
+  OPERATING_REVENUE
+  PRE_REVENUE
+}
+
+enum FinancingUseCase {
+  INVOICE_ADVANCE
+  WORKING_CAPITAL
+  INVENTORY_OR_PO
+  GROWTH_CAPITAL
+  OTHER
+}
+
+enum RequestedAmountBand {
+  UP_TO_10K
+  FROM_10K_TO_50K
+  FROM_50K_TO_100K
+  OVER_100K
+}
+
+enum PreferredTermBand {
+  UP_TO_30_DAYS
+  DAYS_31_TO_90
+  DAYS_91_TO_180
+  OVER_180_DAYS
+}
+
+enum B2bShareBand {
+  LESS_THAN_HALF
+  HALF_OR_MORE
+  ALL
+}
+
+/// Self-reported economic profile. Never proof of KYB, risk or financing approval.
+model BusinessFinancingProfile {
+  businessId          String               @id
+  business            Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  primaryCashFlowType CashFlowType
+  financingUseCase    FinancingUseCase?
+  requestedAmountBand RequestedAmountBand?
+  preferredTermBand   PreferredTermBand?
+  b2bShareBand        B2bShareBand?
+  profileVersion      String
+  completedAt         DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+enum BusinessProfileEventType {
+  Saved
+  Viewed
+  DeletionRequested
+}
+
+/// Append-only history for profile-only businesses, which have no KYB submission yet.
+model BusinessProfileEvent {
+  id               String                   @id @default(cuid())
+  businessId       String
+  business         Business                 @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  actorPrivyUserId String
+  action           BusinessProfileEventType
+  createdAt        DateTime                 @default(now())
+
+  @@index([businessId, action, createdAt])
 }
 
 /// A logged-in wallet. Identity is anchored to `privyUserId` (verified

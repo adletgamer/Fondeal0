@@ -9,3 +9,4 @@ export * from './passport';
 export * from './lending';
 export * from './collateral';
 export * from './ledger';
+export * from './business-financing';
