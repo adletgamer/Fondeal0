@@ -44,6 +44,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@fondealo/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@fondealo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
