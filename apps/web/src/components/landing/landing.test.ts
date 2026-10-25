@@ -30,8 +30,8 @@ const es = render(HomeEs);
 const en = render(HomeEn);
 
 describe.each([
-  ['es', es, 'es-PE', /Tu empresa ya tiene una historia\..*Hazla verificable\./s, '/en'],
-  ['en', en, 'en', /Your company already has a story\..*Make it verifiable\./s, '/'],
+  ['es', es, 'es-PE', /Presenta tu empresa\..*Respalda su historia\./s, '/en'],
+  ['en', en, 'en', /Present your company\..*Back up its story\./s, '/'],
 ] as const)('landing page (%s)', (_l, page, lang, h1, otherHref) => {
   it('has one h1 that says what Fondealo is, on two authored lines', () => {
     expect(page.html.match(/<h1/g)).toHaveLength(1);
@@ -129,10 +129,10 @@ describe('landing claims', () => {
   it('uses the passport vocabulary and keeps examples labelled', () => {
     expect(es.text).not.toContain('expediente');
     expect(en.text).not.toContain('company file');
-    for (const phrase of ['pasaporte', 'señales', 'acceso con permiso']) {
+    for (const phrase of ['pasaporte', 'datos', 'acceso con permiso']) {
       expect(es.text).toContain(phrase);
     }
-    for (const phrase of ['passport', 'signals', 'permissioned access']) {
+    for (const phrase of ['passport', 'data', 'permissioned access']) {
       expect(en.text).toContain(phrase);
     }
     expect(es.text).toContain('aún no hay socios firmados');
