@@ -11,8 +11,31 @@ import { ThemeToggle } from './theme-toggle';
 import { Wallet } from './icons';
 import { APP_NAVIGATION, activeAppHref, type AppRole } from './app-navigation';
 import styles from './app-shell.module.css';
+import {
+  AppLanguageSwitch,
+  AppLocaleProvider,
+  useAppLocale,
+  useAppTranslation,
+} from './app-locale-provider';
+import type { AppLocale } from '@/lib/app-copy';
 
 export function AppShell({
+  locale = 'es',
+  ...props
+}: {
+  locale?: AppLocale;
+  role: AppRole;
+  address: string;
+  children: ReactNode;
+}) {
+  return (
+    <AppLocaleProvider locale={locale}>
+      <LocalizedAppShell {...props} />
+    </AppLocaleProvider>
+  );
+}
+
+function LocalizedAppShell({
   role,
   address,
   children,
@@ -24,6 +47,8 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = usePrivy();
+  const t = useAppTranslation();
+  const locale = useAppLocale();
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoutError, setLogoutError] = useState(false);
   const activeHref = activeAppHref(role, pathname);
@@ -45,23 +70,21 @@ export function AppShell({
   return (
     <div className={styles.shell}>
       <a className={styles.skipLink} href="#app-content">
-        Saltar al contenido
+        {t('Skip to content')}
       </a>
       <header className={styles.header}>
         <div className={styles.bar}>
           <Link
             href={role === 'Business' ? '/business' : '/invest'}
-            aria-label={role === 'Business' ? 'Inicio de empresa' : 'Inicio de inversionista'}
+            aria-label={t(role === 'Business' ? 'Business home' : 'Investor home')}
             className={styles.brand}
           >
             <Logo priority />
           </Link>
-          <span className={styles.role}>{role === 'Business' ? 'Empresa' : 'Inversionista'}</span>
+          <span className={styles.role}>{t(role)}</span>
           <nav
             id="app-navigation"
-            aria-label={
-              role === 'Business' ? 'Navegación de empresa' : 'Navegación de inversionista'
-            }
+            aria-label={t(role === 'Business' ? 'Business navigation' : 'Investor navigation')}
             className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`}
           >
             {APP_NAVIGATION[role].map(({ href, label }) => (
@@ -71,29 +94,30 @@ export function AppShell({
                 aria-current={activeHref === href ? 'page' : undefined}
                 className={`${styles.navLink} ${activeHref === href ? styles.navLinkActive : ''}`}
               >
-                {label}
+                {t(label)}
               </Link>
             ))}
           </nav>
           <div className={styles.actions}>
+            <AppLanguageSwitch />
             <span className={styles.themeControl}>
-              <ThemeToggle />
+              <ThemeToggle locale={locale} />
             </span>
             <button
               type="button"
               className={styles.account}
               onClick={handleLogout}
-              title={`${address} — cerrar sesión`}
-              aria-label={`Cerrar sesión de ${address}`}
+              title={`${address} — ${t('Sign out')}`}
+              aria-label={`${t('Sign out')} ${address}`}
             >
               <Wallet width={16} height={16} aria-hidden="true" />
               <span className={styles.address}>{truncateAddress(address)}</span>
-              <span className={styles.logoutLabel}>Salir</span>
+              <span className={styles.logoutLabel}>{t('Sign out')}</span>
             </button>
             <button
               type="button"
               className={styles.menuButton}
-              aria-label={menuOpen ? 'Cerrar navegación' : 'Abrir navegación'}
+              aria-label={t(menuOpen ? 'Close navigation' : 'Open navigation')}
               aria-controls="app-navigation"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((open) => !open)}
@@ -104,7 +128,7 @@ export function AppShell({
         </div>
         {logoutError ? (
           <p className={styles.error} role="alert">
-            No pudimos cerrar tu sesión. Inténtalo de nuevo.
+            {t('Could not sign out. Please try again.')}
           </p>
         ) : null}
       </header>

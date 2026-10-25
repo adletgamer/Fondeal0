@@ -1,3 +1,4 @@
+import { getAppTranslator } from '@/lib/app-locale';
 import { notFound, redirect } from 'next/navigation';
 import { Badge, Card, Container } from '@fondealo/ui';
 import { buildRepaymentSchedule, requiredCollateral } from '@fondealo/types';
@@ -25,6 +26,7 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ id:
   if (!session?.stellarAddress) redirect('/onboarding');
   if (session.role !== 'Business')
     redirect(session.role === 'Investor' ? '/invest' : '/onboarding');
+  const t = await getAppTranslator();
 
   const { source, opportunity } = await getOpportunityDetail(id);
   if (!opportunity) notFound();
@@ -50,9 +52,11 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ id:
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="mb-2 flex items-center gap-2">
-                <Badge variant="neutral">Risk {opportunity.riskBand}</Badge>
+                <Badge variant="neutral">
+                  {t('Risk')} {opportunity.riskBand}
+                </Badge>
                 <Badge variant={opportunity.status === 'Repaid' ? 'brand' : 'neutral'}>
-                  {opportunity.status}
+                  {t(opportunity.status)}
                 </Badge>
                 <DataSourceBadge source={source} />
               </div>
@@ -61,7 +65,7 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ id:
               </h1>
             </div>
             <a href="/business" className="text-sm font-medium text-brand-600 hover:underline">
-              ← Back to dashboard
+              {t('← Back to dashboard')}
             </a>
           </div>
 
@@ -70,20 +74,20 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ id:
               <Card className="p-6">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                   <Stat
-                    label="Principal"
-                    value={`${Number(opportunity.amount).toLocaleString()} USDC`}
+                    label={t('Principal')}
+                    value={`${Number(opportunity.amount).toLocaleString(t('__locale'))} USDC`}
                   />
                   <Stat
-                    label="Collateral locked"
-                    value={`${Number(collateral).toLocaleString()} USDC`}
+                    label={t('Collateral locked')}
+                    value={`${Number(collateral).toLocaleString(t('__locale'))} USDC`}
                   />
                   <Stat
-                    label="Total due"
-                    value={`${totalDue.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`}
+                    label={t('Total due')}
+                    value={`${totalDue.toLocaleString(t('__locale'), { maximumFractionDigits: 2 })} USDC`}
                   />
                   <Stat
-                    label="Remaining"
-                    value={`${remaining.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`}
+                    label={t('Remaining')}
+                    value={`${remaining.toLocaleString(t('__locale'), { maximumFractionDigits: 2 })} USDC`}
                     accent={remaining === 0}
                   />
                 </div>
@@ -92,24 +96,28 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ id:
               <Card className="p-6">
                 <div className="mb-4 flex items-center gap-2">
                   <Calendar width={18} height={18} className="text-slate-400" />
-                  <h2 className="text-lg font-semibold text-slate-900">Repayment schedule</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">
+                    {t('Repayment schedule')}
+                  </h2>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[420px] text-left text-sm">
                     <thead className="text-xs uppercase tracking-wide text-slate-400">
                       <tr>
                         <th className="py-2 font-semibold">#</th>
-                        <th className="py-2 font-semibold">Due</th>
-                        <th className="py-2 text-right font-semibold">Total</th>
+                        <th className="py-2 font-semibold">{t('Due')}</th>
+                        <th className="py-2 text-right font-semibold">{t('Total')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {schedule.map((s) => (
                         <tr key={s.index} className="border-t border-slate-100">
                           <td className="py-2.5 text-slate-500">{s.index}</td>
-                          <td className="py-2.5 text-slate-600">Day {s.dueInDays}</td>
+                          <td className="py-2.5 text-slate-600">
+                            {t('Day')} {s.dueInDays}
+                          </td>
                           <td className="py-2.5 text-right font-semibold text-slate-900">
-                            {Number(s.total).toLocaleString(undefined, {
+                            {Number(s.total).toLocaleString(t('__locale'), {
                               maximumFractionDigits: 2,
                             })}
                           </td>
@@ -130,17 +138,18 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ id:
                 />
               ) : opportunity.status === 'Repaid' ? (
                 <Card className="p-6">
-                  <h2 className="text-lg font-semibold text-emerald-700">Fully repaid</h2>
+                  <h2 className="text-lg font-semibold text-emerald-700">{t('Fully repaid')}</h2>
                   <p className="mt-2 text-sm text-slate-500">
-                    Collateral returned, score updated. Nothing else to do here.
+                    {t('Collateral returned, score updated. Nothing else to do here.')}
                   </p>
                 </Card>
               ) : (
                 <Card className="p-6">
-                  <h2 className="text-lg font-semibold text-slate-900">Not yet fundable</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">{t('Not yet fundable')}</h2>
                   <p className="mt-2 text-sm text-slate-500">
-                    This loan isn&apos;t fully funded yet — payments open once investors have funded
-                    it in full.
+                    {t(
+                      'This loan isn&apos;t fully funded yet — payments open once investors have funded it in full.',
+                    )}
                   </p>
                 </Card>
               )}

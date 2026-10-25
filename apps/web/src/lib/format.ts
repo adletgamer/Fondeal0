@@ -5,6 +5,7 @@
 export function formatDateLima(
   value: Date | string | number,
   dateStyle: 'short' | 'medium' | 'long' = 'medium',
+  locale = 'es-PE',
 ): string {
-  return new Date(value).toLocaleDateString('es-PE', { timeZone: 'America/Lima', dateStyle });
+  return new Date(value).toLocaleDateString(locale, { timeZone: 'America/Lima', dateStyle });
 }

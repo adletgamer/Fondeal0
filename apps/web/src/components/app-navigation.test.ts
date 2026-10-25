@@ -5,6 +5,7 @@ describe('authenticated navigation', () => {
   it('retains every destination from the Business and Investor tabs', () => {
     expect(APP_NAVIGATION.Business.map(({ href }) => href)).toEqual([
       '/business',
+      '/business/onboarding',
       '/business/new',
       '/business/passport',
       '/business/verify',

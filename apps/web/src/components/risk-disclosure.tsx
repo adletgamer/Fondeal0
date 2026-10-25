@@ -1,3 +1,5 @@
+'use client';
+import { useAppTranslation } from './app-locale-provider';
 import { AlertTriangle } from './icons';
 
 /**
@@ -7,19 +9,19 @@ import { AlertTriangle } from './icons';
  * cross-border legal recourse; there is no guaranteed return.
  */
 export function RiskDisclosure({ className = '' }: { className?: string }) {
+  const t = useAppTranslation();
+
   return (
     <div
       className={`flex gap-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4 text-sm text-amber-900 ${className}`}
     >
       <AlertTriangle width={18} height={18} className="mt-0.5 shrink-0 text-amber-600" />
       <div className="space-y-1">
-        <p className="font-medium">This is not risk-free.</p>
+        <p className="font-medium">{t('This is not risk-free.')}</p>
         <p className="text-amber-800">
-          Businesses post partial collateral in USDC, sized by their risk band — never full
-          collateral, never zero. If a loan defaults, collateral is seized and paid to investors
-          first, but a loss beyond the collateral share is borne by investors. Collateral
-          enforcement happens on-chain; there is no cross-border legal recourse behind it. No return
-          is guaranteed.
+          {t(
+            'Businesses post partial collateral in USDC, sized by their risk band — never full collateral, never zero. If a loan defaults, collateral is seized and paid to investors first, but a loss beyond the collateral share is borne by investors. Collateral enforcement happens on-chain; there is no cross-border legal recourse behind it. No return is guaranteed.',
+          )}
         </p>
       </div>
     </div>

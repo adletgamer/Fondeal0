@@ -77,6 +77,30 @@ beforeEach(() => {
   );
 });
 
+describe('bilingual consent provenance', () => {
+  it('records the English consent version without changing the pending trust state', async () => {
+    const data = form();
+    data.set('locale', 'en');
+    expect(await submitKyb(null, data)).toMatchObject({ ok: true, status: 'Processing' });
+    expect(state.submissionCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          consentVersion: 'kyb-intake-v1-en',
+          status: 'Processing',
+          reviewedAt: null,
+        }),
+      }),
+    );
+    expect(state.passportUpsert).not.toHaveBeenCalled();
+  });
+  it('rejects an unknown consent locale before persistence', async () => {
+    const data = form();
+    data.set('locale', 'invalid');
+    expect(await submitKyb(null, data)).toMatchObject({ ok: false });
+    expect(state.transaction).not.toHaveBeenCalled();
+  });
+});
+
 describe('sandbox KYB', () => {
   it('rejects anonymous and investor requests before reading business data', async () => {
     state.session = null;

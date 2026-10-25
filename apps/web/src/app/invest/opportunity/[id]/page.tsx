@@ -1,3 +1,4 @@
+import { getAppTranslator } from '@/lib/app-locale';
 import { notFound, redirect } from 'next/navigation';
 import { Badge, Card, Container } from '@fondealo/ui';
 import { buildRepaymentSchedule, maxProtectedPct, requiredCollateral } from '@fondealo/types';
@@ -26,6 +27,7 @@ export default async function OpportunityDetailPage({
   if (!session?.stellarAddress) redirect('/onboarding');
   if (session.role !== 'Investor')
     redirect(session.role === 'Business' ? '/business' : '/onboarding');
+  const t = await getAppTranslator();
 
   const { id } = await params;
   const { source, opportunity } = await getOpportunityDetail(id);
@@ -54,8 +56,10 @@ export default async function OpportunityDetailPage({
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="mb-2 flex items-center gap-2">
-                <Badge variant="neutral">Risk {opportunity.riskBand}</Badge>
-                <Badge variant="neutral">{opportunity.status}</Badge>
+                <Badge variant="neutral">
+                  {t('Risk')} {opportunity.riskBand}
+                </Badge>
+                <Badge variant="neutral">{t(opportunity.status)}</Badge>
                 <DataSourceBadge source={source} />
               </div>
               <h1 className="font-display text-3xl font-bold text-slate-900">
@@ -65,10 +69,14 @@ export default async function OpportunityDetailPage({
             </div>
             <div className="text-right">
               <div className="font-display text-4xl font-bold text-slate-900">
-                {(opportunity.aprBps / 100).toFixed(1)}%
+                {(opportunity.aprBps / 100).toLocaleString(t('__locale'), {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                })}
+                %
               </div>
               <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                APR over {opportunity.termDays} days
+                {t('APR over')} {opportunity.termDays} {t('days')}
               </div>
             </div>
           </div>
@@ -78,10 +86,11 @@ export default async function OpportunityDetailPage({
               <Card className="p-6">
                 <div className="mb-1 flex justify-between text-sm">
                   <span className="font-medium text-slate-700">
-                    {Number(opportunity.funded).toLocaleString()} USDC raised
+                    {Number(opportunity.funded).toLocaleString(t('__locale'))} {t('USDC raised')}
                   </span>
                   <span className="text-slate-400">
-                    of {Number(opportunity.amount).toLocaleString()} ({fundedPct}%)
+                    {t('of')} {Number(opportunity.amount).toLocaleString(t('__locale'))} (
+                    {fundedPct}%)
                   </span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
@@ -93,62 +102,66 @@ export default async function OpportunityDetailPage({
 
                 <div className="mt-5 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 sm:grid-cols-4">
                   <Stat
-                    label="Principal"
-                    value={`${Number(opportunity.amount).toLocaleString()} USDC`}
+                    label={t('Principal')}
+                    value={`${Number(opportunity.amount).toLocaleString(t('__locale'))} USDC`}
                   />
                   <Stat
-                    label="Collateral locked"
-                    value={`${Number(collateral).toLocaleString()} USDC`}
+                    label={t('Collateral locked')}
+                    value={`${Number(collateral).toLocaleString(t('__locale'))} USDC`}
                   />
-                  <Stat label="Max protected" value={`${protectedPct}%`} accent />
-                  <Stat label="Term" value={`${opportunity.termDays} days`} />
+                  <Stat label={t('Max protected')} value={`${protectedPct}%`} accent />
+                  <Stat label={t('Term')} value={`${opportunity.termDays} ${t('days')}`} />
                 </div>
 
                 <div className="mt-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-medium text-emerald-700">
                   <ShieldCheck width={14} height={14} />
-                  Collateral covers the first {protectedPct}% of any loss before investor capital is
-                  at risk.
+                  {t('Collateral covers the first')} {protectedPct}
+                  {t('% of any loss before investor capital is at risk.')}
                 </div>
               </Card>
 
               <div>
-                <h2 className="mb-3 text-lg font-semibold text-slate-900">The business</h2>
+                <h2 className="mb-3 text-lg font-semibold text-slate-900">{t('The business')}</h2>
                 <PassportV2 passport={passport} theme={theme} />
               </div>
 
               <Card className="p-6">
                 <div className="mb-4 flex items-center gap-2">
                   <Calendar width={18} height={18} className="text-slate-400" />
-                  <h2 className="text-lg font-semibold text-slate-900">Repayment schedule</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">
+                    {t('Repayment schedule')}
+                  </h2>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[420px] text-left text-sm">
                     <thead className="text-xs uppercase tracking-wide text-slate-400">
                       <tr>
                         <th className="py-2 font-semibold">#</th>
-                        <th className="py-2 font-semibold">Due</th>
-                        <th className="py-2 text-right font-semibold">Principal</th>
-                        <th className="py-2 text-right font-semibold">Interest</th>
-                        <th className="py-2 text-right font-semibold">Total</th>
+                        <th className="py-2 font-semibold">{t('Due')}</th>
+                        <th className="py-2 text-right font-semibold">{t('Principal')}</th>
+                        <th className="py-2 text-right font-semibold">{t('Interest')}</th>
+                        <th className="py-2 text-right font-semibold">{t('Total')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {schedule.map((s) => (
                         <tr key={s.index} className="border-t border-slate-100">
                           <td className="py-2.5 text-slate-500">{s.index}</td>
-                          <td className="py-2.5 text-slate-600">Day {s.dueInDays}</td>
+                          <td className="py-2.5 text-slate-600">
+                            {t('Day')} {s.dueInDays}
+                          </td>
                           <td className="py-2.5 text-right text-slate-700">
-                            {Number(s.principal).toLocaleString(undefined, {
+                            {Number(s.principal).toLocaleString(t('__locale'), {
                               maximumFractionDigits: 2,
                             })}
                           </td>
                           <td className="py-2.5 text-right text-slate-700">
-                            {Number(s.interest).toLocaleString(undefined, {
+                            {Number(s.interest).toLocaleString(t('__locale'), {
                               maximumFractionDigits: 2,
                             })}
                           </td>
                           <td className="py-2.5 text-right font-semibold text-slate-900">
-                            {Number(s.total).toLocaleString(undefined, {
+                            {Number(s.total).toLocaleString(t('__locale'), {
                               maximumFractionDigits: 2,
                             })}
                           </td>
@@ -161,10 +174,11 @@ export default async function OpportunityDetailPage({
                           colSpan={4}
                           className="py-2.5 text-right text-sm font-medium text-slate-500"
                         >
-                          Total due
+                          {t('Total due')}
                         </td>
                         <td className="py-2.5 text-right text-sm font-bold text-slate-900">
-                          {totalDue.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC
+                          {totalDue.toLocaleString(t('__locale'), { maximumFractionDigits: 2 })}{' '}
+                          USDC
                         </td>
                       </tr>
                     </tfoot>

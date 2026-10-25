@@ -1,42 +1,47 @@
+'use client';
 import Link from 'next/link';
+import { AppLanguageSwitch, useAppLocale, useAppTranslation } from './app-locale-provider';
 import { Logo } from './logo';
 import { ThemeToggle } from './theme-toggle';
 import styles from './navbar.module.css';
 
 const NAV_LINKS = [
-  ['/#idea', 'La idea'],
-  ['/#passport', 'Pasaporte'],
-  ['/#reputation', 'Reputación'],
-  ['/#status', 'Estado'],
+  ['/#senales', 'Passport'],
+  ['/#red', 'Access'],
+  ['/#estado', 'Availability'],
+  ['/#preguntas', 'FAQ'],
 ] as const;
 
 /** Public navigation for onboarding and reference pages; the landing has its own editorial header. */
 export function Navbar() {
+  const t = useAppTranslation();
+  const locale = useAppLocale();
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <Link href="/" aria-label="Fondealo, inicio" className={styles.brand}>
+        <Link href="/" aria-label={t('Fondealo home')} className={styles.brand}>
           <Logo priority />
         </Link>
-        <nav aria-label="Explorar Fondealo" className={styles.desktopNav}>
+        <nav aria-label={t('Explore Fondealo')} className={styles.desktopNav}>
           {NAV_LINKS.map(([href, label]) => (
             <Link key={href} href={href} className={styles.link}>
-              {label}
+              {t(label)}
             </Link>
           ))}
         </nav>
         <div className={styles.actions}>
+          <AppLanguageSwitch />
           <span className={styles.themeControl}>
-            <ThemeToggle />
+            <ThemeToggle locale={locale} />
           </span>
           <details className={styles.mobileMenu}>
-            <summary aria-label="Abrir navegación" className={styles.menuTrigger}>
+            <summary aria-label={t('Open navigation')} className={styles.menuTrigger}>
               <span aria-hidden="true">☰</span>
             </summary>
-            <nav aria-label="Explorar Fondealo en móvil" className={styles.mobileNav}>
+            <nav aria-label={t('Explore Fondealo')} className={styles.mobileNav}>
               {NAV_LINKS.map(([href, label]) => (
                 <Link key={href} href={href} className={styles.link}>
-                  {label}
+                  {t(label)}
                 </Link>
               ))}
             </nav>

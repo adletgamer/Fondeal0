@@ -1,4 +1,5 @@
 'use client';
+import { useAppTranslation } from './app-locale-provider';
 
 import { useActionState, useState } from 'react';
 import { Button, Card, Field, TxStatus } from '@fondealo/ui';
@@ -15,6 +16,8 @@ export function RepayForm({
   remaining: number;
   balanceUsdc: number | null;
 }) {
+  const t = useAppTranslation();
+
   const [state, formAction, pending] = useActionState(repayOpportunity, initialState);
   const [amount, setAmount] = useState(remaining);
   const insufficient = balanceUsdc !== null && amount > balanceUsdc;
@@ -22,25 +25,25 @@ export function RepayForm({
   if (remaining <= 0) {
     return (
       <Card className="p-6">
-        <h2 className="text-lg font-semibold text-slate-900">Loan settled</h2>
-        <p className="mt-2 text-sm text-slate-500">Nothing left to repay on this loan.</p>
+        <h2 className="text-lg font-semibold text-slate-900">{t('Loan settled')}</h2>
+        <p className="mt-2 text-sm text-slate-500">{t('Nothing left to repay on this loan.')}</p>
       </Card>
     );
   }
 
   return (
     <Card className="p-6">
-      <h2 className="text-lg font-semibold text-slate-900">Make a payment</h2>
+      <h2 className="text-lg font-semibold text-slate-900">{t('Make a payment')}</h2>
       <p className="mt-1 text-sm text-slate-500">
-        {remaining.toLocaleString('en-US')} USDC left to repay.
+        {remaining.toLocaleString(t('__locale'))} {t('USDC left to repay.')}
         {balanceUsdc !== null ? (
           <>
             {' '}
-            Your balance:{' '}
+            {t('Your balance:')}{' '}
             <strong className="text-slate-700">
-              {balanceUsdc.toLocaleString('en-US')} USDC
+              {balanceUsdc.toLocaleString(t('__locale'))} USDC
             </strong>{' '}
-            <span className="text-slate-400">(test funds)</span>
+            <span className="text-slate-400">{t('(test funds)')}</span>
           </>
         ) : null}
       </p>
@@ -48,7 +51,7 @@ export function RepayForm({
       <form action={formAction} className="mt-4 space-y-3">
         <input type="hidden" name="opportunityId" value={opportunityId} />
         <Field
-          label="Amount"
+          label={t('Amount')}
           name="amount"
           type="number"
           min="0.01"
@@ -65,14 +68,15 @@ export function RepayForm({
             onClick={() => setAmount(remaining)}
             className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-brand-300 hover:text-brand-700"
           >
-            Pay it off ({remaining.toLocaleString('en-US')})
+            {t('Pay it off (')}
+            {remaining.toLocaleString(t('__locale'))})
           </button>
         </div>
         {insufficient ? (
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            Not enough balance for this payment.{' '}
+            {t('Not enough balance for this payment.')}{' '}
             <a href="/business#balance" className="font-medium underline">
-              Add test funds
+              {t('Add test funds')}
             </a>
           </p>
         ) : null}
@@ -82,16 +86,18 @@ export function RepayForm({
           className="w-full"
           disabled={pending || amount <= 0 || insufficient}
         >
-          {pending ? 'Paying…' : `Pay ${amount.toLocaleString('en-US')} USDC`}
+          {pending
+            ? t('Paying…')
+            : t('Pay {p0} USDC', { p0: amount.toLocaleString(t('__locale')) })}
         </Button>
         {pending ? (
-          <TxStatus state="pending" label="Submitting payment" />
+          <TxStatus state="pending" label={t('Submitting payment')} />
         ) : state ? (
           <TxStatus
             state={state.ok ? 'confirmed' : 'failed'}
             // Repayments are recorded off-chain for now: never claim a ledger confirmation.
-            label={state.ok ? 'Recorded' : undefined}
-            meta={state.ok ? state.message : state.error}
+            label={state.ok ? t('Recorded') : undefined}
+            meta={state.ok ? t(state.message) : t.error(state.error)}
           />
         ) : null}
       </form>

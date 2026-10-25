@@ -2,16 +2,17 @@ export type AppRole = 'Business' | 'Investor';
 
 export const APP_NAVIGATION = {
   Business: [
-    { href: '/business', label: 'Inicio' },
-    { href: '/business/new', label: 'Nueva solicitud' },
-    { href: '/business/passport', label: 'Pasaporte' },
-    { href: '/business/verify', label: 'Verificación' },
-    { href: '/business/datos', label: 'Mis datos' },
+    { href: '/business', label: 'Home' },
+    { href: '/business/onboarding', label: 'Financial profile' },
+    { href: '/business/new', label: 'New request' },
+    { href: '/business/passport', label: 'Passport' },
+    { href: '/business/verify', label: 'Verification' },
+    { href: '/business/datos', label: 'My data' },
   ],
   Investor: [
-    { href: '/invest', label: 'Inicio' },
-    { href: '/invest/market', label: 'Mercado' },
-    { href: '/invest/positions', label: 'Posiciones' },
+    { href: '/invest', label: 'Home' },
+    { href: '/invest/market', label: 'Market' },
+    { href: '/invest/positions', label: 'Positions' },
   ],
 } as const;
 

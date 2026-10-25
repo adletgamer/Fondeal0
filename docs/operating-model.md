@@ -10,6 +10,7 @@ Fondealo is building business identity, underwriting and financing infrastructur
 | --- | --- | --- |
 | Privy sign-in, persistent Business/Investor role | Implemented in the app; a user reported successful sign-in on the official site | Account access, subject to runtime availability |
 | Business registration | Intake stores a sandbox KYB submission | Application received; **not** verified |
+| Economic profile (2026-10-25 code increment) | Separate five-step Business flow, typed cash-flow segmentation and profile-only audit; migration tested on isolated local Development | Self-reported profile only; no KYB, risk or financing approval; hosted rollout unverified |
 | KYB and underwriting | PR #13 keeps sandbox submissions `Processing` and adds an unused decision model and financing gate | No real verification or credit approval is available yet |
 | Business Passport | Soroban contract and database projection exist; the hardened contracts ([ADR-0012](adr/0012-contract-initialization-roles-and-funds-safety.md)) were deployed to Testnet and verified on 2026-10-23 (ids in [`deployments/README.md`](../deployments/README.md)); the app does not issue or reconcile Passports on-chain yet | Contracts deployed on **Testnet**. The Passport is still a prototype credential, not a live verified Passport |
 | Funding and repayment | Server actions and an append-only test ledger exist; PR #13 blocks new financing without real KYB and underwriting | Test flow only; no claim of live capital settlement |

@@ -1,4 +1,5 @@
 'use client';
+import { useAppTranslation } from './app-locale-provider';
 
 import { useActionState, useState } from 'react';
 import { Button } from '@fondealo/ui';
@@ -13,6 +14,8 @@ const initialState: DepositResult | null = null;
 
 /** Pick a funding provider and an amount. Only the Testnet faucet is live; real ramps show as planned. */
 export function AddFundsPanel() {
+  const t = useAppTranslation();
+
   const [state, formAction, pending] = useActionState(depositTestFunds, initialState);
   const [providerId, setProviderId] = useState('sandbox-faucet');
   const [amount, setAmount] = useState(1_000);
@@ -22,7 +25,7 @@ export function AddFundsPanel() {
       <input type="hidden" name="providerId" value={providerId} />
 
       <fieldset>
-        <legend className="text-xs font-medium text-slate-600">Funding provider</legend>
+        <legend className="text-xs font-medium text-slate-600">{t('Funding provider')}</legend>
         <div className="mt-2 space-y-2">
           {FUNDING_PROVIDERS.map((p) => {
             const available = p.status === 'available';
@@ -46,16 +49,16 @@ export function AddFundsPanel() {
                 />
                 <span className="flex-1">
                   <span className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                    {p.name}
+                    {t(p.name)}
                     {!available ? (
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                        Planned
+                        {t('Planned')}
                       </span>
                     ) : null}
                   </span>
-                  <span className="mt-0.5 block text-xs text-slate-500">{p.description}</span>
+                  <span className="mt-0.5 block text-xs text-slate-500">{t(p.description)}</span>
                   <span className="mt-1 block text-[11px] text-slate-400">
-                    Fee {p.fee} · {p.eta}
+                    {t('Fee')} {t(p.fee)} · {t(p.eta)}
                   </span>
                 </span>
               </label>
@@ -66,7 +69,7 @@ export function AddFundsPanel() {
 
       <div>
         <label className="text-xs font-medium text-slate-600" htmlFor="deposit-amount">
-          Amount (USDC)
+          {t('Amount (USDC)')}
         </label>
         <input
           id="deposit-amount"
@@ -88,18 +91,20 @@ export function AddFundsPanel() {
               onClick={() => setAmount(v)}
               className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 transition-colors hover:border-brand-300 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/50"
             >
-              {v.toLocaleString('en-US')}
+              {v.toLocaleString(t('__locale'))}
             </button>
           ))}
         </div>
       </div>
 
       <Button type="submit" className="w-full" disabled={pending || amount <= 0}>
-        {pending ? 'Adding funds…' : `Add ${amount.toLocaleString('en-US')} test USDC`}
+        {pending
+          ? t('Adding funds…')
+          : t('Add {p0} test USDC', { p0: amount.toLocaleString(t('__locale')) })}
       </Button>
 
-      {state && !state.ok ? <p className="text-xs text-red-600">{state.error}</p> : null}
-      {state && state.ok ? <p className="text-xs text-brand-600">{state.message}</p> : null}
+      {state && !state.ok ? <p className="text-xs text-red-600">{t.error(state.error)}</p> : null}
+      {state && state.ok ? <p className="text-xs text-brand-600">{t(state.message)}</p> : null}
     </form>
   );
 }

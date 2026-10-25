@@ -1,3 +1,4 @@
+import { getAppTranslator } from '@/lib/app-locale';
 import { redirect } from 'next/navigation';
 import { Container } from '@fondealo/ui';
 import { CollateralCalculatorForm } from '@/components/collateral-calculator-form';
@@ -13,6 +14,8 @@ export default async function NewRequestPage() {
   if (!session?.stellarAddress) redirect('/onboarding');
   if (session.role !== 'Business')
     redirect(session.role === 'Investor' ? '/invest' : '/onboarding');
+  const t = await getAppTranslator();
+
   const address = session.stellarAddress;
   const kyb = await getKybState(address);
   if (!kyb?.eligible) redirect('/business/verify');
@@ -25,11 +28,12 @@ export default async function NewRequestPage() {
         <Container className="py-10">
           <div className="mb-6">
             <h1 className="font-display text-3xl font-bold text-slate-900">
-              New financing request
+              {t('New financing request')}
             </h1>
             <p className="mt-1 text-slate-500">
-              Every number below comes straight from your Passport and the §2 collateral config —
-              nothing is a magic number.
+              {t(
+                'Every number below comes straight from your Passport and the §2 collateral config — nothing is a magic number.',
+              )}
             </p>
           </div>
 

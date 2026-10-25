@@ -1,4 +1,5 @@
 'use client';
+import { useAppTranslation } from './app-locale-provider';
 
 import { useMemo, useState } from 'react';
 import { Card } from '@fondealo/ui';
@@ -14,6 +15,8 @@ const selectClass =
   'rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30';
 
 export function MarketGrid({ opportunities }: { opportunities: Opportunity[] }) {
+  const t = useAppTranslation();
+
   const [bands, setBands] = useState<Set<RiskBand>>(new Set(Object.values(RiskBand)));
   const [maxTermDays, setMaxTermDays] = useState<number>(720);
   const [minAprBps, setMinAprBps] = useState<number>(0);
@@ -47,21 +50,34 @@ export function MarketGrid({ opportunities }: { opportunities: Opportunity[] }) 
     });
   }
 
+  function resetFilters() {
+    setBands(new Set(Object.values(RiskBand)));
+    setMaxTermDays(720);
+    setMinAprBps(0);
+    setMinCollateralPct(0);
+    setOpenOnly(false);
+    setSort('newest');
+  }
+
   return (
     <div>
       <Card className="mb-6 p-5">
         <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
           <Filter width={16} height={16} />
-          Filters
+          {t('Filters')}
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">Risk band</label>
-            <div className="flex gap-1.5">
+            <p id="market-risk-bands" className="mb-1.5 block text-xs font-medium text-slate-600">
+              {t('Risk band')}
+            </p>
+            <div role="group" aria-labelledby="market-risk-bands" className="flex gap-1.5">
               {Object.values(RiskBand).map((band) => (
                 <button
                   key={band}
                   type="button"
+                  aria-pressed={bands.has(band)}
+                  aria-label={`${t('Risk band')} ${band}`}
                   onClick={() => toggleBand(band)}
                   className={`h-8 w-8 rounded-lg border text-sm font-semibold transition-colors ${
                     bands.has(band)
@@ -76,27 +92,36 @@ export function MarketGrid({ opportunities }: { opportunities: Opportunity[] }) 
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">Max term</label>
+            <label
+              htmlFor="market-term"
+              className="mb-1.5 block text-xs font-medium text-slate-600"
+            >
+              {t('Max term')}
+            </label>
             <select
+              id="market-term"
               className={selectClass}
               value={maxTermDays}
               onChange={(e) => setMaxTermDays(Number(e.target.value))}
             >
-              <option value={90}>Up to 90 days</option>
-              <option value={180}>Up to 180 days</option>
-              <option value={365}>Up to 1 year</option>
-              <option value={720}>Any term</option>
+              <option value={90}>{t('Up to 90 days')}</option>
+              <option value={180}>{t('Up to 180 days')}</option>
+              <option value={365}>{t('Up to 1 year')}</option>
+              <option value={720}>{t('Any term')}</option>
             </select>
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">Min. APR</label>
+            <label htmlFor="market-apr" className="mb-1.5 block text-xs font-medium text-slate-600">
+              {t('Min. APR')}
+            </label>
             <select
+              id="market-apr"
               className={selectClass}
               value={minAprBps}
               onChange={(e) => setMinAprBps(Number(e.target.value))}
             >
-              <option value={0}>Any</option>
+              <option value={0}>{t('Any')}</option>
               <option value={1000}>10%+</option>
               <option value={1500}>15%+</option>
               <option value={2000}>20%+</option>
@@ -105,15 +130,19 @@ export function MarketGrid({ opportunities }: { opportunities: Opportunity[] }) 
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">
-              Min. collateral
+            <label
+              htmlFor="market-collateral"
+              className="mb-1.5 block text-xs font-medium text-slate-600"
+            >
+              {t('Min. collateral')}
             </label>
             <select
+              id="market-collateral"
               className={selectClass}
               value={minCollateralPct}
               onChange={(e) => setMinCollateralPct(Number(e.target.value))}
             >
-              <option value={0}>Any</option>
+              <option value={0}>{t('Any')}</option>
               <option value={20}>20%+</option>
               <option value={50}>50%+</option>
               <option value={75}>75%+</option>
@@ -121,15 +150,21 @@ export function MarketGrid({ opportunities }: { opportunities: Opportunity[] }) 
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">Sort by</label>
+            <label
+              htmlFor="market-sort"
+              className="mb-1.5 block text-xs font-medium text-slate-600"
+            >
+              {t('Sort by')}
+            </label>
             <select
+              id="market-sort"
               className={selectClass}
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
             >
-              <option value="newest">Newest</option>
-              <option value="apr">Highest APR</option>
-              <option value="risk">Lowest risk first</option>
+              <option value="newest">{t('Newest')}</option>
+              <option value="apr">{t('Highest APR')}</option>
+              <option value="risk">{t('Lowest risk first')}</option>
             </select>
           </div>
         </div>
@@ -141,15 +176,30 @@ export function MarketGrid({ opportunities }: { opportunities: Opportunity[] }) 
             onChange={(e) => setOpenOnly(e.target.checked)}
             className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
           />
-          Only show opportunities still open for funding
+          {t('Only show opportunities still open for funding')}
         </label>
       </Card>
 
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <p role="status" className="text-ink-muted">
+          {filtered.length === 1
+            ? t('Showing one scenario')
+            : t('Showing {count} scenarios', { count: filtered.length })}
+        </p>
+        <button
+          type="button"
+          onClick={resetFilters}
+          className="min-h-11 font-semibold text-brand-text hover:underline"
+        >
+          {t('Reset filters')}
+        </button>
+      </div>
+
       {filtered.length === 0 ? (
         <Card className="flex flex-col items-center gap-2 px-8 py-14 text-center">
-          <span className="text-lg font-semibold text-slate-900">No matches</span>
+          <span className="text-lg font-semibold text-slate-900">{t('No matches')}</span>
           <p className="max-w-sm text-sm text-slate-500">
-            Nothing fits these filters right now. Widen the risk band or term to see more.
+            {t('Nothing fits these filters right now. Widen the risk band or term to see more.')}
           </p>
         </Card>
       ) : (

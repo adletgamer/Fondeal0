@@ -1,4 +1,5 @@
 'use client';
+import { useAppTranslation } from './app-locale-provider';
 
 import {
   useEffect,
@@ -69,13 +70,15 @@ export function PassportV2({
   explorerUrl,
   className,
 }: PassportV2Props) {
+  const t = useAppTranslation();
+
   const band = BAND_META[passport.riskBand];
   const status = passport.status ?? PassportStatus.Active;
   const verified = passport.kybStatus === KybStatus.Accepted && status === PassportStatus.Active;
   const statList = stats ?? [
     { k: 'Repaid', v: `${passport.loansRepaid}/${passport.loansTotal}` },
     { k: 'Streak', v: String(passport.onTimeStreak) },
-    { k: 'History', v: `${passportHistoryMonths(passport)} mo` },
+    { k: 'History', v: `${passportHistoryMonths(passport)} ${t('months')}` },
   ];
 
   const cardRef = useRef<HTMLDivElement>(null);
@@ -136,7 +139,7 @@ export function PassportV2({
           {/* ============ IDENTITY LAYER — the owner's look ============ */}
           <section
             key={themeKey}
-            aria-label="Business identity"
+            aria-label={t('Business identity')}
             className={`fdo-id fdo-id--${theme.pattern} fdo-id__pulse`}
           >
             <div className="flex items-center justify-between">
@@ -159,7 +162,7 @@ export function PassportV2({
                 {holder?.name ?? shortAddr(passport.business)}
               </div>
               <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.42em] text-white/60">
-                Business Passport
+                {t('Business Passport')}
               </div>
               {holder?.place ? (
                 <div className="mt-2 text-[11px] text-white/55">{holder.place}</div>
@@ -168,11 +171,11 @@ export function PassportV2({
           </section>
 
           {/* ============ TRUST LAYER — fixed, verified by Fondealo ============ */}
-          <section aria-label="Verified credit standing" className="fdo-trust">
+          <section aria-label={t('Verified credit standing')} className="fdo-trust">
             <div className="flex items-center justify-between">
               <StatusPill kyb={passport.kybStatus} status={status} verified={verified} />
               <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/35">
-                Set by Fondealo
+                {t('Set by Fondealo')}
               </span>
             </div>
 
@@ -183,28 +186,28 @@ export function PassportV2({
                   {displayScore}
                 </span>
                 <span className="mt-1 text-[9px] font-medium uppercase tracking-[0.24em] text-white/45">
-                  Credit / {SCORE_MAX}
+                  {t('Credit /')} {SCORE_MAX}
                 </span>
-                <RiskBadge band={passport.riskBand} label={band.label} />
+                <RiskBadge band={passport.riskBand} label={t(band.label)} />
               </div>
             </div>
 
             <dl className="mt-4 grid grid-cols-3 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] text-center">
               {statList.map((st, i) => (
-                <Stat key={st.k} k={st.k} v={st.v} border={i === 1} />
+                <Stat key={st.k} k={t(st.k)} v={st.v} border={i === 1} />
               ))}
             </dl>
 
             {signals?.length ? (
               <div className="mt-4">
                 <div className="text-[9px] font-semibold uppercase tracking-[0.24em] text-white/35">
-                  Credit signals
+                  {t('Credit signals')}
                 </div>
                 <ul className="mt-2 space-y-1.5">
                   {signals.map((sig) => (
                     <li key={sig.k} className="flex items-center gap-2 text-[12px]">
                       <span className="h-1.5 w-1.5 rounded-full bg-brand-400" aria-hidden />
-                      <span className="flex-1 text-white/65">{sig.k}</span>
+                      <span className="flex-1 text-white/65">{t(sig.k)}</span>
                       <span className="font-display font-semibold text-white">{sig.v}</span>
                     </li>
                   ))}
@@ -217,7 +220,7 @@ export function PassportV2({
                 <span className="fdo-passport__seal">
                   <Check width={11} height={11} />
                 </span>
-                Verified on-chain
+                {t('Verified on-chain')}
               </span>
               <span className="flex items-center gap-2">
                 <span className="font-mono text-[10.5px] tracking-wide text-white/55">
@@ -232,7 +235,7 @@ export function PassportV2({
                     rel="noreferrer"
                     className="text-[10px] font-semibold uppercase tracking-wider text-white/60 transition-colors hover:text-white"
                   >
-                    View ↗
+                    {t('View ↗')}
                   </a>
                 ) : null}
               </span>
@@ -255,6 +258,8 @@ function StatusPill({
   status: PassportStatus;
   verified: boolean;
 }) {
+  const t = useAppTranslation();
+
   if (status !== PassportStatus.Active) {
     const revoked = status === PassportStatus.Revoked;
     return (
@@ -265,7 +270,7 @@ function StatusPill({
             : 'border-amber-400/40 bg-amber-400/10 text-amber-200'
         }`}
       >
-        {revoked ? 'Revoked' : 'Frozen'}
+        {revoked ? t('Revoked') : t('Frozen')}
       </span>
     );
   }
@@ -279,7 +284,7 @@ function StatusPill({
       ].join(' ')}
     >
       {verified ? <ShieldCheck width={12} height={12} /> : null}
-      {verified ? 'KYB verified' : `KYB ${kyb}`}
+      {verified ? t('KYB verified') : t('KYB {p0}', { p0: kyb })}
     </span>
   );
 }

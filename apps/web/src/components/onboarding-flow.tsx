@@ -1,4 +1,5 @@
 'use client';
+import { useAppTranslation } from './app-locale-provider';
 
 import { Suspense, useEffect, useRef, useState, useTransition, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -42,20 +43,23 @@ export function OnboardingFlow({
   hasServerWallet: boolean;
   accountServiceUnavailable?: boolean;
 }) {
+  const t = useAppTranslation();
+
   const router = useRouter();
   if (!PRIVY_CONFIGURED) {
     return (
       <Shell>
         <Card className="mx-auto max-w-lg border-white/10 bg-white/5 p-8 text-center backdrop-blur">
           <h1 className="font-display text-xl font-bold text-white">
-            El inicio de sesión no está disponible en esta vista previa
+            {t('El inicio de sesión no está disponible en esta vista previa')}
           </h1>
           <p className="mt-2 text-sm text-slate-300">
-            Crear cuentas e iniciar sesión requiere una app de Privy y una base de datos
-            configuradas. Esta vista previa local aún no tiene un entorno de prueba seguro.
+            {t(
+              'Crear cuentas e iniciar sesión requiere una app de Privy y una base de datos configuradas. Esta vista previa local aún no tiene un entorno de prueba seguro.',
+            )}
           </p>
           <Button variant="ghost-light" className="mt-6" onClick={() => router.push('/')}>
-            Volver
+            {t('Volver')}
           </Button>
         </Card>
       </Shell>
@@ -110,6 +114,8 @@ function OnboardingContent({
   hasServerWallet: boolean;
   accountServiceUnavailable: boolean;
 }) {
+  const t = useAppTranslation();
+
   const router = useRouter();
   const { ready, authenticated, stellarAddress, creatingWallet, walletError, login } = wallet;
   const [isPending, startTransition] = useTransition();
@@ -143,21 +149,22 @@ function OnboardingContent({
             <Sparkle width={24} height={24} />
           </span>
           <h1 className="font-display text-2xl font-bold text-white">
-            Verifica tu empresa una vez
+            {t('Verifica tu empresa una vez')}
           </h1>
           <p className="mt-2 text-sm text-slate-300">
-            Entra con tu correo. Después registras tu empresa con su RUC y decides quién puede ver
-            tu información. No necesitas billetera, extensión ni frase semilla.
+            {t(
+              'Entra con tu correo. Después registras tu empresa con su RUC y decides quién puede ver tu información. No necesitas billetera, extensión ni frase semilla.',
+            )}
           </p>
           <Button onClick={login} size="lg" className="mt-6 w-full">
-            Entrar con mi correo
+            {t('Entrar con mi correo')}
           </Button>
           <p className="mt-4 text-xs text-slate-400">
-            Gratis para empresas. Verificar tu empresa no garantiza financiamiento.
+            {t('Gratis para empresas. Verificar tu empresa no garantiza financiamiento.')}
           </p>
           <div className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-400">
             <ShieldCheck width={14} height={14} />
-            Acceso con Privy · entorno de prueba (Stellar Testnet)
+            {t('Acceso con Privy · entorno de prueba (Stellar Testnet)')}
           </div>
         </Card>
       </Shell>
@@ -169,9 +176,11 @@ function OnboardingContent({
       <Shell>
         <div className="mx-auto max-w-lg text-center">
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-brand-400" />
-          <p className="text-sm font-medium text-slate-200">Preparando tu cuenta…</p>
+          <p className="text-sm font-medium text-slate-200">{t('Preparando tu cuenta…')}</p>
           {walletError ? (
-            <p className="mt-2 text-xs text-red-400">{walletError} Intenta recargar la página.</p>
+            <p className="mt-2 text-xs text-red-400">
+              {t.error(walletError)} {t('Intenta recargar la página.')}
+            </p>
           ) : null}
         </div>
       </Shell>
@@ -183,14 +192,15 @@ function OnboardingContent({
       <Shell>
         <Card className="mx-auto max-w-lg border-white/10 bg-white/5 p-8 text-center backdrop-blur">
           <h1 className="font-display text-xl font-bold text-white">
-            No pudimos terminar de crear tu cuenta
+            {t('No pudimos terminar de crear tu cuenta')}
           </h1>
           <p className="mt-2 text-sm text-slate-300">
-            Entraste correctamente, pero no pudimos completar la configuración de tu cuenta en este
-            momento. Todavía no guardamos tu tipo de cuenta. Inténtalo de nuevo en unos minutos.
+            {t(
+              'Entraste correctamente, pero no pudimos completar la configuración de tu cuenta en este momento. Todavía no guardamos tu tipo de cuenta. Inténtalo de nuevo en unos minutos.',
+            )}
           </p>
           <Button variant="ghost-light" className="mt-6" onClick={() => router.refresh()}>
-            Intentar de nuevo
+            {t('Intentar de nuevo')}
           </Button>
         </Card>
       </Shell>
@@ -202,12 +212,14 @@ function OnboardingContent({
       <Shell>
         <div className="mx-auto max-w-lg text-center" aria-live="polite">
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-brand-400 motion-reduce:animate-none" />
-          <h1 className="font-display text-xl font-semibold text-white">Confirmando tu cuenta</h1>
+          <h1 className="font-display text-xl font-semibold text-white">
+            {t('Confirmando tu cuenta')}
+          </h1>
           <p className="mt-2 text-sm text-slate-300">
-            Estamos confirmando tu sesión segura antes de que elijas tu tipo de cuenta.
+            {t('Estamos confirmando tu sesión segura antes de que elijas tu tipo de cuenta.')}
           </p>
           <Button variant="ghost-light" className="mt-6" onClick={() => router.refresh()}>
-            Revisar de nuevo
+            {t('Revisar de nuevo')}
           </Button>
         </div>
       </Shell>
@@ -246,11 +258,11 @@ function OnboardingContent({
   return (
     <Shell>
       <div className="mx-auto max-w-2xl text-center">
-        <h1 className="font-display text-3xl font-bold text-white">Un paso más</h1>
+        <h1 className="font-display text-3xl font-bold text-white">{t('Un paso más')}</h1>
         <p className="mt-2 text-slate-300">
           {cards.length > 1
-            ? 'Elige el tipo de cuenta. No podrás cambiarlo después.'
-            : 'Confirma que usarás Fondealo como empresa. No podrás cambiarlo después.'}
+            ? t('Elige el tipo de cuenta. No podrás cambiarlo después.')
+            : t('Confirma que usarás Fondealo como empresa. No podrás cambiarlo después.')}
         </p>
       </div>
       <div
@@ -274,10 +286,10 @@ function OnboardingContent({
               <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-500/15 text-brand-400">
                 <c.icon width={22} height={22} />
               </span>
-              <h2 className="mt-4 text-lg font-semibold text-white">{c.title}</h2>
-              <p className="mt-1.5 text-sm text-slate-300">{c.body}</p>
+              <h2 className="mt-4 text-lg font-semibold text-white">{t(c.title)}</h2>
+              <p className="mt-1.5 text-sm text-slate-300">{t(c.body)}</p>
               <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-400">
-                {selectedRole === c.role ? 'Seleccionado' : 'Seleccionar'}
+                {selectedRole === c.role ? t('Seleccionado') : t('Seleccionar')}
                 <ArrowRight width={16} height={16} />
               </span>
             </button>
@@ -290,17 +302,19 @@ function OnboardingContent({
           onClick={() => selectedRole && pick(selectedRole)}
         >
           {isPending
-            ? 'Guardando…'
+            ? t('Guardando…')
             : selectedRole
-              ? `Continuar como ${roleLabel[selectedRole]}`
-              : 'Elige una opción para continuar'}
+              ? t('Continuar como {p0}', { p0: roleLabel[selectedRole] })
+              : t('Elige una opción para continuar')}
         </Button>
         <p className="mt-3 text-xs text-slate-400">
-          El tipo de cuenta no se puede cambiar después de confirmarlo.
+          {t('El tipo de cuenta no se puede cambiar después de confirmarlo.')}
         </p>
       </div>
       {roleError ? (
-        <p className="mx-auto mt-6 max-w-md text-center text-sm text-red-400">{roleError}</p>
+        <p className="mx-auto mt-6 max-w-md text-center text-sm text-red-400">
+          {t.error(roleError)}
+        </p>
       ) : null}
     </Shell>
   );

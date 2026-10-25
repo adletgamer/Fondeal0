@@ -1,3 +1,4 @@
+import { getAppTranslator } from '@/lib/app-locale';
 import { redirect } from 'next/navigation';
 import { Container } from '@fondealo/ui';
 import { ApplicationStatusCard } from '@/components/application-status-card';
@@ -5,6 +6,7 @@ import { KybWizard } from '@/components/kyb-wizard';
 import { applicationStatus } from '@/lib/application-status';
 import { getKybState } from '@/lib/data/kyb';
 import { getSession } from '@/lib/auth/session';
+import { getBusinessOnboardingState } from '@/lib/data/business-onboarding';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,18 +15,24 @@ export default async function VerifyBusinessPage() {
   if (!session?.stellarAddress) redirect('/onboarding');
   if (session.role !== 'Business')
     redirect(session.role === 'Investor' ? '/invest' : '/onboarding');
+  const t = await getAppTranslator();
+
   const kyb = await getKybState(session.stellarAddress);
   const status = applicationStatus(kyb);
+  const onboarding = await getBusinessOnboardingState(session);
 
   return (
     <>
       <main className="bg-slate-50 pb-20">
         <Container className="py-10">
           <div className="mx-auto mb-8 max-w-2xl">
-            <h1 className="font-display text-3xl font-bold text-slate-900">Verifica tu empresa</h1>
+            <h1 className="font-display text-3xl font-bold text-slate-900">
+              {t('Verifica tu empresa')}
+            </h1>
             <p className="mt-1 text-slate-600">
-              Envía los datos de tu empresa para revisión. La verificación, la evaluación y la
-              emisión del Pasaporte son pasos separados.
+              {t(
+                'Envía los datos de tu empresa para revisión. La verificación, la evaluación y la emisión del Pasaporte son pasos separados.',
+              )}
             </p>
           </div>
 
@@ -37,11 +45,26 @@ export default async function VerifyBusinessPage() {
             />
           ) : null}
 
-          {status.canSubmit ? <KybWizard previouslyRejected={kyb?.status === 'Rejected'} /> : null}
+          {status.canSubmit ? (
+            <KybWizard
+              previouslyRejected={kyb?.status === 'Rejected'}
+              initial={
+                onboarding.initial
+                  ? {
+                      legalName: onboarding.initial.legalName,
+                      country: onboarding.initial.country,
+                      sector: onboarding.initial.sector,
+                      foundedYear: String(onboarding.initial.foundedYear ?? ''),
+                      revenueBand: onboarding.initial.revenueBand ?? '',
+                    }
+                  : undefined
+              }
+            />
+          ) : null}
 
           {status.kind === 'verified' && kyb?.providerRef ? (
             <p className="mx-auto max-w-2xl font-mono text-xs text-slate-500">
-              Referencia {kyb.providerRef}
+              {t('Referencia')} {kyb.providerRef}
             </p>
           ) : null}
         </Container>

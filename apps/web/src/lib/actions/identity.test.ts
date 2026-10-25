@@ -66,6 +66,16 @@ describe('Privy session cookie', () => {
 });
 
 describe('onboarding role', () => {
+  it('routes a newly assigned Business role to its economic profile, without a second role write', async () => {
+    state.session = { privyUserId: 'user', stellarAddress: 'GNEW', role: null };
+    state.updateMany.mockResolvedValue({ count: 1 });
+    await expect(chooseRole('Business')).rejects.toThrow('REDIRECT:/business/onboarding');
+    expect(state.updateMany).toHaveBeenCalledTimes(1);
+    expect(state.updateMany).toHaveBeenCalledWith({
+      where: { privyUserId: 'user', role: null },
+      data: { role: 'Business' },
+    });
+  });
   it('refuses an anonymous request without a database write', async () => {
     expect(await chooseRole('Business')).toHaveProperty('error');
     expect(state.updateMany).not.toHaveBeenCalled();

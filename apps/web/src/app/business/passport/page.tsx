@@ -1,3 +1,4 @@
+import { getAppTranslator } from '@/lib/app-locale';
 import { redirect } from 'next/navigation';
 import { Card, Container } from '@fondealo/ui';
 import { COLLATERAL_CONFIG_V1, RiskBand } from '@fondealo/types';
@@ -17,6 +18,8 @@ export default async function BusinessPassportPage() {
   if (!session?.stellarAddress) redirect('/onboarding');
   if (session.role !== 'Business')
     redirect(session.role === 'Investor' ? '/invest' : '/onboarding');
+  const t = await getAppTranslator();
+
   const kyb = await getKybState(session.stellarAddress);
   if (!kyb?.eligible) redirect('/business/verify');
   const address = session.stellarAddress;
@@ -34,9 +37,13 @@ export default async function BusinessPassportPage() {
         <Container className="py-10">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h1 className="font-display text-3xl font-bold text-slate-900">Your reputation</h1>
+              <h1 className="font-display text-3xl font-bold text-slate-900">
+                {t('Your reputation')}
+              </h1>
               <p className="mt-1 text-slate-500">
-                What raised your score, and exactly what lowers your next collateral requirement.
+                {t(
+                  'What raised your score, and exactly what lowers your next collateral requirement.',
+                )}
               </p>
             </div>
             <DataSourceBadge source={source} />
@@ -59,12 +66,12 @@ export default async function BusinessPassportPage() {
 
               <Card className="p-6">
                 <h2 className="mb-4 text-lg font-semibold text-slate-900">
-                  Score → collateral, band by band
+                  {t('Score → collateral, band by band')}
                 </h2>
                 <p className="mb-4 text-sm text-slate-500">
-                  This is the whole flywheel: repay on time → score rises → your band improves → the
-                  next loan needs less locked capital. Nothing here is negotiable or discretionary —
-                  it&apos;s the same table every business reads from.
+                  {t(
+                    'This is the whole flywheel: repay on time → score rises → your band improves → the next loan needs less locked capital. Nothing here is negotiable or discretionary — it&apos;s the same table every business reads from.',
+                  )}
                 </p>
                 <div className="divide-y divide-slate-100">
                   {Object.values(RiskBand).map((band) => {
@@ -86,15 +93,21 @@ export default async function BusinessPassportPage() {
                             {band}
                           </span>
                           <span className="text-sm text-slate-600">
-                            {isCurrent ? 'Your current band' : `Band ${band}`}
+                            {isCurrent ? t('Your current band') : t('Band {p0}', { p0: band })}
                           </span>
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-semibold text-slate-800">
-                            {config.collateralRatioBps / 100}% collateral
+                            {config.collateralRatioBps / 100}
+                            {t('% collateral')}
                           </div>
                           <div className="text-xs text-slate-400">
-                            ~{(config.suggestedAprBps / 100).toFixed(1)}% APR
+                            ~
+                            {(config.suggestedAprBps / 100).toLocaleString(t('__locale'), {
+                              minimumFractionDigits: 1,
+                              maximumFractionDigits: 1,
+                            })}
+                            {t('% APR')}
                           </div>
                         </div>
                       </div>
@@ -104,7 +117,9 @@ export default async function BusinessPassportPage() {
               </Card>
 
               <Card className="p-6">
-                <h2 className="mb-4 text-lg font-semibold text-slate-900">Reputation journey</h2>
+                <h2 className="mb-4 text-lg font-semibold text-slate-900">
+                  {t('Reputation journey')}
+                </h2>
                 <ol className="space-y-4">
                   {[
                     {
@@ -114,8 +129,11 @@ export default async function BusinessPassportPage() {
                     },
                     {
                       icon: TrendingUp,
-                      t: `${passport.loansRepaid} of ${passport.loansTotal} loans repaid on time`,
-                      s: `Current streak: ${passport.onTimeStreak}`,
+                      t: t('{p0} of {p1} loans repaid on time', {
+                        p0: passport.loansRepaid,
+                        p1: passport.loansTotal,
+                      }),
+                      s: t('Current streak: {p0}', { p0: passport.onTimeStreak }),
                     },
                     {
                       icon: Repeat,
@@ -128,8 +146,8 @@ export default async function BusinessPassportPage() {
                         <e.icon width={16} height={16} />
                       </span>
                       <span>
-                        <span className="block text-sm font-medium text-slate-800">{e.t}</span>
-                        <span className="block text-xs text-slate-500">{e.s}</span>
+                        <span className="block text-sm font-medium text-slate-800">{t(e.t)}</span>
+                        <span className="block text-xs text-slate-500">{t(e.s)}</span>
                       </span>
                     </li>
                   ))}

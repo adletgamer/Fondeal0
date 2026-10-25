@@ -2,6 +2,14 @@ import { prisma } from '@fondealo/database';
 import { describeError, privyClient } from '@/lib/auth/session';
 
 export interface MyDataOverview {
+  financingProfile?: {
+    primaryCashFlowType: string;
+    financingUseCase: string | null;
+    requestedAmountBand: string | null;
+    preferredTermBand: string | null;
+    b2bShareBand: string | null;
+    completedAt: string | null;
+  } | null;
   business: {
     legalName: string;
     country: string;
@@ -50,6 +58,12 @@ export async function getMyData(
       const business = await tx.business.findUnique({
         where: { stellarAddress: address },
         include: {
+          financingProfile: true,
+          profileEvents: {
+            where: { action: 'DeletionRequested' },
+            orderBy: { createdAt: 'asc' },
+            take: 1,
+          },
           kybSubmissions: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 1 },
           verificationAuditEvents: {
             where: { action: 'DeletionRequested' },
@@ -59,22 +73,33 @@ export async function getMyData(
         },
       });
       const latest = business?.kybSubmissions[0];
-      if (!business || !latest) return EMPTY;
+      if (!business) return EMPTY;
 
-      const evidence = await tx.evidenceReference.findMany({
-        where: { kybSubmissionId: latest.id, businessId: business.id },
-        select: { kind: true },
-      });
-      const recentView = await tx.verificationAuditEvent.findFirst({
-        where: {
-          businessId: business.id,
-          actorPrivyUserId,
-          action: 'DataOverviewViewed',
-          createdAt: { gte: new Date(Date.now() - VIEW_AUDIT_WINDOW_MS) },
-        },
-        select: { id: true },
-      });
-      if (!recentView) {
+      const profile = business.financingProfile;
+      if (profile) {
+        await tx.businessProfileEvent.create({
+          data: { businessId: business.id, actorPrivyUserId, action: 'Viewed' },
+        });
+      }
+
+      const evidence = latest
+        ? await tx.evidenceReference.findMany({
+            where: { kybSubmissionId: latest.id, businessId: business.id },
+            select: { kind: true },
+          })
+        : [];
+      const recentView = latest
+        ? await tx.verificationAuditEvent.findFirst({
+            where: {
+              businessId: business.id,
+              actorPrivyUserId,
+              action: 'DataOverviewViewed',
+              createdAt: { gte: new Date(Date.now() - VIEW_AUDIT_WINDOW_MS) },
+            },
+            select: { id: true },
+          })
+        : null;
+      if (latest && !recentView) {
         await tx.verificationAuditEvent.create({
           data: {
             businessId: business.id,
@@ -87,6 +112,16 @@ export async function getMyData(
       }
 
       return {
+        financingProfile: profile
+          ? {
+              primaryCashFlowType: profile.primaryCashFlowType,
+              financingUseCase: profile.financingUseCase,
+              requestedAmountBand: profile.requestedAmountBand,
+              preferredTermBand: profile.preferredTermBand,
+              b2bShareBand: profile.b2bShareBand,
+              completedAt: profile.completedAt?.toISOString() ?? null,
+            }
+          : null,
         business: {
           legalName: business.legalName,
           country: business.country,
@@ -96,16 +131,23 @@ export async function getMyData(
           revenueBand: business.revenueBand,
           email: business.email,
         },
-        representative: {
-          name: stringField(latest.fields, 'representativeName'),
-          relationship: stringField(latest.fields, 'representativeRelationship'),
-        },
+        representative: latest
+          ? {
+              name: stringField(latest.fields, 'representativeName'),
+              relationship: stringField(latest.fields, 'representativeRelationship'),
+            }
+          : null,
         declaredEvidence: evidence.map((e) => e.kind),
-        consent: {
-          version: latest.consentVersion,
-          at: latest.consentAt?.toISOString() ?? null,
-        },
-        deletionRequestedAt: business.verificationAuditEvents[0]?.createdAt.toISOString() ?? null,
+        consent: latest
+          ? {
+              version: latest.consentVersion,
+              at: latest.consentAt?.toISOString() ?? null,
+            }
+          : null,
+        deletionRequestedAt:
+          business.profileEvents?.[0]?.createdAt.toISOString() ??
+          business.verificationAuditEvents[0]?.createdAt.toISOString() ??
+          null,
       };
     });
   } catch (err) {

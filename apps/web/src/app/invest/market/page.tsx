@@ -1,3 +1,4 @@
+import { getAppTranslator } from '@/lib/app-locale';
 import { Container } from '@fondealo/ui';
 import { DataSourceBadge } from '@/components/data-source-badge';
 import { MarketGrid } from '@/components/market-grid';
@@ -13,6 +14,7 @@ export default async function MarketPage() {
   if (!session?.stellarAddress) redirect('/onboarding');
   if (session.role !== 'Investor')
     redirect(session.role === 'Business' ? '/business' : '/onboarding');
+  const t = await getAppTranslator();
 
   const { source, opportunities } = await getMarketOpportunities();
 
@@ -22,10 +24,11 @@ export default async function MarketPage() {
         <Container className="py-10">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h1 className="font-display text-3xl font-bold text-slate-900">Marketplace</h1>
+              <h1 className="font-display text-3xl font-bold text-slate-900">{t('Marketplace')}</h1>
               <p className="mt-1 text-slate-500">
-                Every figure below — APR, collateral coverage — comes from the risk-band config in
-                docs/product-v2.md §2, not a magic number per card.
+                {t(
+                  'Every figure below — APR, collateral coverage — comes from the risk-band config in docs/product-v2.md §2, not a magic number per card.',
+                )}
               </p>
             </div>
             <DataSourceBadge source={source} />

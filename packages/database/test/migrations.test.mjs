@@ -132,3 +132,46 @@ describe('staff audit events', () => {
     await rejects(`DELETE FROM "StaffAuditEvent" WHERE id='e1';`, /append-only/);
   });
 });
+
+describe('business financing profiles', () => {
+  it('stores one economic profile without inventing a KYB application or approval', async () => {
+    await db.exec(`INSERT INTO "Business"(id,"stellarAddress","legalName",country,"updatedAt") VALUES ('profile-business','GPROFILE','Synthetic profile company','Peru',now());
+      INSERT INTO "BusinessFinancingProfile"("businessId","primaryCashFlowType","profileVersion","completedAt","updatedAt") VALUES ('profile-business','PRE_REVENUE','business-financing-v1',now(),now());`);
+    const result = await db.query(
+      `SELECT count(*)::int AS n FROM "KybSubmission" WHERE "businessId"='profile-business'`,
+    );
+    assert.equal(result.rows[0].n, 0);
+    await rejects(
+      `INSERT INTO "BusinessFinancingProfile"("businessId","primaryCashFlowType","profileVersion","updatedAt") VALUES ('profile-business','PRE_REVENUE','business-financing-v1',now());`,
+      /pkey|duplicate/,
+    );
+  });
+  it('rejects debt terms for a pre-revenue business and requires complete operating terms', async () => {
+    await rejects(
+      `UPDATE "BusinessFinancingProfile" SET "financingUseCase"='WORKING_CAPITAL' WHERE "businessId"='profile-business';`,
+      /cash_flow_terms/,
+    );
+    await rejects(
+      `UPDATE "BusinessFinancingProfile" SET "primaryCashFlowType"='B2B_RECEIVABLES' WHERE "businessId"='profile-business';`,
+      /cash_flow_terms/,
+    );
+    await rejects(
+      `UPDATE "BusinessFinancingProfile" SET "primaryCashFlowType"='OPERATING_REVENUE',"financingUseCase"='INVOICE_ADVANCE',"requestedAmountBand"='UP_TO_10K',"preferredTermBand"='UP_TO_30_DAYS' WHERE "businessId"='profile-business';`,
+      /contextual_use/,
+    );
+  });
+  it('retains append-only profile audit and one deletion request per company', async () => {
+    await db.exec(
+      `INSERT INTO "BusinessProfileEvent"(id,"businessId","actorPrivyUserId",action) VALUES ('profile-delete','profile-business','synthetic-owner','DeletionRequested');`,
+    );
+    await rejects(
+      `UPDATE "BusinessProfileEvent" SET action='Viewed' WHERE id='profile-delete';`,
+      /append-only/,
+    );
+    await rejects(`DELETE FROM "BusinessProfileEvent" WHERE id='profile-delete';`, /append-only/);
+    await rejects(
+      `INSERT INTO "BusinessProfileEvent"(id,"businessId","actorPrivyUserId",action) VALUES ('profile-delete-again','profile-business','synthetic-owner','DeletionRequested');`,
+      /one_deletion_request/,
+    );
+  });
+});
