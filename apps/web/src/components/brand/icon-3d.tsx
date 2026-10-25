@@ -1,5 +1,6 @@
 import Image from 'next/image';
-import type { Locale } from '@/components/landing/content';
+
+type Locale = 'es' | 'en';
 
 /**
  * The 3D glass tier of the icon system (docs/brand/identity.md §7): raster

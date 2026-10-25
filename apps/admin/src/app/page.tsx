@@ -1,20 +1,24 @@
-import { ReviewConsole } from '@/components/review-console';
+import { Shell } from '@/components/shell';
+import { CaseQueue } from '@/components/case-queue';
+import { requireStaff } from '@/lib/auth/staff';
+import { listCases } from '@/lib/data';
+import { adminEnv } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
-export default function HomePage() {
-  if (process.env.NODE_ENV !== 'development') {
-    return (
-      <main className="locked-page">
-        <div className="locked-card">
-          <span className="brand-mark">f</span>
-          <p className="eyebrow">FONDEALO · OPERACIONES</p>
-          <h1>Prototipo disponible solo en desarrollo local</h1>
-          <p>Esta consola usa casos sintéticos y no está habilitada para despliegue.</p>
-        </div>
-      </main>
-    );
-  }
+export default async function QueuePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ estado?: string }>;
+}) {
+  const staff = await requireStaff();
+  const { estado } = await searchParams;
+  const now = new Date();
+  const cases = await listCases(now);
 
-  return <ReviewConsole />;
+  return (
+    <Shell staff={staff} env={adminEnv()} active="/">
+      <CaseQueue cases={cases} filter={estado ?? 'todos'} now={now} />
+    </Shell>
+  );
 }

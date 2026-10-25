@@ -1,11 +1,9 @@
-import { fileURLToPath } from 'node:url';
-
-const monorepoRoot = fileURLToPath(new URL('../../', import.meta.url));
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  outputFileTracingRoot: monorepoRoot,
+  // The back-office must not advertise its framework.
+  poweredByHeader: false,
+  transpilePackages: ['@fondealo/ui'],
 };
 
 export default nextConfig;

@@ -52,7 +52,9 @@ Estimates are rough (S ≤1d, M ≤3d, L ≤1w). IDs are stable references for P
 | E5 | Final repayment triggers `credit_score.on_repayment` + Passport update | ✅ done (on-chain; UI wiring is E4) | M | E1,D2,C1 |
 | E6 | Investor dashboard: positions, returns, status | P0 | M | E3 |
 | E7 | Escrow contract tests (auth gating, partial funding, pro-rata payout, default seizure, anti-gaming) | ✅ done — 17 tests | M | E1 |
-| E8 | Deploy `loan_escrow` to Testnet + rewire `credit_score.reporter` — script is ready (`scripts/deploy_testnet.sh`), needs a machine with internet + a real `USDC_SAC_ADDRESS` | P0 | S | E1 |
+| E8 | Deploy all three contracts to Testnet with constructors, wire them, verify — `scripts/deploy_testnet.sh` + `scripts/verify_testnet.sh`, or the manual *Deploy contracts to Testnet* workflow ([runbook](testnet-deployment.md)). Uses a Testnet-only `FTUSD` asset. Done when `deployments/testnet.json` is committed and verify passes | P0 | S | E1 |
+| E9 | Align `packages/sdk` with the contract ABI: drop `list_opportunities` / `get_positions` (read listings from an event indexer), decode `OpportunityStatus` as a `u32` enum, add `cancel` / `force_cancel` / `is_credential_valid` | P0 | M | E8 |
+| E10 | Reconcile `reputation_not_reported` events (repay/default on a frozen Passport) | P1 | S | E8 |
 
 ## Epic F — Reputation persistence & composability (Phase 7)
 | ID | Item | Pri | Est | Depends |

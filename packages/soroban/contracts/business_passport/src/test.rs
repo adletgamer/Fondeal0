@@ -15,12 +15,12 @@ struct Fixture {
 fn setup() -> Fixture {
     let env = Env::default();
     env.mock_all_auths();
-    let contract_id = env.register(BusinessPassportContract, ());
-    let client = BusinessPassportContractClient::new(&env, &contract_id);
     let admin = Address::generate(&env);
     let issuer = Address::generate(&env);
     let rep_manager = Address::generate(&env);
-    client.init(&admin, &issuer, &rep_manager);
+    let contract_id = env.register(BusinessPassportContract, (admin.clone(), issuer.clone()));
+    let client = BusinessPassportContractClient::new(&env, &contract_id);
+    client.set_reputation_manager(&rep_manager);
     Fixture {
         env,
         client,
@@ -34,8 +34,11 @@ fn hash(env: &Env) -> BytesN<32> {
     BytesN::from_array(env, &[7u8; 32])
 }
 
+/// Far enough in the future for any credential in these tests.
+const FAR: u64 = 1_000_000;
+
 #[test]
-fn init_sets_roles() {
+fn constructor_sets_roles() {
     let f = setup();
     assert_eq!(f.client.admin(), f.admin);
     assert_eq!(f.client.issuer(), f.issuer);
@@ -43,10 +46,32 @@ fn init_sets_roles() {
 }
 
 #[test]
-fn double_init_fails() {
-    let f = setup();
-    let res = f.client.try_init(&f.admin, &f.issuer, &f.rep_manager);
-    assert_eq!(res, Err(Ok(Error::AlreadyInitialized)));
+#[should_panic(expected = "Error(Contract, #15)")]
+fn admin_cannot_also_be_the_issuer() {
+    let env = Env::default();
+    let same = Address::generate(&env);
+    env.register(BusinessPassportContract, (same.clone(), same));
+}
+
+#[test]
+fn nobody_can_apply_reputation_until_the_manager_is_wired() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let issuer = Address::generate(&env);
+    let id = env.register(BusinessPassportContract, (admin, issuer));
+    let client = BusinessPassportContractClient::new(&env, &id);
+    let business = Address::generate(&env);
+    client.issue(&business, &KybStatus::Accepted, &500, &hash(&env));
+    assert_eq!(
+        client.try_reputation_manager(),
+        Err(Ok(Error::NotInitialized))
+    );
+    assert_eq!(
+        client.try_apply_reputation(&business, &900, &1, &1, &1),
+        Err(Ok(Error::NotInitialized))
+    );
+    assert_eq!(client.get(&business).unwrap().score, 500);
 }
 
 #[test]
@@ -243,14 +268,12 @@ fn owner_updates_only_their_own_metadata_and_no_credit_field_moves() {
 fn someone_else_cannot_update_the_metadata() {
     // No `mock_all_auths` here: only the addresses we explicitly authorise sign.
     let env = Env::default();
-    let contract_id = env.register(BusinessPassportContract, ());
-    let client = BusinessPassportContractClient::new(&env, &contract_id);
     let admin = Address::generate(&env);
     let issuer = Address::generate(&env);
-    let manager = Address::generate(&env);
+    let contract_id = env.register(BusinessPassportContract, (admin.clone(), issuer.clone()));
+    let client = BusinessPassportContractClient::new(&env, &contract_id);
     let business = Address::generate(&env);
     let attacker = Address::generate(&env);
-    client.init(&admin, &issuer, &manager);
 
     env.mock_auths(&[MockAuth {
         address: &issuer,
@@ -294,15 +317,13 @@ fn someone_else_cannot_update_the_metadata() {
 #[test]
 fn an_untrusted_address_cannot_issue_a_passport() {
     let env = Env::default();
-    let contract_id = env.register(BusinessPassportContract, ());
-    let client = BusinessPassportContractClient::new(&env, &contract_id);
     let admin = Address::generate(&env);
     let issuer = Address::generate(&env);
-    let manager = Address::generate(&env);
+    let contract_id = env.register(BusinessPassportContract, (admin.clone(), issuer.clone()));
+    let client = BusinessPassportContractClient::new(&env, &contract_id);
     let attacker = Address::generate(&env);
     let business = Address::generate(&env);
     let data_hash = hash(&env);
-    client.init(&admin, &issuer, &manager);
 
     env.mock_auths(&[MockAuth {
         address: &attacker,
@@ -374,7 +395,7 @@ fn freeze_blocks_changes_but_stays_readable_and_is_reversible() {
     );
     assert_eq!(
         f.client
-            .try_add_credential(&business, &symbol_short!("tax_reg"), &hash(&f.env)),
+            .try_add_credential(&business, &symbol_short!("tax_reg"), &hash(&f.env), &FAR),
         Err(Ok(Error::PassportFrozen))
     );
     // Score is unchanged while frozen.
@@ -463,10 +484,15 @@ fn credentials_can_be_added_listed_and_revoked() {
 
     assert_eq!(f.client.credentials(&business).len(), 0);
 
-    f.client.add_credential(&business, &tax, &hash(&f.env));
-    assert_eq!(f.env.auths()[0].0, f.issuer);
     f.client
-        .add_credential(&business, &ubo, &BytesN::from_array(&f.env, &[9u8; 32]));
+        .add_credential(&business, &tax, &hash(&f.env), &FAR);
+    assert_eq!(f.env.auths()[0].0, f.issuer);
+    f.client.add_credential(
+        &business,
+        &ubo,
+        &BytesN::from_array(&f.env, &[9u8; 32]),
+        &FAR,
+    );
 
     let all = f.client.credentials(&business);
     assert_eq!(all.len(), 2);
@@ -504,27 +530,34 @@ fn credential_edge_cases() {
     );
     assert_eq!(f.client.get_credential(&business, &tax), None);
 
-    // Duplicate kind, even after revocation.
-    f.client.add_credential(&business, &tax, &hash(&f.env));
+    // An active credential cannot be overwritten.
+    f.client
+        .add_credential(&business, &tax, &hash(&f.env), &FAR);
     assert_eq!(
-        f.client.try_add_credential(&business, &tax, &hash(&f.env)),
+        f.client
+            .try_add_credential(&business, &tax, &hash(&f.env), &FAR),
         Err(Ok(Error::CredentialAlreadyExists))
     );
+    // Revoking twice is not a transition.
     f.client.revoke_credential(&business, &tax);
-    assert_eq!(
-        f.client.try_add_credential(&business, &tax, &hash(&f.env)),
-        Err(Ok(Error::CredentialAlreadyExists))
-    );
     assert_eq!(
         f.client.try_revoke_credential(&business, &tax),
         Err(Ok(Error::InvalidStatusTransition))
     );
+    // A revoked kind can be attached again (renewal) without listing it twice.
+    f.client
+        .add_credential(&business, &tax, &hash(&f.env), &FAR);
+    assert_eq!(
+        f.client.get_credential(&business, &tax).unwrap().status,
+        CredentialStatus::Active
+    );
+    assert_eq!(f.client.credentials(&business).len(), 1);
 
     // No Passport, no credentials.
     let stranger = Address::generate(&f.env);
     assert_eq!(
         f.client
-            .try_add_credential(&stranger, &symbol_short!("x"), &hash(&f.env)),
+            .try_add_credential(&stranger, &symbol_short!("x"), &hash(&f.env), &FAR),
         Err(Ok(Error::PassportNotFound))
     );
 }
@@ -534,7 +567,8 @@ fn credentials_can_still_be_revoked_while_frozen() {
     let f = setup();
     let business = issue_default(&f);
     let tax = symbol_short!("tax_reg");
-    f.client.add_credential(&business, &tax, &hash(&f.env));
+    f.client
+        .add_credential(&business, &tax, &hash(&f.env), &FAR);
     f.client.freeze(&business);
     f.client.revoke_credential(&business, &tax);
     assert_eq!(
@@ -549,14 +583,149 @@ fn credential_count_is_capped() {
     let business = issue_default(&f);
     for i in 0..MAX_CREDENTIALS {
         let kind = Symbol::new(&f.env, &std::format!("c{i}"));
-        f.client.add_credential(&business, &kind, &hash(&f.env));
+        f.client
+            .add_credential(&business, &kind, &hash(&f.env), &FAR);
     }
     assert_eq!(f.client.credentials(&business).len(), MAX_CREDENTIALS);
 
     let one_more = Symbol::new(&f.env, "overflow");
     assert_eq!(
         f.client
-            .try_add_credential(&business, &one_more, &hash(&f.env)),
+            .try_add_credential(&business, &one_more, &hash(&f.env), &FAR),
         Err(Ok(Error::TooManyCredentials))
     );
+}
+
+// ---------------------------------------------------------------------------
+// Credential expiry, admin handover and role separation
+// ---------------------------------------------------------------------------
+
+#[test]
+fn credentials_expire_and_can_be_renewed() {
+    let f = setup();
+    let business = issue_default(&f);
+    let kyb = symbol_short!("KYB");
+    f.env.ledger().set_timestamp(1_000);
+
+    assert_eq!(
+        f.client
+            .try_add_credential(&business, &kyb, &hash(&f.env), &1_000),
+        Err(Ok(Error::InvalidExpiry))
+    );
+    f.client
+        .add_credential(&business, &kyb, &hash(&f.env), &2_000);
+    assert!(f.client.is_credential_valid(&business, &kyb));
+    assert_eq!(
+        f.client.get_credential(&business, &kyb).unwrap().expires_at,
+        2_000
+    );
+
+    f.env.ledger().set_timestamp(2_000);
+    assert!(!f.client.is_credential_valid(&business, &kyb));
+    // Expired: renewal is allowed and the kind stays listed once.
+    f.client
+        .add_credential(&business, &kyb, &hash(&f.env), &5_000);
+    assert!(f.client.is_credential_valid(&business, &kyb));
+    assert_eq!(f.client.credentials(&business).len(), 1);
+}
+
+#[test]
+fn a_credential_is_not_valid_on_a_frozen_or_revoked_passport() {
+    let f = setup();
+    let business = issue_default(&f);
+    let kyb = symbol_short!("KYB");
+    f.client
+        .add_credential(&business, &kyb, &hash(&f.env), &FAR);
+    f.client.freeze(&business);
+    assert!(!f.client.is_credential_valid(&business, &kyb));
+    f.client.unfreeze(&business);
+    assert!(f.client.is_credential_valid(&business, &kyb));
+    f.client.revoke_credential(&business, &kyb);
+    assert!(!f.client.is_credential_valid(&business, &kyb));
+    assert!(!f
+        .client
+        .is_credential_valid(&Address::generate(&f.env), &kyb));
+}
+
+#[test]
+fn admin_handover_is_two_step() {
+    let f = setup();
+    let next = Address::generate(&f.env);
+    assert_eq!(f.client.try_accept_admin(), Err(Ok(Error::NoPendingAdmin)));
+    f.client.propose_admin(&next);
+    assert_eq!(f.client.admin(), f.admin);
+    assert_eq!(f.client.pending_admin(), Some(next.clone()));
+    f.client.accept_admin();
+    assert_eq!(f.env.auths()[0].0, next);
+    assert_eq!(f.client.admin(), next);
+    assert_eq!(f.client.pending_admin(), None);
+}
+
+#[test]
+fn the_admin_never_becomes_the_issuer() {
+    let f = setup();
+    assert_eq!(
+        f.client.try_set_issuer(&f.admin),
+        Err(Ok(Error::RolesMustDiffer))
+    );
+    f.client.propose_admin(&f.issuer);
+    assert_eq!(f.client.try_accept_admin(), Err(Ok(Error::RolesMustDiffer)));
+    assert_eq!(f.client.admin(), f.admin);
+}
+
+#[test]
+fn only_the_admin_proposes_and_only_the_proposed_accepts() {
+    let env = Env::default();
+    let admin = Address::generate(&env);
+    let issuer = Address::generate(&env);
+    let next = Address::generate(&env);
+    let attacker = Address::generate(&env);
+    let id = env.register(BusinessPassportContract, (admin.clone(), issuer.clone()));
+    let client = BusinessPassportContractClient::new(&env, &id);
+
+    env.mock_auths(&[MockAuth {
+        address: &attacker,
+        invoke: &MockAuthInvoke {
+            contract: &id,
+            fn_name: "propose_admin",
+            args: (attacker.clone(),).into_val(&env),
+            sub_invokes: &[],
+        },
+    }]);
+    assert!(client.try_propose_admin(&attacker).is_err());
+
+    env.mock_auths(&[MockAuth {
+        address: &admin,
+        invoke: &MockAuthInvoke {
+            contract: &id,
+            fn_name: "propose_admin",
+            args: (next.clone(),).into_val(&env),
+            sub_invokes: &[],
+        },
+    }]);
+    client.propose_admin(&next);
+
+    env.mock_auths(&[MockAuth {
+        address: &attacker,
+        invoke: &MockAuthInvoke {
+            contract: &id,
+            fn_name: "accept_admin",
+            args: ().into_val(&env),
+            sub_invokes: &[],
+        },
+    }]);
+    assert!(client.try_accept_admin().is_err());
+    assert_eq!(client.admin(), admin);
+
+    env.mock_auths(&[MockAuth {
+        address: &attacker,
+        invoke: &MockAuthInvoke {
+            contract: &id,
+            fn_name: "set_issuer",
+            args: (attacker.clone(),).into_val(&env),
+            sub_invokes: &[],
+        },
+    }]);
+    assert!(client.try_set_issuer(&attacker).is_err());
+    assert_eq!(client.issuer(), issuer);
 }

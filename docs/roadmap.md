@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | 0. Baseline | Reproducible web and Soroban CI; protected auth, roles and ledger behavior | Implemented; CI green for [merged PR #13](https://github.com/adletgamer/Fondeal0/pull/13) | Node format/lint/types/tests/build and Soroban fmt/clippy/tests/WASM green on the release commit |
 | 1. Trust containment | Sandbox KYB cannot create a verified Passport or finance a new opportunity | Code merged to `main`; database and Production rollout unverified | Migration tested in isolated Development, legacy data inspected, existing obligations reconciled, security review complete |
-| 2. Peru KYB and underwriting | Evidence-backed identity decision and explainable, versioned risk decision | Design only | Authorized data source, consent/retention and legal review; reviewer authorization; adverse/review reasons; expiry and limits; negative tests |
+| 2. Peru KYB and underwriting | Evidence-backed identity decision and explainable, versioned risk decision | Design only; back-office design, workflow rules and fail-closed access in `apps/admin` on example data ([ADR-0011](adr/0011-admin-back-office-and-decision-authority.md)); no decision is persisted yet | Authorized data source, consent/retention and legal review; reviewer authorization; adverse/review reasons; expiry and limits; negative tests |
 | 3. Passport lifecycle on Testnet | Issue, revoke, renew and read a nontransferable credential with durable event reconciliation | Contract code exists; application issuance/indexer pending | Contract auth review, compatible toolchain, Testnet IDs, idempotent issuance, event cursor, TTL restoration, independent verification |
 | 4. Financing integration | Reconciled new funding and repayment linked to current eligibility | Test ledger and server actions exist; live settlement pending | End-to-end synthetic Testnet flow, money conservation, ownership and rollback tests, no orphaned funds |
 | 5. Agentic verification pilot | One bounded paid data check for underwriting | Concept only | One approved provider, synthetic data, Testnet budget, allowlists, idempotent receipt and evidence review; no automatic approval |
@@ -41,7 +41,7 @@ A green CI build is evidence for code quality, not for database compatibility, p
 
 ## Stage 3–5 technical gates
 
-- Passport: no transfer/approval path; authorized issuer/admin; freeze/revoke; KYB status checked by consumers; storage TTL and restoration; event replay and reorg-safe reconciliation.
+- Passport: no transfer/approval path; authorized issuer/admin; freeze/revoke; KYB status checked by consumers; storage TTL and restoration; event replay and reorg-safe reconciliation. *Contract side done in code ([ADR-0012](adr/0012-contract-initialization-roles-and-funds-safety.md)): constructors, admin ≠ issuer/keeper, two-step admin, credential expiry, escrow eligibility gate, unblockable repayment and refunds. Open: Testnet deployment evidence ([runbook](testnet-deployment.md)), TTL job, indexer and reconciliation, independent review.*
 - Financing: server and contract enforce the same eligibility and ownership; no client-first value transfer; exact monetary units; idempotent transaction and payout; ledger-to-chain reconciliation.
 - Agentic payments: approved provider and evidence schema, minimal data, consent, per-call/daily caps, allowlisted asset/network/recipient, replay store and verified settlement. A paid response routes to underwriting review.
 

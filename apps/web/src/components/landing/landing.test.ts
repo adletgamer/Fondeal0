@@ -30,8 +30,8 @@ const es = render(HomeEs);
 const en = render(HomeEn);
 
 describe.each([
-  ['es', es, 'es-PE', /Un expediente\..*Tú decides quién\./s, '/en'],
-  ['en', en, 'en', /One company file\..*You choose who\./s, '/'],
+  ['es', es, 'es-PE', /Tu empresa ya tiene una historia\..*Hazla verificable\./s, '/en'],
+  ['en', en, 'en', /Your company already has a story\..*Make it verifiable\./s, '/'],
 ] as const)('landing page (%s)', (_l, page, lang, h1, otherHref) => {
   it('has one h1 that says what Fondealo is, on two authored lines', () => {
     expect(page.html.match(/<h1/g)).toHaveLength(1);
@@ -60,16 +60,43 @@ describe.each([
   });
 
   it('renders the live fragments readable without JavaScript', () => {
-    expect(page.html).toContain('role="radiogroup"');
+    expect(page.html.match(/role="radiogroup"/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
     expect(page.html).toContain('aria-checked="true"');
-    expect(page.html).toContain('type="search"');
-    expect(page.html.match(/data-ui/g)?.length ?? 0).toBeGreaterThanOrEqual(4);
+    expect(page.html).toContain('aria-pressed=');
+    expect(page.html.match(/data-ui/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+  });
+
+  it('renders the 3D stage with a poster, a label and no script dependency', () => {
+    expect(page.html).toContain('data-scene="loading"');
+    expect(page.html).toContain('/brand/3d/badge.webp');
+    expect(page.html).toMatch(/role="img"[^>]*aria-label="[^"]*(ejemplo|sample)/i);
+  });
+
+  it('names the layers of the 3D passport and keeps the hero free of captions', () => {
+    const layers =
+      page === es
+        ? ['Identidad', 'Actividad', 'Reputación financiera']
+        : ['Identity', 'Activity', 'Financial reputation'];
+    for (const l of layers) expect(page.html).toContain(l);
+    // No caption or legend under the scene: the sample is declared in its description.
+    expect(page.text).not.toMatch(
+      /ilustración de ejemplo|sample illustration|señales con fuente|signals with a source/,
+    );
   });
 
   it('gives every section a heading', () => {
     const sections = page.html.match(/<section[^>]*>/g) ?? [];
-    expect(sections.length).toBeGreaterThanOrEqual(8);
+    expect(sections.length).toBeGreaterThanOrEqual(6);
     for (const s of sections) expect(s).toMatch(/aria-labelledby="[a-z-]+"/);
+  });
+
+  it('offers section links on small screens, not only from lg up', () => {
+    expect(page.html).toMatch(/aria-expanded="false"[^>]*aria-controls=/);
+  });
+
+  it('stays short: a landing, not a manual', () => {
+    const words = page.text.split(' ').filter(Boolean).length;
+    expect(words).toBeLessThan(700);
   });
 });
 
@@ -97,6 +124,27 @@ describe('landing claims', () => {
       expect(es.text).not.toContain(phrase);
     }
     expect(es.text).toContain('no invierte ni intermedia inversiones');
+  });
+
+  it('uses the passport vocabulary and keeps examples labelled', () => {
+    expect(es.text).not.toContain('expediente');
+    expect(en.text).not.toContain('company file');
+    for (const phrase of ['pasaporte', 'señales', 'acceso con permiso']) {
+      expect(es.text).toContain(phrase);
+    }
+    for (const phrase of ['passport', 'signals', 'permissioned access']) {
+      expect(en.text).toContain(phrase);
+    }
+    expect(es.text).toContain('aún no hay socios firmados');
+    expect(en.text).toContain('no signed partners yet');
+    expect(es.text).toContain('construido sobre stellar · piloto');
+    expect(en.text).toContain('built on stellar · pilot');
+  });
+
+  it('never names a real company, fund or registry as a partner', () => {
+    for (const phrase of ['sunat', 'sunarp', 'sbs', 'smv', 'cavali', 'interbank', 'bcp']) {
+      expect(es.text).not.toMatch(new RegExp(`\\b${phrase}\\b`));
+    }
   });
 
   it('never offers investment, returns or approval in English', () => {

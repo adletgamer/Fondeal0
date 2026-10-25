@@ -18,18 +18,19 @@ fn setup(start_score: u32) -> Fixture {
     let env = Env::default();
     env.mock_all_auths();
 
-    let passport_id = env.register(BusinessPassportContract, ());
-    let passport = BusinessPassportContractClient::new(&env, &passport_id);
-    let score_id = env.register(CreditScoreContract, ());
-    let score = CreditScoreContractClient::new(&env, &score_id);
-
     let admin = Address::generate(&env);
     let issuer = Address::generate(&env);
     let reporter = Address::generate(&env);
 
-    // The score contract is the Passport's reputation manager.
-    passport.init(&admin, &issuer, &score_id);
-    score.init(&admin, &passport_id, &reporter);
+    let passport_id = env.register(BusinessPassportContract, (admin.clone(), issuer));
+    let passport = BusinessPassportContractClient::new(&env, &passport_id);
+    let score_id = env.register(CreditScoreContract, (admin.clone(), passport_id.clone()));
+    let score = CreditScoreContractClient::new(&env, &score_id);
+
+    // Wiring, as the deploy does it: the score contract is the Passport's
+    // reputation manager, and `reporter` stands in for the escrow.
+    passport.set_reputation_manager(&score_id);
+    score.set_reporter(&reporter);
 
     let business = Address::generate(&env);
     let data_hash = BytesN::from_array(&env, &[1u8; 32]);
@@ -139,14 +140,15 @@ fn repayment_without_passport_fails() {
 #[test]
 fn an_untrusted_address_cannot_report_a_default() {
     let env = Env::default();
-    let contract_id = env.register(CreditScoreContract, ());
-    let client = CreditScoreContractClient::new(&env, &contract_id);
     let admin = Address::generate(&env);
     let passport = Address::generate(&env);
     let reporter = Address::generate(&env);
     let attacker = Address::generate(&env);
     let business = Address::generate(&env);
-    client.init(&admin, &passport, &reporter);
+    let contract_id = env.register(CreditScoreContract, (admin, passport));
+    let client = CreditScoreContractClient::new(&env, &contract_id);
+    env.mock_all_auths();
+    client.set_reporter(&reporter);
 
     env.mock_auths(&[MockAuth {
         address: &attacker,
@@ -164,4 +166,34 @@ fn an_untrusted_address_cannot_report_a_default() {
         Err(Ok(Error::PassportNotFound))
     );
     assert!(client.try_on_default(&business).is_err());
+}
+
+#[test]
+fn nobody_can_report_until_the_reporter_is_wired() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let passport = Address::generate(&env);
+    let id = env.register(CreditScoreContract, (admin.clone(), passport.clone()));
+    let client = CreditScoreContractClient::new(&env, &id);
+    assert_eq!(client.admin(), admin);
+    assert_eq!(client.passport(), passport);
+    assert_eq!(client.try_reporter(), Err(Ok(Error::NotInitialized)));
+    let business = Address::generate(&env);
+    assert_eq!(
+        client.try_on_default(&business),
+        Err(Ok(Error::NotInitialized))
+    );
+}
+
+#[test]
+fn admin_handover_is_two_step() {
+    let f = setup(500);
+    let next = Address::generate(&f.env);
+    assert_eq!(f.score.try_accept_admin(), Err(Ok(Error::NoPendingAdmin)));
+    f.score.propose_admin(&next);
+    assert_eq!(f.score.pending_admin(), Some(next.clone()));
+    f.score.accept_admin();
+    assert_eq!(f.score.admin(), next);
+    assert_eq!(f.score.pending_admin(), None);
 }

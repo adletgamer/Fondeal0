@@ -1,6 +1,6 @@
 # Fondealo identity — Sprint 1 of the controlled redesign
 
-**Date:** 2026-10-21 · **Status:** proposal, in review · **Branch:** `feat/landing-v2-base` (uncommitted)
+**Date:** 2026-10-21 · **Updated:** 2026-10-22 (§9 added; Sprints 2 and 3 first pass on the landing) · **Status:** proposal, in review
 
 We stop patching the current landing section by section. The redesign runs in
 four sprints, and each one ends with something we can look at and approve:
@@ -154,7 +154,7 @@ square, transparent) and `badge.webp` (the 3D logo, 512px, 28 KB against the
 900 KB PNG). Component: `Icon3D` / `BrandBadge3D` in
 `apps/web/src/components/brand/icon-3d.tsx`, capped at 150 CSS px so the
 sources stay sharp on 2x screens. They were cut from the transparent sheet
-*Fondealo Neon Glass Icon Kit.png*. For anything larger than 150px, export each
+_Fondealo Neon Glass Icon Kit.png_. For anything larger than 150px, export each
 icon again at 600px or more.
 
 The flat landing pictograms in `components/landing/art` are retired when the 3D
@@ -166,3 +166,63 @@ set lands.
 2. Approve Unbounded as the brand face. It is wide and constructed; the
    alternative is a single-face identity in Onest.
 3. Approve dropping gold as a brand colour.
+
+## 9. Concept layer: Signal · Passport · Network
+
+Every visual on the marketing site derives from three ideas. If a new element
+cannot be traced to one of them, it does not belong.
+
+| Concept      | Means                                         | Visual form                                                                   | Where                                  |
+| ------------ | --------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------- |
+| **Signal**   | A fact with a source and a date               | A point. Filled mint = a named source confirmed it; hollow orbit = declared; dashed = pending | Hero scene, signal ledger |
+| **Passport** | The company's portable record                 | The booklet from the mark, in 3D on the hero (separating into its layers) and as layered pages in the ledger | Hero scene, ledger card, CTA badge  |
+| **Network**  | Permissioned links from company to recipients | The orbit ring and curved links; solid and flowing = access, dotted = none    | Hero scene, access section             |
+
+**Hero thesis.** "Tu empresa ya tiene una historia. Hazla verificable." / "Your
+company already has a story. Make it verifiable." The line under it says how
+(identity, activity, financial reputation) and to whom (people who can fund the
+next stage). It never says what Fondealo has already verified.
+
+**Section blueprint (marketing home).** Hero → Signals (the passport as layers,
+each signal with source and state) → Access (the one live thing: choose what each
+recipient receives) → What is real today (status, Stellar pilot, what Fondealo
+does not do) → FAQ → waitlist. One idea per section, one live object per section.
+
+**State vocabulary.** _Verificada_ only where a named source checked it;
+_Declarada_ when the company says so; _Pendiente_ when there is no data. Every
+sample object is labelled _Ejemplo_ / _Sample_ on its face.
+
+**The 3D hero scene** (`components/landing/passport-scene.tsx`).
+
+- three.js, loaded after first paint and only when WebGL works, the device is not
+  saving data and has more than 2 GB of memory. The server renders `badge.webp`
+  as the poster.
+- Colours are read from `--mark-body`, `--brand-fill`, `--orbit` and `--holo` and
+  re-read when `data-theme` changes. No hex values in the component.
+- Pixel ratio capped at 2; the loop stops off screen and in hidden tabs.
+- **Exploded view.** Five layers on one stacking axis: back cover, financial
+  reputation, activity, identity, front cover. The cycle is assembled, apart,
+  assembled; hovering the stage holds it apart. Each layer has an edge line, and
+  guides join the corners along the stacking axis while apart.
+- **Pages carry no text and no figures.** They are pictograms (photo frame, seal
+  and machine-readable strip; bars and a trend of signals; a ring and a payment
+  record), so the scene shows how a passport is built without claiming anything
+  about a company. Keep it that way: no numbers, names, scores or "verified" marks.
+- **Call-outs, not a legend.** Once the layers are apart, each page gets a point
+  on its top edge, a guide line and a label on its own level (identity, activity,
+  financial reputation), so labels never overlap. They are hidden below `sm`.
+  There is no caption or legend under the scene.
+- Reduced motion renders one still frame, apart. Otherwise a visible "Pausar
+  animación" control is present (WCAG 2.2.2). The stage is `role="img"` and its
+  description says it is a sample illustration; the visible tag was removed
+  because the scene shows no data.
+- Do not add a second 3D scene. Every other visual uses the 3D icon tier (§7) or
+  flat tone steps.
+
+**Motion tokens.** Entrances 600–900 ms with `cubic-bezier(0.16, 1, 0.3, 1)`;
+control feedback 150 ms ease-out; the access links animate dash offset at 1.4 s
+linear and stop under reduced motion. No parallax on scroll.
+
+**Layout rules added.** Separation by tone, never by line or shadow. Nothing
+sits on a white or mint band in Night. Minimum text 13 px inside product
+fragments (`data-ui`), 14 px elsewhere. Target size 44 px for every control.

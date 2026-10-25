@@ -21,14 +21,26 @@ Fondealo's Soroban smart contracts (Rust). Cargo workspace, `soroban-sdk` 27.
   deployed contract crates depend on this non-contract crate so their Wasm
   artifacts do not contain another contract's entrypoint exports.
 
-Wiring order at deploy: deploy both → `passport.init(admin, issuer, score_id)` →
-`score.init(admin, passport_id, reporter)`. See `scripts/deploy_testnet.sh`.
-Each `init` requires authorization from the proposed `admin`; the deployment
-transaction must include that account's signature. This prevents an unrelated
-account from claiming the one-time initialization and selecting privileged roles.
+Roles are set by each contract's **constructor**, in the same transaction as
+the deployment, so nobody can initialize a contract first
+([ADR-0012](../../docs/adr/0012-contract-initialization-roles-and-funds-safety.md)):
 
-**Tests:** 50 passing (`business_passport` 24, `credit_score` 9,
-`loan_escrow` 17), including the cross-contract paths and anti-gaming rule.
+| Contract | Constructor | Set by admin after deploy |
+| --- | --- | --- |
+| `business_passport` | `admin`, `issuer` | `set_reputation_manager(credit_score)` |
+| `credit_score` | `admin`, `passport` | `set_reporter(loan_escrow)` |
+| `loan_escrow` | `admin`, `passport`, `score`, `token`, `keeper` | — |
+
+The admin can never also be the issuer or the keeper, and admin handover is
+two-step (`propose_admin`, then `accept_admin`). `loan_escrow` only creates,
+funds or releases for a business whose Passport is `Active` with KYB
+`Accepted`; repayments and defaults always settle, and `cancel` /
+`force_cancel` refund investors in full. Credentials carry `expires_at`;
+verifiers call `is_credential_valid`.
+
+**Tests:** 72 passing (`business_passport` 31, `credit_score` 12,
+`loan_escrow` 29), including the cross-contract paths, the anti-gaming rule
+and exact-authorization negatives for every role.
 
 ## Develop
 
@@ -39,4 +51,6 @@ cargo clippy --all-targets -- -D warnings    # lints
 cargo build --target wasm32v1-none --release   # build wasm
 ```
 
-Deploy to Testnet with `scripts/deploy_testnet.sh` (requires `stellar-cli`).
+Deploy to Testnet with `scripts/deploy_testnet.sh` and check it with
+`scripts/verify_testnet.sh` (requires `stellar-cli` 28.1.0). Runbook:
+[`docs/testnet-deployment.md`](../../docs/testnet-deployment.md).

@@ -22,8 +22,13 @@ mod test;
 
 pub use types::{collateral_ratio_bps, DataKey, Error, Opportunity, OpportunityStatus};
 
-use fondealo_soroban_shared::{BusinessPassportClient, CreditScoreClient, RiskBand};
-use soroban_sdk::{contract, contractevent, contractimpl, token, Address, Env, Map};
+use fondealo_soroban_shared::{
+    BusinessPassportClient, CreditScoreClient, KybStatus, Passport, PassportStatus, RiskBand,
+};
+use soroban_sdk::{
+    contract, contractevent, contractimpl, panic_with_error, symbol_short, token, Address, Env,
+    Map, Symbol,
+};
 
 // --- Grace + TTL policy (ledgers/seconds). Testnet ~5s/ledger => ~17,280 ledgers/day. ---
 /// Seconds past `due_at` before `default` becomes callable.
@@ -84,27 +89,72 @@ pub struct Defaulted {
     pub recovered: i128,
 }
 
+/// Emitted when an opportunity is unwound before release. Topic: `cancelled`.
+#[contractevent]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Cancelled {
+    #[topic]
+    pub opportunity_id: u64,
+    pub business: Address,
+    /// True when the keeper unwound it because the business stopped being eligible.
+    pub by_keeper: bool,
+}
+
+/// Emitted when a loan outcome could not be reported to `credit_score` (for
+/// example, the Passport is frozen). The money still moved; the reputation
+/// update is left for review. Topic: `reputation_not_reported`.
+#[contractevent]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ReputationNotReported {
+    #[topic]
+    pub opportunity_id: u64,
+    pub business: Address,
+}
+
+/// Emitted when the admin pauses or resumes new activity. Topic: `pause_changed`.
+#[contractevent]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PauseChanged {
+    pub paused: bool,
+}
+
+/// Emitted when a role is set or rotated. Topic: `role_changed`.
+#[contractevent]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RoleChanged {
+    #[topic]
+    pub role: Symbol,
+    pub address: Address,
+}
+
+/// Emitted when the admin proposes a successor. Topic: `admin_proposed`.
+#[contractevent]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AdminProposed {
+    pub current: Address,
+    pub proposed: Address,
+}
+
 #[contract]
 pub struct LoanEscrowContract;
 
 #[contractimpl]
 impl LoanEscrowContract {
-    /// Initialize once. `passport`/`score` are the deployed Fondealo
-    /// contracts; `token` is the USDC Stellar Asset Contract; `keeper` is the
-    /// address allowed to call `default` once a loan is past due + grace.
-    pub fn init(
+    /// Fix every address at deployment, atomically with the deploy.
+    /// `passport`/`score` are the deployed Fondealo contracts; `token` is the
+    /// Stellar Asset Contract escrowed (Testnet: a test asset); `keeper` may
+    /// call `default` past due + grace and unwind ineligible opportunities.
+    /// The admin may not also be the keeper.
+    pub fn __constructor(
         env: Env,
         admin: Address,
         passport: Address,
         score: Address,
         token: Address,
         keeper: Address,
-    ) -> Result<(), Error> {
-        // The first initializer chooses every privileged role; require that
-        // the proposed admin authorizes this one-time configuration.
-        admin.require_auth();
-        if env.storage().instance().has(&DataKey::Admin) {
-            return Err(Error::AlreadyInitialized);
+    ) {
+        if admin == keeper {
+            panic_with_error!(&env, Error::RolesMustDiffer);
         }
         env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage().instance().set(&DataKey::Passport, &passport);
@@ -114,7 +164,16 @@ impl LoanEscrowContract {
         env.storage()
             .instance()
             .extend_ttl(TTL_BUMP_THRESHOLD, TTL_EXTEND_TO);
-        Ok(())
+        RoleChanged {
+            role: symbol_short!("admin"),
+            address: admin,
+        }
+        .publish(&env);
+        RoleChanged {
+            role: symbol_short!("keeper"),
+            address: keeper,
+        }
+        .publish(&env);
     }
 
     /// Business-gated: open a funding opportunity and lock `collateral_amount`
@@ -140,8 +199,8 @@ impl LoanEscrowContract {
             return Err(Error::OpportunityAlreadyExists);
         }
 
-        let passport = Self::passport_client(&env);
-        let p = passport.get(&business).ok_or(Error::PassportNotFound)?;
+        Self::require_not_paused(&env)?;
+        let p = Self::require_eligible(&env, &business)?;
         let required = Self::required_collateral(principal, p.risk_band);
         if collateral_amount != required {
             return Err(Error::CollateralMismatch);
@@ -195,11 +254,13 @@ impl LoanEscrowContract {
             return Err(Error::InvalidAmount);
         }
 
+        Self::require_not_paused(&env)?;
         let key = DataKey::Opportunity(opportunity_id);
         let mut opportunity = Self::load(&env, &key)?;
         if opportunity.status != OpportunityStatus::Open {
             return Err(Error::InvalidStatus);
         }
+        Self::require_eligible(&env, &opportunity.business)?;
         let new_funded = opportunity.funded + amount;
         if new_funded > opportunity.principal {
             return Err(Error::OverFunding);
@@ -239,6 +300,8 @@ impl LoanEscrowContract {
         if opportunity.status != OpportunityStatus::Funded {
             return Err(Error::InvalidStatus);
         }
+        Self::require_not_paused(&env)?;
+        Self::require_eligible(&env, &opportunity.business)?;
 
         Self::token_client(&env).transfer(
             &env.current_contract_address(),
@@ -313,7 +376,18 @@ impl LoanEscrowContract {
 
             let on_time = env.ledger().timestamp() <= opportunity.due_at;
             let external = Self::has_external_funder(&shares, &opportunity.business);
-            Self::score_client(&env).on_repayment(&opportunity.business, &on_time, &external);
+            // The money has moved; a frozen Passport must not trap the final
+            // payment, so a failed reputation report is recorded, not fatal.
+            if Self::score_client(&env)
+                .try_on_repayment(&opportunity.business, &on_time, &external)
+                .is_err()
+            {
+                ReputationNotReported {
+                    opportunity_id,
+                    business: opportunity.business.clone(),
+                }
+                .publish(&env);
+            }
 
             opportunity.status = OpportunityStatus::Repaid;
         }
@@ -353,7 +427,16 @@ impl LoanEscrowContract {
         let recovered = opportunity.collateral_amount + opportunity.repaid;
         Self::distribute_pro_rata(&env, &token, &shares, opportunity.principal, recovered);
 
-        Self::score_client(&env).on_default(&opportunity.business);
+        if Self::score_client(&env)
+            .try_on_default(&opportunity.business)
+            .is_err()
+        {
+            ReputationNotReported {
+                opportunity_id,
+                business: opportunity.business.clone(),
+            }
+            .publish(&env);
+        }
 
         opportunity.status = OpportunityStatus::Defaulted;
         env.storage().persistent().set(&key, &opportunity);
@@ -366,6 +449,106 @@ impl LoanEscrowContract {
         }
         .publish(&env);
         Ok(())
+    }
+
+    /// Business-gated: unwind an opportunity that has not been released yet.
+    /// Every investor gets back exactly what they put in and the business gets
+    /// its collateral. Works while paused, so funds are never trapped.
+    pub fn cancel(env: Env, opportunity_id: u64) -> Result<(), Error> {
+        let key = DataKey::Opportunity(opportunity_id);
+        let opportunity = Self::load(&env, &key)?;
+        opportunity.business.require_auth();
+        Self::unwind(&env, opportunity_id, opportunity, false)
+    }
+
+    /// Keeper-gated: unwind an unreleased opportunity whose business is no
+    /// longer eligible (Passport frozen or revoked, or KYB no longer accepted),
+    /// so investors are not left waiting on a business that cannot draw.
+    pub fn force_cancel(env: Env, opportunity_id: u64) -> Result<(), Error> {
+        Self::require_keeper(&env)?;
+        let key = DataKey::Opportunity(opportunity_id);
+        let opportunity = Self::load(&env, &key)?;
+        if Self::require_eligible(&env, &opportunity.business).is_ok() {
+            return Err(Error::StillEligible);
+        }
+        Self::unwind(&env, opportunity_id, opportunity, true)
+    }
+
+    /// Admin-gated: stop or resume new opportunities, funding and releases.
+    /// Repayments, defaults and cancellations are never paused.
+    pub fn set_paused(env: Env, paused: bool) -> Result<(), Error> {
+        Self::require_admin(&env)?;
+        env.storage().instance().set(&DataKey::Paused, &paused);
+        PauseChanged { paused }.publish(&env);
+        Ok(())
+    }
+
+    pub fn paused(env: Env) -> bool {
+        env.storage()
+            .instance()
+            .get(&DataKey::Paused)
+            .unwrap_or(false)
+    }
+
+    /// Step one of an admin handover. Admin-gated.
+    pub fn propose_admin(env: Env, proposed: Address) -> Result<(), Error> {
+        let current = Self::require_admin(&env)?;
+        env.storage()
+            .instance()
+            .set(&DataKey::PendingAdmin, &proposed);
+        AdminProposed { current, proposed }.publish(&env);
+        Ok(())
+    }
+
+    /// Step two: the proposed admin accepts and becomes admin.
+    pub fn accept_admin(env: Env) -> Result<(), Error> {
+        let proposed: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::PendingAdmin)
+            .ok_or(Error::NoPendingAdmin)?;
+        proposed.require_auth();
+        let keeper: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Keeper)
+            .ok_or(Error::NotInitialized)?;
+        if proposed == keeper {
+            return Err(Error::RolesMustDiffer);
+        }
+        env.storage().instance().set(&DataKey::Admin, &proposed);
+        env.storage().instance().remove(&DataKey::PendingAdmin);
+        RoleChanged {
+            role: symbol_short!("admin"),
+            address: proposed,
+        }
+        .publish(&env);
+        Ok(())
+    }
+
+    pub fn pending_admin(env: Env) -> Option<Address> {
+        env.storage().instance().get(&DataKey::PendingAdmin)
+    }
+
+    pub fn passport(env: Env) -> Result<Address, Error> {
+        env.storage()
+            .instance()
+            .get(&DataKey::Passport)
+            .ok_or(Error::NotInitialized)
+    }
+
+    pub fn score(env: Env) -> Result<Address, Error> {
+        env.storage()
+            .instance()
+            .get(&DataKey::Score)
+            .ok_or(Error::NotInitialized)
+    }
+
+    pub fn token(env: Env) -> Result<Address, Error> {
+        env.storage()
+            .instance()
+            .get(&DataKey::Token)
+            .ok_or(Error::NotInitialized)
     }
 
     /// Read one opportunity. Public.
@@ -400,8 +583,16 @@ impl LoanEscrowContract {
 
     /// Rotate the keeper. Admin-gated.
     pub fn set_keeper(env: Env, new_keeper: Address) -> Result<(), Error> {
-        Self::require_admin(&env)?;
+        let admin = Self::require_admin(&env)?;
+        if new_keeper == admin {
+            return Err(Error::RolesMustDiffer);
+        }
         env.storage().instance().set(&DataKey::Keeper, &new_keeper);
+        RoleChanged {
+            role: symbol_short!("keeper"),
+            address: new_keeper,
+        }
+        .publish(&env);
         Ok(())
     }
 
@@ -487,13 +678,83 @@ impl LoanEscrowContract {
         CreditScoreClient::new(env, &addr)
     }
 
-    fn require_admin(env: &Env) -> Result<(), Error> {
+    fn require_admin(env: &Env) -> Result<Address, Error> {
         let admin: Address = env
             .storage()
             .instance()
             .get(&DataKey::Admin)
             .ok_or(Error::NotInitialized)?;
         admin.require_auth();
+        Ok(admin)
+    }
+
+    fn require_not_paused(env: &Env) -> Result<(), Error> {
+        if env
+            .storage()
+            .instance()
+            .get(&DataKey::Paused)
+            .unwrap_or(false)
+        {
+            return Err(Error::Paused);
+        }
+        Ok(())
+    }
+
+    /// New value only flows to a business whose Passport is `Active` and whose
+    /// KYB is `Accepted`, read from the Passport, never from the caller.
+    fn require_eligible(env: &Env, business: &Address) -> Result<Passport, Error> {
+        let p = Self::passport_client(env)
+            .get(business)
+            .ok_or(Error::PassportNotFound)?;
+        if p.status != PassportStatus::Active {
+            return Err(Error::PassportNotActive);
+        }
+        if p.kyb_status != KybStatus::Accepted {
+            return Err(Error::KybNotAccepted);
+        }
+        Ok(p)
+    }
+
+    /// Refund every investor their exact contribution and the business its
+    /// collateral, then close the opportunity as `Cancelled`.
+    fn unwind(
+        env: &Env,
+        opportunity_id: u64,
+        mut opportunity: Opportunity,
+        by_keeper: bool,
+    ) -> Result<(), Error> {
+        if opportunity.status != OpportunityStatus::Open
+            && opportunity.status != OpportunityStatus::Funded
+        {
+            return Err(Error::InvalidStatus);
+        }
+        let token = Self::token_client(env);
+        let shares: Map<Address, i128> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Shares(opportunity_id))
+            .unwrap_or_else(|| Map::new(env));
+        for (investor, contribution) in shares.iter() {
+            if contribution > 0 {
+                token.transfer(&env.current_contract_address(), &investor, &contribution);
+            }
+        }
+        token.transfer(
+            &env.current_contract_address(),
+            &opportunity.business,
+            &opportunity.collateral_amount,
+        );
+        opportunity.status = OpportunityStatus::Cancelled;
+        env.storage()
+            .persistent()
+            .set(&DataKey::Opportunity(opportunity_id), &opportunity);
+        Self::bump(env, opportunity_id);
+        Cancelled {
+            opportunity_id,
+            business: opportunity.business,
+            by_keeper,
+        }
+        .publish(env);
         Ok(())
     }
 

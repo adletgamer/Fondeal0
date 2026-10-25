@@ -20,12 +20,6 @@
     text-rendering: optimizeLegibility;
   }
 
-  .data-label {
-    font-family: var(--font-mono), ui-monospace, monospace;
-    font-size: 0.75rem;
-    line-height: 1.4;
-  }
-
   h1,
   h2,
   h3,
@@ -469,6 +463,22 @@ html {
   transform: translateY(18px);
 }
 
+/* Hero scene: fade the stage edges so the 3D signals never end in a hard cut. */
+.scene-canvas {
+  -webkit-mask-image: radial-gradient(ellipse 52% 52% at 50% 50%, black 58%, transparent 100%);
+  mask-image: radial-gradient(ellipse 52% 52% at 50% 50%, black 58%, transparent 100%);
+}
+
+/* Access network: signals travel along a link while access is granted. */
+@keyframes network-flow {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+.network-flow {
+  animation: network-flow 1.4s linear infinite;
+}
+
 /* Reading progress: a thin brand line driven by scroll, where supported. */
 .landing-progress {
   display: none;
@@ -503,6 +513,9 @@ html {
   .landing-progress {
     display: none !important;
   }
+  .network-flow {
+    animation: none !important;
+  }
   .reveal-ready .landing [data-reveal] {
     opacity: 1 !important;
     transform: none !important;
@@ -513,39 +526,5 @@ html {
   .landing [data-reveal] {
     opacity: 1 !important;
     transform: none !important;
-  }
-}
-
-/* Landing visuals: dotted ground, live connector dashes, step progress. */
-.landing-dots {
-  background-image: radial-gradient(rgb(var(--line-strong) / 0.35) 1px, transparent 1.2px);
-  background-size: 18px 18px;
-}
-@keyframes landing-dash {
-  to {
-    stroke-dashoffset: -24;
-  }
-}
-.landing-dash {
-  animation: landing-dash 1.2s linear infinite;
-}
-@keyframes landing-step-progress {
-  from {
-    width: 0%;
-  }
-  to {
-    width: 100%;
-  }
-}
-.landing-step-progress {
-  animation: landing-step-progress linear forwards;
-}
-@media (prefers-reduced-motion: reduce) {
-  .landing-dash,
-  .landing-step-progress {
-    animation: none !important;
-  }
-  .landing-step-progress {
-    width: 100%;
   }
 }

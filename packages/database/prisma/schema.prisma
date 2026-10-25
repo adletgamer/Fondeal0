@@ -78,14 +78,15 @@ model Business {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  kybSubmissions KybSubmission[]
-  evidenceReferences EvidenceReference[]
-  providerChecks ProviderCheck[]
-  evidenceAcquisitions EvidenceAcquisition[]
+  kybSubmissions          KybSubmission[]
+  evidenceReferences      EvidenceReference[]
+  evidenceAcquisitions    EvidenceAcquisition[]
+  providerChecks          ProviderCheck[]
   verificationAuditEvents VerificationAuditEvent[]
-  underwritingDecisions UnderwritingDecision[]
-  opportunities  Opportunity[]
-  passport       PassportProjection?
+  underwritingDecisions   UnderwritingDecision[]
+  kybDecisions            KybDecision[]
+  opportunities           Opportunity[]
+  passport                PassportProjection?
 
   @@unique([country, taxId])
   @@index([country])
@@ -107,49 +108,82 @@ model UserWallet {
 
 /// KYB intake, shaped after SEP-12. `fields` holds provider-specific data (PII).
 model KybSubmission {
-  id          String    @id @default(cuid())
-  businessId  String
-  business    Business  @relation(fields: [businessId], references: [id])
+  id                    String                 @id @default(cuid())
+  businessId            String
+  business              Business               @relation(fields: [businessId], references: [id])
   underwritingDecisions UnderwritingDecision[]
-  status      KybStatus @default(Processing)
+  kybDecisions          KybDecision[]
+  status                KybStatus              @default(Processing)
   /// Which verifier issued the decision (`sandbox` until real KYB vendors are wired).
-  provider    String    @default("sandbox")
-  providerRef String?
+  provider              String                 @default("sandbox")
+  providerRef           String?
   /// PII payload — encrypted at rest in production.
-  fields      Json
+  fields                Json
   /// Client-generated retry token. Unique across submissions; ownership is checked before reuse.
-  idempotencyKey String? @unique
-  consentAt   DateTime?
-  consentVersion String?
+  idempotencyKey        String?                @unique
+  consentAt             DateTime?
+  consentVersion        String?
   /// 32-byte commitment (hex) mirrored on-chain as `data_hash`.
-  dataHash    String?
-  reviewedAt  DateTime?
-  createdAt   DateTime  @default(now())
+  dataHash              String?
+  reviewedAt            DateTime?
+  createdAt             DateTime               @default(now())
 
-  evidenceReferences EvidenceReference[]
-  providerChecks ProviderCheck[]
+  evidenceReferences   EvidenceReference[]
   evidenceAcquisitions EvidenceAcquisition[]
-  auditEvents VerificationAuditEvent[]
+  providerChecks       ProviderCheck[]
+  auditEvents          VerificationAuditEvent[]
 
   @@index([businessId])
   @@index([status])
 }
 
+/// A paid provider call and its settlement lifecycle, without retaining raw provider payloads.
+model EvidenceAcquisition {
+  id              String          @id @default(cuid())
+  businessId      String
+  business        Business        @relation(fields: [businessId], references: [id])
+  kybSubmissionId String
+  kybSubmission   KybSubmission   @relation(fields: [kybSubmissionId], references: [id])
+  providerId      String
+  evidenceType    String
+  country         String
+  requestHash     String
+  idempotencyKey  String          @unique
+  network         String
+  asset           String
+  quotedAmount    String?
+  paidAmount      String?
+  paymentStatus   String          @default("Pending")
+  paymentTxHash   String?
+  requestedAt     DateTime        @default(now())
+  paidAt          DateTime?
+  fulfilledAt     DateTime?
+  responseHash    String?
+  failureCode     String?
+  retryable       Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  providerChecks  ProviderCheck[]
+
+  @@index([businessId, createdAt])
+  @@index([kybSubmissionId, createdAt])
+  @@index([providerId, evidenceType, country])
+}
+
 /// Metadata only. No document bytes or public object URL are stored here.
 model EvidenceReference {
-  id String @id @default(cuid())
-  businessId String
-  business Business @relation(fields: [businessId], references: [id])
-  kybSubmissionId String
-  kybSubmission KybSubmission @relation(fields: [kybSubmissionId], references: [id])
-  kind String
-  sourceType String
-  status String @default("Declared")
+  id               String          @id @default(cuid())
+  businessId       String
+  business         Business        @relation(fields: [businessId], references: [id])
+  kybSubmissionId  String
+  kybSubmission    KybSubmission   @relation(fields: [kybSubmissionId], references: [id])
+  kind             String
+  sourceType       String
+  status           String          @default("Declared")
   /// Reserved for a future private storage adapter; never a public URL.
   privateObjectKey String?
-  createdAt DateTime @default(now())
-  expiresAt DateTime?
-  providerChecks ProviderCheck[]
+  createdAt        DateTime        @default(now())
+  expiresAt        DateTime?
+  providerChecks   ProviderCheck[]
 
   @@unique([kybSubmissionId, kind, sourceType])
   @@index([businessId, createdAt])
@@ -157,75 +191,43 @@ model EvidenceReference {
 
 /// One normalized provider result per idempotent check.
 model ProviderCheck {
-  id String @id @default(cuid())
-  businessId String
-  business Business @relation(fields: [businessId], references: [id])
-  kybSubmissionId String
-  kybSubmission KybSubmission @relation(fields: [kybSubmissionId], references: [id])
-  idempotencyKey String @unique
+  id                    String               @id @default(cuid())
+  businessId            String
+  business              Business             @relation(fields: [businessId], references: [id])
+  kybSubmissionId       String
+  kybSubmission         KybSubmission        @relation(fields: [kybSubmissionId], references: [id])
+  idempotencyKey        String               @unique
+  providerId            String
+  sourceType            String
+  checkType             String
+  result                String
+  evidenceReferenceId   String?
+  evidenceReference     EvidenceReference?   @relation(fields: [evidenceReferenceId], references: [id])
   evidenceAcquisitionId String?
-  evidenceAcquisition EvidenceAcquisition? @relation(fields: [evidenceAcquisitionId], references: [id])
-  providerId String
-  sourceType String
-  checkType String
-  result String
-  evidenceReferenceId String?
-  evidenceReference EvidenceReference? @relation(fields: [evidenceReferenceId], references: [id])
-  checkedAt DateTime
-  expiresAt DateTime?
-  reasonCodes Json
-  failureCode String?
-  retryable Boolean @default(false)
-  createdAt DateTime @default(now())
+  evidenceAcquisition   EvidenceAcquisition? @relation(fields: [evidenceAcquisitionId], references: [id], onDelete: SetNull)
+  checkedAt             DateTime
+  expiresAt             DateTime?
+  reasonCodes           Json
+  failureCode           String?
+  retryable             Boolean              @default(false)
+  createdAt             DateTime             @default(now())
 
   @@index([businessId, createdAt])
   @@index([kybSubmissionId])
   @@index([evidenceAcquisitionId])
 }
 
-/// Records how a provider check was acquired and paid for; never stores raw provider payloads.
-model EvidenceAcquisition {
-  id String @id @default(cuid())
-  businessId String
-  business Business @relation(fields: [businessId], references: [id])
-  kybSubmissionId String
-  kybSubmission KybSubmission @relation(fields: [kybSubmissionId], references: [id])
-  providerId String
-  evidenceType String
-  country String
-  requestHash String
-  idempotencyKey String @unique
-  network String
-  asset String
-  quotedAmount String?
-  paidAmount String?
-  paymentStatus String @default("Pending")
-  paymentTxHash String?
-  requestedAt DateTime @default(now())
-  paidAt DateTime?
-  fulfilledAt DateTime?
-  responseHash String?
-  failureCode String?
-  retryable Boolean @default(false)
-  createdAt DateTime @default(now())
-  providerChecks ProviderCheck[]
-
-  @@index([businessId, createdAt])
-  @@index([kybSubmissionId, createdAt])
-  @@index([providerId, evidenceType, country])
-}
-
 /// Append-only application and sensitive-access audit trail. No raw PII.
 model VerificationAuditEvent {
-  id String @id @default(cuid())
-  businessId String
-  business Business @relation(fields: [businessId], references: [id])
-  kybSubmissionId String
-  kybSubmission KybSubmission @relation(fields: [kybSubmissionId], references: [id])
+  id               String        @id @default(cuid())
+  businessId       String
+  business         Business      @relation(fields: [businessId], references: [id])
+  kybSubmissionId  String
+  kybSubmission    KybSubmission @relation(fields: [kybSubmissionId], references: [id])
   actorPrivyUserId String
-  action String
-  metadata Json
-  createdAt DateTime @default(now())
+  action           String
+  metadata         Json
+  createdAt        DateTime      @default(now())
 
   @@index([businessId, createdAt])
   @@index([kybSubmissionId, createdAt])
@@ -234,20 +236,20 @@ model VerificationAuditEvent {
 /// Immutable risk decisions. An approval is tied to one real KYB submission,
 /// evidence and a policy version; a newer decision supersedes it for new loans.
 model UnderwritingDecision {
-  id                   String             @id @default(cuid())
-  businessId           String
-  business             Business           @relation(fields: [businessId], references: [id])
-  kybSubmissionId      String
-  kybSubmission        KybSubmission      @relation(fields: [kybSubmissionId], references: [id])
-  status               UnderwritingStatus
-  policyVersion        String
-  reasonCodes          Json
-  evidenceRefs         Json
-  decidedBy            String?
-  maxPrincipalStroops  BigInt?
-  maxTermDays          Int?
-  expiresAt            DateTime?
-  createdAt            DateTime           @default(now())
+  id                  String             @id @default(cuid())
+  businessId          String
+  business            Business           @relation(fields: [businessId], references: [id])
+  kybSubmissionId     String
+  kybSubmission       KybSubmission      @relation(fields: [kybSubmissionId], references: [id])
+  status              UnderwritingStatus
+  policyVersion       String
+  reasonCodes         Json
+  evidenceRefs        Json
+  decidedBy           String?
+  maxPrincipalStroops BigInt?
+  maxTermDays         Int?
+  expiresAt           DateTime?
+  createdAt           DateTime           @default(now())
 
   @@index([businessId, createdAt])
   @@index([kybSubmissionId])
@@ -401,4 +403,107 @@ model WaitlistEntry {
 
   @@index([ipHash, createdAt])
   @@index([profile])
+}
+
+/// Back-office roles. A person may hold several (docs/adr/0011-admin-back-office-and-decision-authority.md).
+enum StaffRole {
+  Reviewer
+  Approver
+  Admin
+}
+
+enum StaffStatus {
+  Active
+  Suspended
+  Revoked
+}
+
+/// Privy authenticates; this table authorizes. A verified Privy session gets
+/// no back-office access unless it maps to an Active row here.
+model StaffMember {
+  id          String      @id @default(cuid())
+  /// The Privy user id from the verified access token (`sub`), never an email.
+  privyUserId String      @unique
+  /// For display and notices only. Never used to authorize.
+  email       String
+  roles       StaffRole[]
+  status      StaffStatus @default(Active)
+  /// Decisions require a second factor verified by Fondealo itself (step-up).
+  mfaRequired Boolean     @default(true)
+  createdById String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  decisionsMade     KybDecision[] @relation("KybDecisionActor")
+  decisionsPrepared KybDecision[] @relation("KybDecisionPreparer")
+
+  @@index([status])
+}
+
+enum KybDecisionKind {
+  Claim
+  RequestInformation
+  Approve
+  Reject
+  Reopen
+}
+
+enum KybCaseStatus {
+  Received
+  InReview
+  NeedsInformation
+  Approved
+  Rejected
+  ReviewDue
+}
+
+/// One row per decision on a KYB case. Append-only: a database trigger rejects
+/// UPDATE and DELETE. The case state is derived from the latest row, and
+/// `KybSubmission.status` is only its projection.
+model KybDecision {
+  id                   String          @id @default(cuid())
+  businessId           String
+  business             Business        @relation(fields: [businessId], references: [id])
+  kybSubmissionId      String
+  kybSubmission        KybSubmission   @relation(fields: [kybSubmissionId], references: [id])
+  kind                 KybDecisionKind
+  fromStatus           KybCaseStatus
+  toStatus             KybCaseStatus
+  actorStaffId         String
+  actor                StaffMember     @relation("KybDecisionActor", fields: [actorStaffId], references: [id])
+  preparedByStaffId    String?
+  preparedBy           StaffMember?    @relation("KybDecisionPreparer", fields: [preparedByStaffId], references: [id], onDelete: Restrict)
+  /// `enforced` or `solo` (one operator, Testnet only).
+  separationMode       String
+  /// The policy the decision was made under, e.g. `kyb-v1-draft`.
+  policyVersion        String
+  reasonCodes          Json
+  /// Checklist answers with their sources and notes (approvals only).
+  checklist            Json
+  /// Hash of what the reviewer saw; evidence may change later, this does not.
+  evidenceSnapshotHash String
+  /// Approvals only: the KYB credential `data_hash` published on-chain.
+  credentialCommitment String?
+  /// Approvals only: the salt behind `credentialCommitment`. Never leaves the server.
+  commitmentSalt       String?
+  idempotencyKey       String          @unique
+  decidedAt            DateTime        @default(now())
+  expiresAt            DateTime?
+
+  @@index([kybSubmissionId, decidedAt])
+  @@index([businessId, decidedAt])
+}
+
+/// Append-only record of staff access changes and sensitive reads (bootstrap,
+/// role changes, suspensions, full tax-number reveals). No raw PII.
+model StaffAuditEvent {
+  id            String   @id @default(cuid())
+  actorStaffId  String?
+  action        String
+  targetStaffId String?
+  metadata      Json
+  createdAt     DateTime @default(now())
+
+  @@index([actorStaffId, createdAt])
+  @@index([targetStaffId, createdAt])
 }

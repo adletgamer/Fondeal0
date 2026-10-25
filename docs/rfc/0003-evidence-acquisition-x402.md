@@ -7,7 +7,7 @@
 
 Prove one path from a synthetic paid evidence response to a normalized `ProviderCheck` and `EvidenceReference`. This is acquisition infrastructure only. It does not authenticate staff, decide KYB, score credit, create an `UnderwritingDecision`, issue a Passport, or make a financing decision. A licensed lender, factor, or other capital provider keeps final credit authority.
 
-This checkout does not contain `docs/adr/0011-admin-back-office-and-decision-authority.md`, `docs/adr/0012-contract-initialization-roles-and-funds-safety.md`, staff roles, or maker-checker. The current `apps/admin` is a synthetic UI prototype. Consequently, the service has no HTTP endpoint or UI action yet; spending must not be callable by an unauthenticated reviewer surface.
+This implementation builds on the staff roles, decision workflow and deployment safeguards documented in ADRs 0011 and 0012. The x402 service itself remains disconnected from authenticated routes and UI actions. Capability flags in `apps/admin/src/lib/env.ts` keep staff authentication, persisted decisions and Passport issuance disabled; spending must not be callable by an unauthenticated reviewer surface.
 
 ## Implemented path
 
@@ -34,8 +34,8 @@ The only supported provider is synthetic. It enforces a fixed demo subject and H
 
 ## Required before wiring a staff action
 
-- Implement staff authentication, explicit permissions and server-side authorization on every read/write.
-- Document and enforce the review/approver separation and maker-checker policy. Evidence purchase alone is not a privileged credit decision, but it still spends funds and needs an authorized actor/audit trail.
+- Before connecting the service to an admin action, enforce the existing staff permissions server-side and identify the authorized actor in the audit trail. Evidence purchase is not a credit decision, but it still spends funds.
+- Preserve the review/approver separation and maker-checker policy for every KYB or underwriting decision; evidence acquisition must never create or change a decision.
 - Establish and verify an isolated Development database target; review and apply the additive migration there only.
 - Replace the generic service audit actor with the authenticated staff or delegated service principal required by the approved audit model.
 - Add tests for the live x402 client transport and facilitator settlement against a synthetic Testnet provider without involving real data.

@@ -1,0 +1,92 @@
+# Deploy the Soroban contracts to Stellar Testnet, by hand only.
+#
+# Runs scripts/deploy_testnet.sh (build, deploy with constructors, wire,
+# verify) and publishes deployments/testnet.json as an artifact and in the job
+# summary. Never runs on push or on a pull request.
+#
+# Setup, once (Settings -> Environments):
+#   1. Create the environment `testnet` and add yourself as a required reviewer,
+#      so every run waits for your approval.
+#   2. Add three environment secrets, each a Testnet secret key (S...) for a
+#      different account: STELLAR_TESTNET_ADMIN_SECRET,
+#      STELLAR_TESTNET_ISSUER_SECRET, STELLAR_TESTNET_KEEPER_SECRET.
+#      Testnet keys only. Never put a Mainnet key here.
+name: Deploy contracts to Testnet
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy testnet" to confirm'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-testnet
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build, deploy, wire and verify
+    if: inputs.confirm == 'deploy testnet'
+    runs-on: ubuntu-latest
+    environment: testnet
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # rust-toolchain.toml pins the toolchain and the wasm32v1-none target.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32v1-none
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/soroban
+
+      - name: Cache stellar-cli
+        id: cli-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/stellar
+          key: stellar-cli-28.1.0-nodefault-${{ runner.os }}
+      # Without default features: no OS keyring or Ledger support (and no
+      # libdbus build dependency). Keys live in the CLI's file keystore.
+      - name: Install stellar-cli 28.1.0
+        if: steps.cli-cache.outputs.cache-hit != 'true'
+        run: cargo install --locked stellar-cli --version 28.1.0 --no-default-features
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Deploy, wire and verify
+        env:
+          ADMIN_SECRET_KEY: ${{ secrets.STELLAR_TESTNET_ADMIN_SECRET }}
+          ISSUER_SECRET_KEY: ${{ secrets.STELLAR_TESTNET_ISSUER_SECRET }}
+          KEEPER_SECRET_KEY: ${{ secrets.STELLAR_TESTNET_KEEPER_SECRET }}
+        run: |
+          for s in ADMIN_SECRET_KEY ISSUER_SECRET_KEY KEEPER_SECRET_KEY; do
+            [ -n "${!s}" ] || { echo "::error::missing environment secret for $s"; exit 1; }
+          done
+          ./scripts/deploy_testnet.sh
+
+      - name: Publish the manifest
+        if: success()
+        run: |
+          {
+            echo '### Testnet deployment'
+            echo '```json'
+            cat deployments/testnet.json
+            echo '```'
+            echo 'Commit `deployments/testnet.json` and set the `NEXT_PUBLIC_*` ids in Vercel (Preview).'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: testnet-deployment
+          path: deployments/testnet.json
+          if-no-files-found: error
