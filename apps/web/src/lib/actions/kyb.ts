@@ -198,6 +198,9 @@ export async function submitKyb(_prev: KybResult | null, formData: FormData): Pr
         ),
       );
       await tx.providerCheck.create({
+        // Sandbox intake does not use experimental acquisition fields. Avoid
+        // RETURNING every schema column when saving this independent check.
+        select: { id: true },
         data: {
           businessId: business.id,
           kybSubmissionId: submission.id,
