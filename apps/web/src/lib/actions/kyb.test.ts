@@ -237,6 +237,22 @@ describe('sandbox KYB', () => {
     });
   });
 
+  it.each(['P1001', 'P1002', 'P2024', 'P2021', 'P2022'])(
+    'reports persistence failure %s without claiming a successful submission',
+    async (code) => {
+      state.transaction.mockRejectedValueOnce({ code });
+      const result = await submitKyb(null, form());
+      expect(result).toMatchObject({ ok: false });
+      if (!result.ok) {
+        const { appTranslator } = await import('@/lib/app-copy');
+        const translated = appTranslator('en').error(result.error);
+        expect(translated).toContain('Your application was not saved.');
+        expect(translated).not.toContain('Could not complete the operation');
+      }
+      expect(state.passportUpsert).not.toHaveBeenCalled();
+    },
+  );
+
   it('fails closed when the database is unavailable', async () => {
     state.transaction.mockRejectedValue(new Error('database unavailable'));
     expect(await submitKyb(null, form())).toMatchObject({ ok: false });

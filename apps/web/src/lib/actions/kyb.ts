@@ -280,12 +280,18 @@ export async function submitKyb(_prev: KybResult | null, formData: FormData): Pr
       };
     }
     const code = (err as { code?: unknown }).code;
+    const unavailable = ['P1001', 'P1002', 'P1008', 'P1017', 'P2024'].includes(String(code));
+    const schemaUnavailable = ['P2021', 'P2022'].includes(String(code));
     console.error('[submitKyb] persistence unavailable', {
       code: typeof code === 'string' && /^P\d{4}$/.test(code) ? code : 'UNKNOWN',
     });
     return {
       ok: false,
-      error: 'No pudimos guardar tu solicitud. Inténtalo de nuevo en un momento.',
+      error: unavailable
+        ? 'La base de datos no está disponible. Tu solicitud no se guardó. Inténtalo de nuevo más tarde.'
+        : schemaUnavailable
+          ? 'El registro de solicitudes no está disponible temporalmente. Tu solicitud no se guardó.'
+          : 'No pudimos guardar tu solicitud. Inténtalo de nuevo en un momento.',
     };
   }
 }
