@@ -123,6 +123,33 @@ Development, so this PR did not apply the migration. Code that calls
 `joinWaitlist` must not reach Production before the migration does. The action
 reads the optional server secret `WAITLIST_IP_SECRET`.
 
+## Sandbox submission and optional acquisition fields
+
+`submitKyb` saves a sandbox application as `Processing`, together with consent,
+declared evidence, a synthetic check and audit events. It does not approve KYB
+or issue a Passport. The check write selects only its ID: asking Prisma to return
+all `ProviderCheck` columns also requests the experimental `evidenceAcquisitionId`
+column and fails with `P2022` if the acquisition migration has not been applied.
+Sandbox submission does not use that column.
+
+The PostgreSQL regression test installs migrations through the intake/staff
+schema, leaves the acquisition migration unapplied, and verifies persistence,
+consent, audit events and an idempotent retry. CI runs it with a disposable local
+PostgreSQL service. To run it locally, create a disposable database named
+`fondealo_kyb_test` on localhost, then run:
+
+```bash
+KYB_TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:55432/fondealo_kyb_test \
+  pnpm --filter @fondealo/web exec vitest run src/lib/actions/kyb-postgres.test.ts
+```
+
+The test creates and drops its own random schema. It rejects remote hosts and
+other database names. It is skipped when `KYB_TEST_DATABASE_URL` is unset.
+The required intake migrations must still be applied to the deployment database;
+this compatibility fix does not create missing intake tables or replace the
+migration procedure above. A successful `/api/health` checks connectivity only,
+not application schema readiness.
+
 ## Health check
 
 `GET /api/health` runs `SELECT 1` through Prisma and returns `{ ok, db, ms }`
