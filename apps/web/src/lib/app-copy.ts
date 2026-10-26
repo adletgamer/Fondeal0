@@ -7,6 +7,62 @@ export const intlLocale = (locale: AppLocale) => (locale === 'es' ? 'es-PE' : 'e
 /** Source text is a stable lookup key; user-authored business data is never translated. */
 export const APP_MESSAGES: Record<string, readonly [string, string]> = {
   ...DASHBOARD_MESSAGES,
+  'No pudimos guardar tu solicitud. Inténtalo de nuevo en un momento.': [
+    'No pudimos guardar tu solicitud. Inténtalo de nuevo en un momento.',
+    'We could not save your application. Please try again in a moment.',
+  ],
+  'Tu empresa ya tiene una verificación en curso.': [
+    'Tu empresa ya tiene una verificación en curso.',
+    'Your business already has an application under review.',
+  ],
+  'Esta referencia pertenece a otra solicitud.': [
+    'Esta referencia pertenece a otra solicitud.',
+    'This reference belongs to another application.',
+  ],
+  'Esta solicitud cambió. Actualiza su estado.': [
+    'Esta solicitud cambió. Actualiza su estado.',
+    'This application has changed. Refresh to see its status.',
+  ],
+  'En esta solicitud no se pueden subir documentos.': [
+    'En esta solicitud no se pueden subir documentos.',
+    'Documents cannot be uploaded in this application.',
+  ],
+  'La base de datos no está disponible. Tu solicitud no se guardó. Inténtalo de nuevo más tarde.': [
+    'La base de datos no está disponible. Tu solicitud no se guardó. Inténtalo de nuevo más tarde.',
+    'The database is unavailable. Your application was not saved. Please try again later.',
+  ],
+  'El registro de solicitudes no está disponible temporalmente. Tu solicitud no se guardó.': [
+    'El registro de solicitudes no está disponible temporalmente. Tu solicitud no se guardó.',
+    'Application registration is temporarily unavailable. Your application was not saved.',
+  ],
+  'Ingresa la razón social': ['Ingresa la razón social', 'Enter your legal business name'],
+  'Selecciona un país': ['Selecciona un país', 'Select a country'],
+  'Selecciona un sector': ['Selecciona un sector', 'Select a sector'],
+  'Ingresa un año válido': ['Ingresa un año válido', 'Enter a valid year'],
+  'El año de fundación no puede ser futuro': [
+    'El año de fundación no puede ser futuro',
+    'The founding year cannot be in the future',
+  ],
+  'Ingresa un correo de contacto válido': [
+    'Ingresa un correo de contacto válido',
+    'Enter a valid contact email',
+  ],
+  'Ingresa el nombre del representante': [
+    'Ingresa el nombre del representante',
+    'Enter the representative’s name',
+  ],
+  'Selecciona tu relación con la empresa': [
+    'Selecciona tu relación con la empresa',
+    'Select your relationship to the business',
+  ],
+  'Necesitamos tu consentimiento para tratar estos datos': [
+    'Necesitamos tu consentimiento para tratar estos datos',
+    'We need your consent to process this data',
+  ],
+  'Ya hay una solicitud en curso, o ese {p0} está registrado en otra cuenta.': [
+    'Ya hay una solicitud en curso, o ese {p0} está registrado en otra cuenta.',
+    'An application is already in progress, or this {p0} is registered to another account.',
+  ],
   __locale: ['es-PE', 'en-US'],
   'Showing one scenario': ['Mostrando 1 escenario', 'Showing 1 scenario'],
   'Ya registramos tu solicitud el {date}.': [

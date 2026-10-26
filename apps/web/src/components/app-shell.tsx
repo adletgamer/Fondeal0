@@ -55,6 +55,18 @@ function LocalizedAppShell({
 
   useEffect(() => setMenuOpen(false), [pathname]);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+        document.getElementById('app-menu-toggle')?.focus();
+      }
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [menuOpen]);
+
   async function handleLogout() {
     setLogoutError(false);
     try {
@@ -91,6 +103,7 @@ function LocalizedAppShell({
               <Link
                 key={href}
                 href={href}
+                onClick={() => setMenuOpen(false)}
                 aria-current={activeHref === href ? 'page' : undefined}
                 className={`${styles.navLink} ${activeHref === href ? styles.navLinkActive : ''}`}
               >
@@ -116,6 +129,7 @@ function LocalizedAppShell({
             </button>
             <button
               type="button"
+              id="app-menu-toggle"
               className={styles.menuButton}
               aria-label={t(menuOpen ? 'Close navigation' : 'Open navigation')}
               aria-controls="app-navigation"
